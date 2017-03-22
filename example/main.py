@@ -30,7 +30,7 @@ class TokenStorageImp(TokenStorage):
     def contains(self, token):
         return token in self.tokens
 
-    def store(self, token, expireTime=None):
+    def store(self, token, client, userId=None, expireTime=None):
         self.tokens.append(token)
 
 
@@ -78,8 +78,8 @@ class OAuth2Imp(OAuth2):
         redirectUri = request.args['redirect_uri'][0]
         if len(request.args.get("confirm", [])) > 0 and request.args["confirm"][0] == "yes":
             scopeList = request.args['scope'][0].split()
-            clientId = request.args['client_id'][0]
-            return self.grantAccess(request, clientId, scopeList, state, redirectUri)
+            client = self.clientStorage.getClient(request.args['client_id'][0])
+            return self.grantAccess(request, client, scopeList, state, redirectUri)
         else:
             return self.denyAccess(request, state, redirectUri)
 

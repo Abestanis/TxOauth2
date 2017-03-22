@@ -9,7 +9,7 @@ from .errors import InsecureConnectionError, MissingParameterError,\
 
 
 class TokenFactory(object):
-    def generateToken(self):
+    def generateToken(self, client, userId=None):
         raise NotImplementedError()
 
 
@@ -17,7 +17,7 @@ class TokenStorage(object):
     def contains(self, token):
         raise NotImplementedError()
 
-    def store(self, token, expireTime=None):
+    def store(self, token, client, userId=None, expireTime=None):
         raise NotImplementedError()
 
 
@@ -75,18 +75,19 @@ class TokenResource(Resource, object):
                 return InvalidParameterError("Invalid client_id").generate(request)
             if client.clientSecret != request.args['client_secret'][0]:
                 return InvalidParameterError("Invalid client_secret").generate(request)
-            accessToken = self.tokenFactory.generateToken()
+            accessToken = self.tokenFactory.generateToken(client, userId=data['user_id'])
             expireTime = None
             if self.authTokenLifeTime > 0:
                 expireTime = int(time.time()) + self.authTokenLifeTime
-            self.authTokenStorage.store(accessToken, expireTime=expireTime)
+            self.authTokenStorage.store(accessToken, client,
+                                        userId=data['user_id'], expireTime=expireTime)
             result = {
                 "access_token": accessToken,
                 "token_type": "Bearer"
             }
             if self.authTokenLifeTime > 0:
-                refreshToken = self.tokenFactory.generateToken()
-                self.refreshTokenStorage.store(refreshToken)
+                refreshToken = self.tokenFactory.generateToken(client, userId=data['user_id'])
+                self.refreshTokenStorage.store(refreshToken, client, userId=data['user_id'])
                 result["refresh_token"] = refreshToken
                 result["expires_in"] = self.authTokenLifeTime
             request.setHeader("Content-Type", "application/json;charset=UTF-8")
