@@ -99,12 +99,11 @@ class OAuth2(Resource, object):
 
 def isAuthorized(request, scope, allowInsecureRequestDebug=False):
     if allowInsecureRequestDebug or request.isSecure():
-        if 'Authorization' in request.args:
-            token = request.args['Authorization'][0]
-            if token.startswith("Bearer "):
-                token = token[7:]
-                if OAuth2.OAuthTokenStorage.contains(token):
-                    return True
+        token = request.getHeader('Authorization')
+        if token is not None and token.startswith("Bearer "):
+            token = token[7:]
+            if OAuth2.OAuthTokenStorage.contains(token):
+                return True
     request.write(InvalidTokenError("auth token").generate(request))
     request.finish()
     return False
