@@ -1,6 +1,6 @@
 # Copyright (c) Sebastian Scholz
 # See LICENSE for details.
-
+import time
 from twisted.web.resource import Resource
 from urllib import urlencode
 from functools import wraps
@@ -81,16 +81,14 @@ class OAuth2(Resource, object):
     def denyAccess(self, request, state, redirectUri):
         return UserDeniesAuthorization(state).generate(request, redirectUri)
 
-    def grantAccess(self, request, clientId, scopeList, state, redirectUri):
+    def grantAccess(self, request, clientId, scopeList, state, redirectUri, lifeTime=120):
         if not self.allowInsecureRequestDebug and not request.isSecure():
             return InsecureConnectionError().generate(request, redirectUri)
-        print("Access grant for {client}:\nScope: {scope}\nstate: {state}\nredirectUri: {uri}"
-              .format(client=clientId, scope=" ".join(scopeList), state=state, uri=redirectUri))
         code = self.tokenFactory.generateToken()
         self.persistentStorage.put(code, json.dumps({
             "redirect_uri": redirectUri,
             "client_id": clientId
-        }))
+        }), expireTime=int(time.time()) + lifeTime)
         queryParameter = urlencode({'state': state, 'code': code})
         request.redirect(redirectUri + '?' + queryParameter)
         request.finish()

@@ -1,6 +1,6 @@
 # Copyright (c) Sebastian Scholz
 # See LICENSE for details.
-
+import time
 from twisted.web.resource import Resource, NoResource
 import json
 
@@ -66,7 +66,8 @@ class TokenResource(Resource, object):
             except KeyError:
                 return InvalidTokenError("authorization code").generate(request)
             data = json.loads(data)
-            if data['client_id'] != request.args['client_id'][0] or data['redirect_uri'] != request.args['redirect_uri'][0]:
+            if data['client_id'] != request.args['client_id'][0] or\
+               data['redirect_uri'] != request.args['redirect_uri'][0]:
                 return InvalidParameterError("Invalid client_id or redirect_uri").generate(request)
             try:
                 client = self.clientStorage.getClient(request.args['client_id'][0])
@@ -75,7 +76,10 @@ class TokenResource(Resource, object):
             if client.clientSecret != request.args['client_secret'][0]:
                 return InvalidParameterError("Invalid client_secret").generate(request)
             accessToken = self.tokenFactory.generateToken()
-            self.authTokenStorage.store(accessToken, expireTime=self.authTokenLifeTime if self.authTokenLifeTime > 0 else None)
+            expireTime = None
+            if self.authTokenLifeTime > 0:
+                expireTime = int(time.time()) + self.authTokenLifeTime
+            self.authTokenStorage.store(accessToken, expireTime=expireTime)
             result = {
                 "access_token": accessToken,
                 "token_type": "Bearer"
