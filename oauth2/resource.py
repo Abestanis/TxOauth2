@@ -47,7 +47,7 @@ class OAuth2(Resource, object):
         self.persistentStorage = persistentStorage
         self.clientStorage = clientStorage
         self.putChild(tokenPath, TokenResource(tokenFactory, persistentStorage,
-                                               refreshTokenStorage, authTokenStorage,
+                                               refreshTokenStorage, authTokenStorage, clientStorage,
                                                allowInsecureRequestDebug=allowInsecureRequestDebug))
         OAuth2.OAuthTokenStorage = authTokenStorage
 

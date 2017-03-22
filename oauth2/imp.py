@@ -30,6 +30,7 @@ class SimpleClientStorage(ClientStorage):
         client = Client()
         client.clientId = clientId
         client.name = self._configParser.get(sectionName, 'name')
+        client.clientSecret = self._configParser.get(sectionName, 'secret')
         client.redirectUris = self._configParser.get(sectionName, 'redirect_uris')
         return client
 
@@ -42,6 +43,7 @@ class SimpleClientStorage(ClientStorage):
         except DuplicateSectionError:
             pass
         self._configParser.set(sectionName, 'name', client.name)
+        self._configParser.set(sectionName, 'secret', client.clientSecret)
         self._configParser.set(sectionName, 'redirect_uris', ' '.join(client.redirectUris))
         if not os.path.exists(os.path.dirname(self.path)):
             os.makedirs(os.path.dirname(self.path))

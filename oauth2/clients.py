@@ -10,5 +10,6 @@ class ClientStorage(object):
 
 class Client(object):
     clientId = None
+    clientSecret = None
     redirectUris = None
     name = None

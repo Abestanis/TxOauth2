@@ -88,6 +88,7 @@ def setupOAuth2Clients():
     clientStorage = SimpleClientStorage(os.path.join(os.path.dirname(__file__), 'clientStorage'))
     testClient = Client()
     testClient.clientId = 'test'
+    testClient.clientSecret = 'test_secret'
     testClient.name = 'Test Client'
     testClient.redirectUris = ['https://clientServer.com/return']
     clientStorage.addClient(testClient)

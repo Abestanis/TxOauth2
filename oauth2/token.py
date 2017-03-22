@@ -37,10 +37,11 @@ class TokenResource(Resource, object):
     allowInsecureRequestDebug = False
     refreshTokenStorage = None
     authTokenStorage = None
+    clientStorage = None
     authTokenLifeTime = 3600
 
     def __init__(self, tokenFactory, persistentStorage, refreshTokenStorage, authTokenStorage,
-                 authTokenLifeTime=3600, allowInsecureRequestDebug=False):
+                 clientStorage, authTokenLifeTime=3600, allowInsecureRequestDebug=False):
         super(TokenResource, self).__init__()
         self.allowedMethods = ['POST']
         self.allowInsecureRequestDebug = allowInsecureRequestDebug
@@ -48,6 +49,7 @@ class TokenResource(Resource, object):
         self.authTokenStorage = authTokenStorage
         self.tokenFactory = tokenFactory
         self.persistentStorage = persistentStorage
+        self.clientStorage = clientStorage
         self.authTokenLifeTime = authTokenLifeTime
 
     def render_POST(self, request):
@@ -66,7 +68,12 @@ class TokenResource(Resource, object):
             data = json.loads(data)
             if data['client_id'] != request.args['client_id'][0] or data['redirect_uri'] != request.args['redirect_uri'][0]:
                 return InvalidParameterError("Invalid client_id or redirect_uri").generate(request)
-            # TODO: Check client secret
+            try:
+                client = self.clientStorage.getClient(request.args['client_id'][0])
+            except KeyError:
+                return InvalidParameterError("Invalid client_id").generate(request)
+            if client.clientSecret != request.args['client_secret'][0]:
+                return InvalidParameterError("Invalid client_secret").generate(request)
             accessToken = self.tokenFactory.generateToken()
             self.authTokenStorage.store(accessToken, expireTime=self.authTokenLifeTime if self.authTokenLifeTime > 0 else None)
             result = {
