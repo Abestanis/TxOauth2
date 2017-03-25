@@ -16,3 +16,6 @@ $RECYCLE.BIN/
 
 #IDE
 .idea
+
+example/clientStorage
+tests/_trial*

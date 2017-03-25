@@ -96,12 +96,16 @@ def setupOAuth2Clients():
     return clientStorage
 
 
-def main():
+def setupTestServerResource():
     clientStorage = setupOAuth2Clients()
     root = Resource()
     root.putChild("clock", ClockPage())
     root.putChild("oauth2", OAuth2Imp(clientStorage))
-    factory = Site(root)
+    return root
+
+
+def main():
+    factory = Site(setupTestServerResource())
     endpoint = endpoints.TCP4ServerEndpoint(reactor, 8880)
     endpoint.listen(factory)
     reactor.run()
