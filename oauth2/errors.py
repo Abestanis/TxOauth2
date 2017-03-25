@@ -5,6 +5,7 @@ import json
 from httplib import BAD_REQUEST, UNAUTHORIZED, OK
 from urllib import urlencode
 
+import logging
 from twisted.web.server import NOT_DONE_YET
 
 
@@ -13,6 +14,7 @@ class OAuth2Error(object):
     detail = None
     errorUri = None
     code = BAD_REQUEST
+    logger = logging.getLogger('oauth2')
 
     def __init__(self, code, message, detail, errorUri=None):
         self.code = code
@@ -33,7 +35,9 @@ class OAuth2Error(object):
         request.setHeader("Content-Type", "application/json;charset=UTF-8")
         request.setHeader("Cache-Control", "no-store")
         request.setHeader("Pragma", "no-cache")
-        return json.dumps(self._generateErrorBody()).encode("utf-8")
+        result = json.dumps(self._generateErrorBody()).encode("utf-8")
+        self.logger.debug('OAuth2 Error: {result}'.format(result=result))
+        return result
 
 
 class AuthorizationError(OAuth2Error):
