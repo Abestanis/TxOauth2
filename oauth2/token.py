@@ -14,7 +14,7 @@ class TokenFactory(object):
 
 
 class TokenStorage(object):
-    def contains(self, token):
+    def contains(self, token, scope):
         raise NotImplementedError()
 
     def store(self, token, client, userId=None, expireTime=None):

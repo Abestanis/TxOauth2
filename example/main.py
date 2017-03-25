@@ -8,8 +8,9 @@ from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
 import time
 
+from oauth2 import oauth2, isAuthorized
 from oauth2.clients import Client
-from oauth2.resource import OAuth2, isAuthorized, oauth2
+from oauth2.resource import OAuth2
 from oauth2.token import TokenStorage, PersistentStorage
 from oauth2.imp import UUIDTokenFactory, SimpleClientStorage
 
@@ -27,7 +28,7 @@ class ClockPage(Resource):
 class TokenStorageImp(TokenStorage):
     tokens = []
 
-    def contains(self, token):
+    def contains(self, token, scope):
         return token in self.tokens
 
     def store(self, token, client, userId=None, expireTime=None):
