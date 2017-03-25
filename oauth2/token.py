@@ -77,7 +77,7 @@ class TokenResource(Resource, object):
                 return InvalidTokenError("refresh token").generate(request)
             if 'scope' in request.args:
                 if scope != request.args['scope'][0]: # TODO: Support multiple scopes
-                    return InvalidScopeError(request.args['scope'][0]).gererate(request)
+                    return InvalidScopeError(request.args['scope'][0]).generate(request)
                 scope = request.args['scope'][0]
             if not self.refreshTokenStorage.contains(refreshToken, scope):
                 return InvalidTokenError("refresh token").generate(request)
