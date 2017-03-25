@@ -1,5 +1,9 @@
 # Copyright (c) Sebastian Scholz
 # See LICENSE for details.
+#
+# This is an example of how to implement oauth2 with this library and twisted.
+# It should not be used as is in a real server and is meant as a starting point
+# to build your own implementation
 
 import os
 
@@ -16,16 +20,37 @@ from oauth2.imp import UUIDTokenFactory, SimpleClientStorage
 
 
 class ClockPage(Resource):
+    """
+    This represents a resource that should be protected via oauth2.
+    
+    There are two ways to protect a resource with oauth2:
+    1: Use the isAuthorized function and return NOT_DONE_YET if it returns False
+    2: use the oauth2 descriptor on one of the render_* functions (or any function, that accepts
+       the request as the second argument) and it will call isAuthorized for you.
+    
+    Note that we allow requests send over http (allowInsecureRequestDebug=True). This is done
+    so one could test this server locally. Do not enable it when running a real server! Don't do it!
+    """
     isLeaf = True
 
     @oauth2('VIEW_CLOCK', allowInsecureRequestDebug=True)
     def render_GET(self, request):
-        #if not isAuthorized(request, 'VIEW_CLOCK'):
-        #    return NOT_DONE_YET
+        # This check is not necessary, because this method is already protected by the @oauth
+        # decorator. It is included here to show of the two ways of protecting a resource.
+        if not isAuthorized(request, 'VIEW_CLOCK'):
+            return NOT_DONE_YET
         return "<html><body>{time}</body></html>".format(time=time.ctime())
 
 
 class TokenStorageImp(TokenStorage):
+    """
+    This is an implementation of the TokenStorage interface.
+    Check out the base class for more detail.
+    
+    This implementation does not implement any type of persistence, because it is not required
+    for this example. Any real implementation will likely want to implement persistence to preserve
+    tokens between server restarts.
+    """
     tokens = {}
 
     def contains(self, token, scope):
@@ -51,6 +76,13 @@ class TokenStorageImp(TokenStorage):
 
 
 class PersistentStorageImp(PersistentStorage):
+    """
+    This implements the PersistentStorage interface. Check out the base class for more detail.
+    
+    As with the TokenStorageImp, this implementation does not implement any type of persistence.
+    Often persistence is probably not needed here, because the lifetime of the objects stored here
+    is commonly very short.
+    """
     storage = {}
 
     def put(self, key, data, expireTime=None):
@@ -67,11 +99,21 @@ class PersistentStorageImp(PersistentStorage):
         return entry['data']
 
 
-class OAuth2Imp(OAuth2):
+class OAuth2Endpoint(OAuth2):
+    """
+    This is the Resource that implements the oauth2 endpoint. It will handle the user authorization
+    and it hosts the token endpoint.
+    
+    Note: This implementation does not verify the user and does not require him to authenticate
+    himself. A real implementation should probably do so.
+    You are not limited to display a simple web page in onAuthenticate. It is totally valid
+    to redirect to a different resource and call grantAccess from there.
+    """
+
     def __init__(self, clientStorage):
-        super(OAuth2Imp, self).__init__(UUIDTokenFactory(), PersistentStorageImp(),
-                                        TokenStorageImp(), TokenStorageImp(), clientStorage,
-                                        allowInsecureRequestDebug=True)
+        super(OAuth2Endpoint, self).__init__(
+            UUIDTokenFactory(), PersistentStorageImp(), TokenStorageImp(), TokenStorageImp(),
+            clientStorage, allowInsecureRequestDebug=True)
 
     def onAuthenticate(self, request, client, responseType, scope, redirectUri, state):
         return """
@@ -97,6 +139,10 @@ class OAuth2Imp(OAuth2):
                   state=state, redirect_uri=redirectUri)
 
     def render_POST(self, request):
+        """
+        This will be called when the user clicks on the "yes" or "no" button in the page
+        returned by onAuthenticate.
+        """
         state = request.args['state'][0]
         redirectUri = request.args['redirect_uri'][0]
         if len(request.args.get("confirm", [])) > 0 and request.args["confirm"][0] == "yes":
@@ -108,6 +154,10 @@ class OAuth2Imp(OAuth2):
 
 
 def setupOAuth2Clients():
+    """
+    Setup a client storage with a test client.
+    :return: The client storage
+    """
     clientStorage = SimpleClientStorage(os.path.join(os.path.dirname(__file__), 'clientStorage'))
     testClient = Client()
     testClient.clientId = 'test'
@@ -119,14 +169,21 @@ def setupOAuth2Clients():
 
 
 def setupTestServerResource():
+    """
+    Setup a test server with a protected clock resource and an oauth2 endpoint.
+    :return: The root resource of the test server
+    """
     clientStorage = setupOAuth2Clients()
     root = Resource()
     root.putChild("clock", ClockPage())
-    root.putChild("oauth2", OAuth2Imp(clientStorage))
+    root.putChild("oauth2", OAuth2Endpoint(clientStorage))
     return root
 
 
 def main():
+    """
+    Run a test server at localhost:8880.
+    """
     factory = Site(setupTestServerResource())
     endpoint = endpoints.TCP4ServerEndpoint(reactor, 8880)
     endpoint.listen(factory)
