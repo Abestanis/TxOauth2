@@ -5,7 +5,6 @@ from twisted.web.resource import Resource
 from urllib import urlencode
 
 from twisted.web.server import NOT_DONE_YET
-import json
 
 from .errors import MissingParameterError, InsecureConnectionError, InvalidRedirectUriError,\
     UserDeniesAuthorization, InvalidClientIdError
@@ -85,11 +84,11 @@ class OAuth2(Resource, object):
         if not self.allowInsecureRequestDebug and not request.isSecure():
             return InsecureConnectionError().generate(request, redirectUri)
         code = self.tokenFactory.generateToken(client, userId=userId)
-        self.persistentStorage.put(code, json.dumps({
+        self.persistentStorage.put(code, {
             "redirect_uri": redirectUri,
             "client_id": client.clientId,
             "user_id": userId
-        }), expireTime=int(time.time()) + lifeTime)
+        }, expireTime=int(time.time()) + lifeTime)
         queryParameter = urlencode({'state': state, 'code': code})
         request.redirect(redirectUri + '?' + queryParameter)
         request.finish()

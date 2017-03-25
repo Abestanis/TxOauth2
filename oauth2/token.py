@@ -65,7 +65,6 @@ class TokenResource(Resource, object):
                 data = self.persistentStorage.get(request.args['code'][0])
             except KeyError:
                 return InvalidTokenError("authorization code").generate(request)
-            data = json.loads(data)
             if data['client_id'] != request.args['client_id'][0] or\
                data['redirect_uri'] != request.args['redirect_uri'][0]:
                 return InvalidParameterError("Invalid client_id or redirect_uri").generate(request)
