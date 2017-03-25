@@ -39,10 +39,14 @@ class TokenStorageImp(TokenStorage):
             return scope in tokenEntry['scope']
         return False
 
+    def getTokenData(self, token):
+        return self.tokens[token]['scope'], self.tokens[token]['additionalData']
+
     def store(self, token, client, scope, additionalData=None, expireTime=None):
         self.tokens[token] = {
             'scope': scope,
-            'expires': expireTime
+            'expires': expireTime,
+            'additionalData': additionalData
         }
 
 

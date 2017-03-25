@@ -110,6 +110,12 @@ class InvalidTokenError(OAuth2Error):
         super(InvalidTokenError, self).__init__(BAD_REQUEST, "invalid_grant", message)
 
 
+class InvalidScopeError(OAuth2Error):
+    def __init__(self, scope):
+        message = "The provided scope is invalid: {scope}".format(scope=scope)
+        super(InvalidScopeError, self).__init__(BAD_REQUEST, "invalid_scope", message)
+
+
 class UserDeniesAuthorization(AuthorizationError):
     def __init__(self, state=None):
         super(UserDeniesAuthorization, self).__init__(OK, "access_denied", None, state=state)

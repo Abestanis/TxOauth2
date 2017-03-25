@@ -4,8 +4,8 @@ import time
 from twisted.web.resource import Resource, NoResource
 import json
 
-from .errors import InsecureConnectionError, MissingParameterError,\
-    InvalidParameterError, InvalidTokenError
+from .errors import InsecureConnectionError, MissingParameterError, \
+    InvalidParameterError, InvalidTokenError, InvalidScopeError
 
 
 class TokenFactory(object):
@@ -15,6 +15,9 @@ class TokenFactory(object):
 
 class TokenStorage(object):
     def contains(self, token, scope):
+        raise NotImplementedError()
+
+    def getTokenData(self, token):
         raise NotImplementedError()
 
     def store(self, token, client, scope, additionalData=None, expireTime=None):
@@ -57,7 +60,36 @@ class TokenResource(Resource, object):
             return InsecureConnectionError().generate(request)
         if 'grant_type' not in request.args:
             return MissingParameterError(name='grant_type')
-        if request.args['grant_type'][0] == 'authorization_code':
+        if request.args['grant_type'][0] == 'grant_type':
+            for argument in ['client_id', 'client_secret', 'refresh_token']:
+                if argument not in request.args:
+                    return MissingParameterError(name=argument).generate(request)
+            try:
+                client = self.clientStorage.getClient(request.args['client_id'][0])
+            except KeyError:
+                return InvalidParameterError("Invalid client_id").generate(request)
+            if client.clientSecret != request.args['client_secret'][0]:
+                return InvalidParameterError("Invalid client_secret").generate(request)
+            refreshToken = request.args['refresh_token'][0]
+            try:
+                scope, additionalData = self.refreshTokenStorage.getTokenData(refreshToken)
+            except KeyError:
+                return InvalidTokenError("refresh token").generate(request)
+            if 'scope' in request.args:
+                if scope != request.args['scope'][0]: # TODO: Support multiple scopes
+                    return InvalidScopeError(request.args['scope'][0]).gererate(request)
+                scope = request.args['scope'][0]
+            if not self.refreshTokenStorage.contains(refreshToken, scope):
+                return InvalidTokenError("refresh token").generate(request)
+            accessToken = self.tokenFactory.generateToken(client, scope=scope,
+                                                          additionalData=additionalData)
+            expireTime = None
+            if self.authTokenLifeTime > 0:
+                expireTime = int(time.time()) + self.authTokenLifeTime
+            self.authTokenStorage.store(accessToken, client, scope=scope,
+                                        additionalData=additionalData, expireTime=expireTime)
+            return self.buildResponse(request, accessToken)
+        elif request.args['grant_type'][0] == 'authorization_code':
             for argument in ['client_id', 'client_secret', 'code', 'redirect_uri']:
                 if argument not in request.args:
                     return MissingParameterError(name=argument).generate(request)
@@ -83,20 +115,25 @@ class TokenResource(Resource, object):
                 expireTime = int(time.time()) + self.authTokenLifeTime
             self.authTokenStorage.store(accessToken, client, scope=scope,
                                         additionalData=additionalData, expireTime=expireTime)
-            result = {
-                "access_token": accessToken,
-                "token_type": "Bearer"
-            }
+            refreshToken = None
             if self.authTokenLifeTime > 0:
                 refreshToken = self.tokenFactory.generateToken(client, scope=scope,
                                                                additionalData=additionalData)
                 self.refreshTokenStorage.store(refreshToken, client, scope=scope,
                                                additionalData=additionalData)
-                result["refresh_token"] = refreshToken
-                result["expires_in"] = self.authTokenLifeTime
-            request.setHeader("Content-Type", "application/json;charset=UTF-8")
-            request.setHeader("Cache-Control", "no-store")
-            request.setHeader("Pragma", "no-cache")
-            return json.dumps(result).encode("utf-8")
+            return self.buildResponse(request, accessToken, refreshToken)
         else:
             return NoResource() # TODO
+
+    def buildResponse(self, request, accessToken, refreshToken=None):
+        result = {
+            "access_token": accessToken,
+            "token_type": "Bearer"
+        }
+        if refreshToken is not None:
+            result["refresh_token"] = refreshToken
+            result["expires_in"] = self.authTokenLifeTime
+        request.setHeader("Content-Type", "application/json;charset=UTF-8")
+        request.setHeader("Cache-Control", "no-store")
+        request.setHeader("Pragma", "no-cache")
+        return json.dumps(result).encode("utf-8")
