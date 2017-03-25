@@ -93,9 +93,9 @@ class OAuth2Imp(OAuth2):
         state = request.args['state'][0]
         redirectUri = request.args['redirect_uri'][0]
         if len(request.args.get("confirm", [])) > 0 and request.args["confirm"][0] == "yes":
-            scopeList = request.args['scope'][0].split()
+            scope = request.args['scope'][0].split()
             client = self.clientStorage.getClient(request.args['client_id'][0])
-            return self.grantAccess(request, client, scopeList, state, redirectUri)
+            return self.grantAccess(request, client, scope, state, redirectUri)
         else:
             return self.denyAccess(request, state, redirectUri)
 
