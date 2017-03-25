@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='TwistedOAuth2',
-    version='0.1',
+    version='0.2',
     author='Sebastian Scholz',
     author_email='abestanis.gc@gmail.com',
     description='A module that allows implementing OAuth2 with twisted',
