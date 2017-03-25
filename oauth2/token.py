@@ -60,7 +60,7 @@ class TokenResource(Resource, object):
             return InsecureConnectionError().generate(request)
         if 'grant_type' not in request.args:
             return MissingParameterError(name='grant_type')
-        if request.args['grant_type'][0] == 'grant_type':
+        if request.args['grant_type'][0] == 'refresh_token':
             for argument in ['client_id', 'client_secret', 'refresh_token']:
                 if argument not in request.args:
                     return MissingParameterError(name=argument).generate(request)
