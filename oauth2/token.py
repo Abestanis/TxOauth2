@@ -67,9 +67,9 @@ class TokenResource(Resource, object):
             try:
                 client = self.clientStorage.getClient(request.args['client_id'][0])
             except KeyError:
-                return InvalidParameterError("Invalid client_id").generate(request)
+                return InvalidParameterError("client_id").generate(request)
             if client.clientSecret != request.args['client_secret'][0]:
-                return InvalidParameterError("Invalid client_secret").generate(request)
+                return InvalidParameterError("client_secret").generate(request)
             refreshToken = request.args['refresh_token'][0]
             try:
                 scope, additionalData = self.refreshTokenStorage.getTokenData(refreshToken)
@@ -99,13 +99,13 @@ class TokenResource(Resource, object):
                 return InvalidTokenError("authorization code").generate(request)
             if data['client_id'] != request.args['client_id'][0] or\
                data['redirect_uri'] != request.args['redirect_uri'][0]:
-                return InvalidParameterError("Invalid client_id or redirect_uri").generate(request)
+                return InvalidParameterError("client_id or redirect_uri").generate(request)
             try:
                 client = self.clientStorage.getClient(request.args['client_id'][0])
             except KeyError:
-                return InvalidParameterError("Invalid client_id").generate(request)
+                return InvalidParameterError("client_id").generate(request)
             if client.clientSecret != request.args['client_secret'][0]:
-                return InvalidParameterError("Invalid client_secret").generate(request)
+                return InvalidParameterError("client_secret").generate(request)
             additionalData = data['additional_data']
             scope = data['scope']
             accessToken = self.tokenFactory.generateToken(client, scope=scope,
