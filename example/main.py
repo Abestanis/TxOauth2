@@ -26,13 +26,24 @@ class ClockPage(Resource):
 
 
 class TokenStorageImp(TokenStorage):
-    tokens = []
+    tokens = {}
 
     def contains(self, token, scope):
-        return token in self.tokens
+        tokenEntry = self.tokens.get(token, None)
+        if tokenEntry is not None:
+            if tokenEntry['expires'] is not None and time.time() > tokenEntry['expires']:
+                # The token expired
+                del self.tokens[token]
+                return False
+            # Check if the token allows access to the scope
+            return scope in tokenEntry['scope']
+        return False
 
-    def store(self, token, client, additionalData=None, expireTime=None):
-        self.tokens.append(token)
+    def store(self, token, client, scope, additionalData=None, expireTime=None):
+        self.tokens[token] = {
+            'scope': scope,
+            'expires': expireTime
+        }
 
 
 class PersistentStorageImp(PersistentStorage):

@@ -87,6 +87,7 @@ class OAuth2(Resource, object):
         self.persistentStorage.put(code, {
             "redirect_uri": redirectUri,
             "client_id": client.clientId,
+            "scope": scopeList,
             "additional_data": additionalData
         }, expireTime=int(time.time()) + lifeTime)
         queryParameter = urlencode({'state': state, 'code': code})
