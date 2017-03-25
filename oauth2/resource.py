@@ -80,14 +80,14 @@ class OAuth2(Resource, object):
         return UserDeniesAuthorization(state).generate(request, redirectUri)
 
     def grantAccess(self, request, client, scopeList, state, redirectUri,
-                    lifeTime=120, userId=None):
+                    lifeTime=120, additionalData=None):
         if not self.allowInsecureRequestDebug and not request.isSecure():
             return InsecureConnectionError().generate(request, redirectUri)
-        code = self.tokenFactory.generateToken(client, userId=userId)
+        code = self.tokenFactory.generateToken(client, additionalData=additionalData)
         self.persistentStorage.put(code, {
             "redirect_uri": redirectUri,
             "client_id": client.clientId,
-            "user_id": userId
+            "additional_data": additionalData
         }, expireTime=int(time.time()) + lifeTime)
         queryParameter = urlencode({'state': state, 'code': code})
         request.redirect(redirectUri + '?' + queryParameter)

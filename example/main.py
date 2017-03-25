@@ -31,7 +31,7 @@ class TokenStorageImp(TokenStorage):
     def contains(self, token, scope):
         return token in self.tokens
 
-    def store(self, token, client, userId=None, expireTime=None):
+    def store(self, token, client, additionalData=None, expireTime=None):
         self.tokens.append(token)
 
 

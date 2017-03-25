@@ -9,7 +9,7 @@ from .errors import InsecureConnectionError, MissingParameterError,\
 
 
 class TokenFactory(object):
-    def generateToken(self, client, userId=None):
+    def generateToken(self, client, additionalData=None):
         raise NotImplementedError()
 
 
@@ -17,7 +17,7 @@ class TokenStorage(object):
     def contains(self, token, scope):
         raise NotImplementedError()
 
-    def store(self, token, client, userId=None, expireTime=None):
+    def store(self, token, client, additionalData=None, expireTime=None):
         raise NotImplementedError()
 
 
@@ -74,19 +74,21 @@ class TokenResource(Resource, object):
                 return InvalidParameterError("Invalid client_id").generate(request)
             if client.clientSecret != request.args['client_secret'][0]:
                 return InvalidParameterError("Invalid client_secret").generate(request)
-            accessToken = self.tokenFactory.generateToken(client, userId=data['user_id'])
+            additionalData = data['additional_data']
+            accessToken = self.tokenFactory.generateToken(client, additionalData=additionalData)
             expireTime = None
             if self.authTokenLifeTime > 0:
                 expireTime = int(time.time()) + self.authTokenLifeTime
-            self.authTokenStorage.store(accessToken, client,
-                                        userId=data['user_id'], expireTime=expireTime)
+            self.authTokenStorage.store(
+                accessToken, client, additionalData=additionalData, expireTime=expireTime)
             result = {
                 "access_token": accessToken,
                 "token_type": "Bearer"
             }
             if self.authTokenLifeTime > 0:
-                refreshToken = self.tokenFactory.generateToken(client, userId=data['user_id'])
-                self.refreshTokenStorage.store(refreshToken, client, userId=data['user_id'])
+                refreshToken = self.tokenFactory.generateToken(client,
+                                                               additionalData=additionalData)
+                self.refreshTokenStorage.store(refreshToken, client, additionalData=additionalData)
                 result["refresh_token"] = refreshToken
                 result["expires_in"] = self.authTokenLifeTime
             request.setHeader("Content-Type", "application/json;charset=UTF-8")
