@@ -54,10 +54,17 @@ class PersistentStorageImp(PersistentStorage):
     storage = {}
 
     def put(self, key, data, expireTime=None):
-        self.storage[key] = data
+        self.storage[key] = {
+            'data': data,
+            'expires': expireTime
+        }
 
     def get(self, key):
-        return self.storage[key]
+        entry = self.storage[key]
+        if entry['expires'] is not None and time.time() > entry['expires']:
+            del self.storage[key]
+            raise KeyError(key)
+        return entry['data']
 
 
 class OAuth2Imp(OAuth2):
