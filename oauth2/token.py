@@ -1,5 +1,6 @@
 # Copyright (c) Sebastian Scholz
 # See LICENSE for details.
+import string
 import time
 from twisted.web.resource import Resource, NoResource
 import json
@@ -34,7 +35,7 @@ class PersistentStorage(object):
 
 
 class TokenResource(Resource, object):
-
+    VALID_TOKEN_CHARS = string.digits + string.ascii_letters + '-.~+/'
     tokenFactory = None
     persistentStorage = None
     allowInsecureRequestDebug = False
@@ -83,6 +84,8 @@ class TokenResource(Resource, object):
                 return InvalidTokenError("refresh token").generate(request)
             accessToken = self.tokenFactory.generateToken(client, scope=scope,
                                                           additionalData=additionalData)
+            if not self.isValidToken(accessToken):
+                raise ValueError('Generated token is invalid: {token}'.format(token=accessToken))
             expireTime = None
             if self.authTokenLifeTime > 0:
                 expireTime = int(time.time()) + self.authTokenLifeTime
@@ -110,6 +113,8 @@ class TokenResource(Resource, object):
             scope = data['scope']
             accessToken = self.tokenFactory.generateToken(client, scope=scope,
                                                           additionalData=additionalData)
+            if not self.isValidToken(accessToken):
+                raise ValueError('Generated token is invalid: {token}'.format(token=accessToken))
             expireTime = None
             if self.authTokenLifeTime > 0:
                 expireTime = int(time.time()) + self.authTokenLifeTime
@@ -119,11 +124,20 @@ class TokenResource(Resource, object):
             if self.authTokenLifeTime > 0:
                 refreshToken = self.tokenFactory.generateToken(client, scope=scope,
                                                                additionalData=additionalData)
+                if not self.isValidToken(refreshToken):
+                    raise ValueError('Generated token is invalid: {token}'
+                                     .format(token=refreshToken))
                 self.refreshTokenStorage.store(refreshToken, client, scope=scope,
                                                additionalData=additionalData)
             return self.buildResponse(request, accessToken, refreshToken)
         else:
             return NoResource() # TODO
+
+    def isValidToken(self, token):
+        for char in token:
+            if char not in self.VALID_TOKEN_CHARS:
+                return False
+        return True
 
     def buildResponse(self, request, accessToken, refreshToken=None):
         result = {
