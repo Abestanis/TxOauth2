@@ -144,9 +144,10 @@ class TokenResource(Resource, object):
             "access_token": accessToken,
             "token_type": "Bearer"
         }
+        if self.authTokenLifeTime > 0:
+            result["expires_in"] = self.authTokenLifeTime
         if refreshToken is not None:
             result["refresh_token"] = refreshToken
-            result["expires_in"] = self.authTokenLifeTime
         request.setHeader("Content-Type", "application/json;charset=UTF-8")
         request.setHeader("Cache-Control", "no-store")
         request.setHeader("Pragma", "no-cache")

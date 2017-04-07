@@ -37,7 +37,7 @@ class OAuth2(Resource, object):
     allowInsecureRequestDebug = False
 
     def __init__(self, tokenFactory, persistentStorage, refreshTokenStorage, authTokenStorage,
-                 clientStorage, authorizePath=None, tokenPath='token',
+                 clientStorage, authorizePath=None, tokenPath='token', authTokenLifeTime=3600,
                  allowInsecureRequestDebug=False):
         super(OAuth2, self).__init__()
         self.allowInsecureRequestDebug = allowInsecureRequestDebug
@@ -46,6 +46,7 @@ class OAuth2(Resource, object):
         self.clientStorage = clientStorage
         self.putChild(tokenPath, TokenResource(tokenFactory, persistentStorage,
                                                refreshTokenStorage, authTokenStorage, clientStorage,
+                                               authTokenLifeTime=authTokenLifeTime,
                                                allowInsecureRequestDebug=allowInsecureRequestDebug))
         OAuth2.OAuthTokenStorage = authTokenStorage
 

@@ -61,7 +61,12 @@ class TokenStorageImp(TokenStorage):
                 del self.tokens[token]
                 return False
             # Check if the token allows access to the scope
-            return scope in tokenEntry['scope']
+            if type(scope) != list:
+                scope = [scope]
+            for scopeType in scope:
+                if scopeType not in tokenEntry['scope']:
+                    return False
+            return False
         return False
 
     def getTokenData(self, token):
