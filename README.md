@@ -30,7 +30,7 @@ A few implementations of these interfaces can be found in the [imp package](http
 
 * __User__: A user is the actual owner of a resource and he can grant access to the resource to a client. It is up to you to identify and authenticate a user. You can pass additionalData to ```grantAccess``` that identifies an user. This additional data will be passed to the tokengenerator and storage, which allows for the user information to be encoded into the token.
 * __Client__: A client is an other application that wants to access a protected resource that is owned by the user. The client has no rights if they are not explicitly grantd by the user. Clients are represented by [Client objects](https://github.com/Abestanis/TwistedOAuth2/blob/master/oauth2/clients.py#L11).
-* __Token__: There are two types of tokens: Access-tokens and refreshtokens. Accesstokens allow access to a protected resource. If they expire, the client can use the refreshtoken to generate a new accesstoken. [A token can only contain alphanumeric and the following characters: -._~+/](https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/#token).
+* __Token__: There are two types of tokens: Access Tokens and Refresh Tokens. Access Tokens allow access to a protected resource. If they expire, the client can use the Refresh Token to generate a new Access Token. [A token can only contain alphanumeric and the following characters: -._~+/](https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/#token).
 ## Security
 
 The OAuth2 specification requires that the protected resource and the OAuth2 endpoint is served via a secure connection (e.g. https).
