@@ -10,7 +10,7 @@ from oauth2.token import TokenFactory
 
 
 class UUIDTokenFactory(TokenFactory):
-    def generateToken(self, client, scope, additionalData=None):
+    def generateToken(self, lifetime, client, scope, additionalData=None):
         return str(uuid4())
 
 

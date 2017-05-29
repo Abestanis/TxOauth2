@@ -84,7 +84,7 @@ class OAuth2(Resource, object):
                     lifeTime=120, additionalData=None):
         if not self.allowInsecureRequestDebug and not request.isSecure():
             return InsecureConnectionError().generate(request, redirectUri)
-        code = self.tokenFactory.generateToken(client, scope, additionalData=additionalData)
+        code = self.tokenFactory.generateToken(client, lifeTime, scope, additionalData=additionalData)
         self.persistentStorage.put(code, {
             "redirect_uri": redirectUri,
             "client_id": client.clientId,

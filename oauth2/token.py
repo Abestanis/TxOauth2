@@ -10,7 +10,7 @@ from .errors import InsecureConnectionError, MissingParameterError, \
 
 
 class TokenFactory(object):
-    def generateToken(self, client, scope, additionalData=None):
+    def generateToken(self, lifetime, client, scope, additionalData=None):
         raise NotImplementedError()
 
 
