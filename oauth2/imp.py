@@ -31,7 +31,7 @@ class SimpleClientStorage(ClientStorage):
         client.clientId = clientId
         client.name = self._configParser.get(sectionName, 'name')
         client.clientSecret = self._configParser.get(sectionName, 'secret')
-        client.redirectUris = self._configParser.get(sectionName, 'redirect_uris')
+        client.redirectUris = self._configParser.get(sectionName, 'redirect_uris').split()
         return client
 
     def addClient(self, client):
