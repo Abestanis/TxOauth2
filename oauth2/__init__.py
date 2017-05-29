@@ -25,9 +25,9 @@ def isAuthorized(request, scope, allowInsecureRequestDebug=False):
 
 def oauth2(scope, allowInsecureRequestDebug=False):
     def decorator(func):
-        def wrapper(self, request):
+        def wrapper(self, request, *args, **kwargs):
             if not isAuthorized(request, scope, allowInsecureRequestDebug):
                 return NOT_DONE_YET
-            return func(self, request)
+            return func(self, request, *args, **kwargs)
         return wraps(func)(wrapper)
     return decorator
