@@ -3,7 +3,7 @@
 
 from uuid import uuid4
 import os
-from ConfigParser import RawConfigParser, DuplicateSectionError
+from ConfigParser import RawConfigParser
 
 from oauth2.clients import ClientStorage, Client
 from oauth2.token import TokenFactory
@@ -38,10 +38,8 @@ class SimpleClientStorage(ClientStorage):
         if not all(uri.startswith('https') for uri in client.redirectUris):
             raise ValueError("All redirectUris must be https")
         sectionName = 'client_' + client.clientId
-        try:
+        if not self._configParser.has_section(sectionName):
             self._configParser.add_section(sectionName)
-        except DuplicateSectionError:
-            pass
         self._configParser.set(sectionName, 'name', client.name)
         self._configParser.set(sectionName, 'secret', client.clientSecret)
         self._configParser.set(sectionName, 'redirect_uris', ' '.join(client.redirectUris))
