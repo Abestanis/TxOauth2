@@ -144,11 +144,12 @@ class OAuth2Endpoint(OAuth2):
         returned by onAuthenticate.
         """
         state = request.args['state'][0]
+        responseType = request.args['response_type'][0]
         redirectUri = request.args['redirect_uri'][0]
         if len(request.args.get("confirm", [])) > 0 and request.args["confirm"][0] == "yes":
             scope = request.args['scope'][0].split()
             client = self.clientStorage.getClient(request.args['client_id'][0])
-            return self.grantAccess(request, client, scope, state, redirectUri)
+            return self.grantAccess(request, client, scope, state, redirectUri, responseType)
         else:
             return self.denyAccess(request, state, redirectUri)
 

@@ -8,7 +8,6 @@ from twisted.web.server import NOT_DONE_YET
 
 from .errors import MissingParameterError, InsecureConnectionError, InvalidRedirectUriError,\
     UserDeniesAuthorization, InvalidClientIdError
-from .token import TokenResource
 
 
 class OAuth2(Resource, object):
@@ -84,17 +83,19 @@ class OAuth2(Resource, object):
     def denyAccess(self, request, state, redirectUri):
         return UserDeniesAuthorization(state).generate(request, redirectUri)
 
-    def grantAccess(self, request, client, scope, state, redirectUri,
-                    lifeTime=120, additionalData=None):
+    def grantAccess(self, request, client, scope, state, redirectUri, responseType,
+                    codeLifeTime=120, additionalData=None):
+        # TODO: Handle token responseType
         if not self.allowInsecureRequestDebug and not request.isSecure():
             return InsecureConnectionError().generate(request, redirectUri)
-        code = self.tokenFactory.generateToken(client, lifeTime, scope, additionalData=additionalData)
+        code = self.tokenFactory.generateToken(client, codeLifeTime, scope,
+                                               additionalData=additionalData)
         self.persistentStorage.put(code, {
             "redirect_uri": redirectUri,
             "client_id": client.clientId,
             "scope": scope,
             "additional_data": additionalData
-        }, expireTime=int(time.time()) + lifeTime)
+        }, expireTime=int(time.time()) + codeLifeTime)
         queryParameter = urlencode({'state': state, 'code': code})
         request.redirect(redirectUri + '?' + queryParameter)
         request.finish()
