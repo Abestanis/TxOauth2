@@ -22,12 +22,12 @@ from oauth2.imp import UUIDTokenFactory, SimpleClientStorage
 class ClockPage(Resource):
     """
     This represents a resource that should be protected via oauth2.
-    
+
     There are two ways to protect a resource with oauth2:
     1: Use the isAuthorized function and return NOT_DONE_YET if it returns False
     2: use the oauth2 descriptor on one of the render_* functions (or any function, that accepts
        the request as the second argument) and it will call isAuthorized for you.
-    
+
     Note that we allow requests send over http (allowInsecureRequestDebug=True). This is done
     so one could test this server locally. Do not enable it when running a real server! Don't do it!
     """
@@ -46,7 +46,7 @@ class TokenStorageImp(TokenStorage):
     """
     This is an implementation of the TokenStorage interface.
     Check out the base class for more detail.
-    
+
     This implementation does not implement any type of persistence, because it is not required
     for this example. Any real implementation will likely want to implement persistence to preserve
     tokens between server restarts.
@@ -83,7 +83,7 @@ class TokenStorageImp(TokenStorage):
 class PersistentStorageImp(PersistentStorage):
     """
     This implements the PersistentStorage interface. Check out the base class for more detail.
-    
+
     As with the TokenStorageImp, this implementation does not implement any type of persistence.
     Often persistence is probably not needed here, because the lifetime of the objects stored here
     is commonly very short.
@@ -108,7 +108,7 @@ class OAuth2Endpoint(OAuth2):
     """
     This is the Resource that implements the oauth2 endpoint. It will handle the user authorization
     and it hosts the token endpoint.
-    
+
     Note: This implementation does not verify the user and does not require him to authenticate
     himself. A real implementation should probably do so.
     You are not limited to display a simple web page in onAuthenticate. It is totally valid

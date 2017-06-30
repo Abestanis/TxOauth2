@@ -12,20 +12,26 @@ from .errors import MissingParameterError, InsecureConnectionError, InvalidRedir
 
 class OAuth2(Resource, object):
     """
-    This resource serves all the Endpoints necessary for oauth2.
+    This resource handles the authorization process by the user.
 
-    Authentication Flow:
-    1: Request to this resource[/authorizePath] with query parameters
-       state, client_id, response_type, scope, and redirect_uri.
-    2: onAuthenticate is called. At this point one could redirect to a login page an then send
-       the user back when they are logged in.
-    3: onAuthenticate returns a html page which explains the user that they allow the service
-       'client_id' access to all resources which require the permissions in 'scope'
-    4: If the user agrees, they should be able to submit a form which will generate a POST
-       request back to this resource[/authorizePath]
-    5: render_POST is called. If the user agreed, render_POST should call 'return grandAccess'
-    6: grandAccess generates an authentication code and redirects the user to 'redirect_uri'
-       with the authentication code as the 'code' query parameter.
+    Clients that want to get tokens need to send the user to
+    this resource to start the authorization process.
+    While configuring the client, one needs to specify the address
+    of this resource as the "Authorization Endpoint".
+
+    Authorization Flow:
+    1: A client sends the user to this resource and sends the parameter state, client_id,
+       response_type, scope, and redirect_uri as query parameters of the (GET) request.
+    2: After validating the parameters, this class calls onAuthenticate. At this point one
+       could redirect to a login page an then send the user back when they are logged in.
+    3: onAuthenticate need to show the user a html page which explains that they allow the client
+       access to all resources which require the permissions in 'scope'.
+    4a: If the user denies access, you need to call denyAccess.
+    4b: If the user agrees, you need to call grantAccess and the user is then redirected to
+        one of the returnUris of the client. The request to the redirect url will contain a
+        code in the url parameters. The code does not grant access to the scope and has a very
+        short lifetime.
+    5: The client uses the code to get a token from the TokenEndpoint.
 
     """
 
@@ -36,6 +42,15 @@ class OAuth2(Resource, object):
 
     def __init__(self, tokenFactory, persistentStorage, clientStorage,
                  allowInsecureRequestDebug=False):
+        """
+        Creates a new OAuth2 Resource.
+
+        :param tokenFactory: A tokenFactory to generate short lived tokens.
+        :param persistentStorage: A persistent storage that can be accessed by the TokenResource.
+        :param clientStorage: A handle to the storage of known clients.
+        :param allowInsecureRequestDebug: If True, allow requests over insecure connections.
+                                          Do NOT use in production!
+        """
         super(OAuth2, self).__init__()
         self.tokenFactory = tokenFactory
         self.persistentStorage = persistentStorage
@@ -44,6 +59,19 @@ class OAuth2(Resource, object):
 
     @classmethod
     def initFromTokenResource(cls, tokenResource, subPath=None, *args, **kwargs):
+        """
+        Create an OAuth2 Resource with the tokenFactory, the persistentStorage
+        and the clientStorage of the tokenResource. The allowInsecureRequestDebug
+        flag is also copied.
+        If a subPath is given, the tokenResource is added as a child to the new
+        OAuth2 Resource at the subPath.
+
+        :param tokenResource: The TokenResource to initialize the new OAuth2 Resource.
+        :param subPath: An optional path at which the tokenResource will be added.
+        :param args: Additional arguments to the for the classes __init__ function.
+        :param kwargs: Additional keyword arguments to the for the classes __init__ function.
+        :return: A new initialized OAuth2 Resource.
+        """
         if not issubclass(cls, OAuth2):
             raise ValueError('The class must be a subclass of OAuth2')
         oAuth2Resource = cls(tokenResource.tokenFactory, tokenResource.persistentStorage,
@@ -54,6 +82,16 @@ class OAuth2(Resource, object):
         return oAuth2Resource
 
     def render_GET(self, request):
+        """
+        Handle a GET request to this resource. This initializes
+        the authorization process.
+
+        All parameter necessary for authorization are parsed from the
+        request and on onAuthenticate is called with the parsed arguments.
+
+        :param request: The GET request.
+        :return: A response or NOT_DONE_YET
+        """
         # First check for errors where we should not redirect
         if 'client_id' not in request.args:
             return MissingParameterError(name='client_id').generate(request)
@@ -78,13 +116,77 @@ class OAuth2(Resource, object):
             request.args['scope'][0].split(), redirectUri, request.args['state'][0])
 
     def onAuthenticate(self, request, client, responseType, scope, redirectUri, state):
+        """
+        Called when a GET request is made to the OAuth2 resource.
+        This happens when a clients sends a user to this resource.
+
+        The user should be presented with a website that clearly
+        informs him, that he can give access to the scopes to the
+        client. He must have the option to allow or deny the request.
+
+        Optionally, he should be able to select the scopes he wants
+        to grant access to.
+
+        It is also possible to redirect the user to a different site
+        here (e.g. to a login page).
+
+        If the user grants access, call 'grantAccess'.
+        If the user denies access, call 'denyAccess'.
+
+        :param request: The GET request.
+        :param client: The client that sent the user.
+        :param responseType: The OAuth2 response type ('code' or 'token').
+        :param scope: The list of scopes that the client requests access to.
+        :param redirectUri: The uri the user should get redirected to
+               after he grants or denies access.
+        :param state: A parameter that is send by the client und must
+               be send back unaltered in the response.
+        :return: A response or NOT_DONE_YET
+        """
         raise NotImplementedError()
 
     def denyAccess(self, request, state, redirectUri):
+        """
+        The user denies access to the requested scopes.
+        This method redirects the user to the redirectUri
+        with an access_denied parameter, as required
+        by the OAuth2 spec.
+
+        The request will be closed and can't be written
+        to after this function returns.
+
+        :param request: The request made by the user.
+        :param state: The state parameter that was given to onAuthenticate.
+        :param redirectUri: The redirect target as given to onAuthenticate.
+        :return: NOT_DONE_YET
+        """
         return UserDeniesAuthorization(state).generate(request, redirectUri)
 
     def grantAccess(self, request, client, scope, state, redirectUri, responseType,
                     codeLifeTime=120, additionalData=None):
+        """
+        The user grants access to the list of scopes. This list may
+        contain less values than the original list passed to onAuthenticate.
+
+        The user will be redirected to the redirectUri with a code or a
+        token as a parameter, depending on the responseType.
+
+        The request will be closed and can't be written
+        to after this function returns.
+
+        :param request: The request made by the user.
+        :param client: The client that the user grants access.
+        :param scope: The list of scopes the user grants access to.
+        :param state: The state parameter that was given to onAuthenticate.
+        :param redirectUri: The redirect target as given to onAuthenticate.
+        :param responseType: The responseType as given to onAuthenticate.
+        :param codeLifeTime: The lifetime of the generated code, if responseType is 'code'.
+                             This code can be used at the TokenResource to get a real token.
+                             The code itself is not a token and should expire soon.
+        :param additionalData: Any additional data that should be passed associated
+                               with the generated tokens.
+        :return: NOT_DONE_YET
+        """
         # TODO: Handle token responseType
         if not self.allowInsecureRequestDebug and not request.isSecure():
             return InsecureConnectionError().generate(request, redirectUri)

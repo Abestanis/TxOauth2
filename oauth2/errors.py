@@ -10,6 +10,14 @@ from twisted.web.server import NOT_DONE_YET
 
 
 class OAuth2Error(object):
+    """
+    Represents an OAuth2 error.
+    This is not a Python exception and cannot be raised.
+    It is intended to return a json description of the
+    error and setting the response code of the request
+    via the generate method, to comply with the OAuth2
+    specification.
+    """
     message = None
     detail = None
     errorUri = None
@@ -31,6 +39,12 @@ class OAuth2Error(object):
         return error
 
     def generate(self, request):
+        """
+        Set the response code of the request and return a string representing
+        the error, which can be written to the request.
+        :param request: The request.
+        :return: A string representing the error.
+        """
         request.setResponseCode(self.code)
         request.setHeader("Content-Type", "application/json;charset=UTF-8")
         request.setHeader("Cache-Control", "no-store")
@@ -41,6 +55,12 @@ class OAuth2Error(object):
 
 
 class AuthorizationError(OAuth2Error):
+    """
+    Represents an error can occur during authorization.
+    The OAuth2 specification says, these errors should be send
+    to the redirection url with the error details encoded
+    into the url parameters of the redirect.
+    """
     state = None
 
     def __init__(self, code, message, detail, errorUri=None, state=None):
@@ -54,6 +74,14 @@ class AuthorizationError(OAuth2Error):
         return error
 
     def generate(self, request, redirectUri=None):
+        """
+        If a redirectUri is given, the request is redirected to
+        the url with the error details encoded into the url parameter.
+        Otherwise it behaves like generate in OAuth2Error.
+        :param request: The request.
+        :param redirectUri: An optional redirect uri.
+        :return: NOT_DONE_YET or a string representing the error.
+        """
         if redirectUri is None:
             return super(AuthorizationError, self).generate(request)
         else:
