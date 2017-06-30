@@ -5,6 +5,7 @@ from twisted.web.server import NOT_DONE_YET
 
 from oauth2.errors import InvalidTokenError
 from oauth2.resource import OAuth2
+from oauth2.token import TokenResource
 
 
 def _getToken(request):
@@ -13,10 +14,11 @@ def _getToken(request):
 
 def isAuthorized(request, scope, allowInsecureRequestDebug=False):
     if allowInsecureRequestDebug or request.isSecure():
-        token = _getToken(request)
-        if token is not None and token.startswith("Bearer "):
-            token = token[7:]
-            if OAuth2.OAuthTokenStorage.contains(token, scope):
+        tokenStr = _getToken(request)
+        if tokenStr is not None and tokenStr.startswith("Bearer "):
+            tokenStr = tokenStr[7:]
+            scope = scope if type(scope) == list else [scope]
+            if TokenResource.getTokenStorageSingleton().contains(tokenStr, scope):
                 return True
     request.write(InvalidTokenError("auth token").generate(request))
     request.finish()

@@ -33,22 +33,26 @@ class OAuth2(Resource, object):
     tokenFactory = None
     persistentStorage = None
     clientStorage = None
-    OAuthTokenStorage = None
     allowInsecureRequestDebug = False
 
-    def __init__(self, tokenFactory, persistentStorage, refreshTokenStorage, authTokenStorage,
-                 clientStorage, authorizePath=None, tokenPath='token', authTokenLifeTime=3600,
+    def __init__(self, tokenFactory, persistentStorage, clientStorage,
                  allowInsecureRequestDebug=False):
         super(OAuth2, self).__init__()
-        self.allowInsecureRequestDebug = allowInsecureRequestDebug
         self.tokenFactory = tokenFactory
         self.persistentStorage = persistentStorage
         self.clientStorage = clientStorage
-        self.putChild(tokenPath, TokenResource(tokenFactory, persistentStorage,
-                                               refreshTokenStorage, authTokenStorage, clientStorage,
-                                               authTokenLifeTime=authTokenLifeTime,
-                                               allowInsecureRequestDebug=allowInsecureRequestDebug))
-        OAuth2.OAuthTokenStorage = authTokenStorage
+        self.allowInsecureRequestDebug = allowInsecureRequestDebug
+
+    @classmethod
+    def initFromTokenResource(cls, tokenResource, subPath=None, *args, **kwargs):
+        if not issubclass(cls, OAuth2):
+            raise ValueError('The class must be a subclass of OAuth2')
+        oAuth2Resource = cls(tokenResource.tokenFactory, tokenResource.persistentStorage,
+                             tokenResource.clientStorage, tokenResource.allowInsecureRequestDebug,
+                             *args, **kwargs)
+        if subPath is not None:
+            oAuth2Resource.putChild(subPath, tokenResource)
+        return oAuth2Resource
 
     def render_GET(self, request):
         # First check for errors where we should not redirect

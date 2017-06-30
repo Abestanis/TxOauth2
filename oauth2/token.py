@@ -40,7 +40,8 @@ class TokenResource(Resource, object):
     persistentStorage = None
     allowInsecureRequestDebug = False
     refreshTokenStorage = None
-    authTokenStorage = None
+    # This is the token storage singleton
+    _OAuthTokenStorage = None
     clientStorage = None
     authTokenLifeTime = 3600
 
@@ -50,11 +51,11 @@ class TokenResource(Resource, object):
         self.allowedMethods = ['POST']
         self.allowInsecureRequestDebug = allowInsecureRequestDebug
         self.refreshTokenStorage = refreshTokenStorage
-        self.authTokenStorage = authTokenStorage
         self.tokenFactory = tokenFactory
         self.persistentStorage = persistentStorage
         self.clientStorage = clientStorage
         self.authTokenLifeTime = authTokenLifeTime
+        TokenResource._OAuthTokenStorage = authTokenStorage
 
     def render_POST(self, request):
         if not self.allowInsecureRequestDebug and not request.isSecure():
@@ -89,8 +90,9 @@ class TokenResource(Resource, object):
             expireTime = None
             if self.authTokenLifeTime > 0:
                 expireTime = int(time.time()) + self.authTokenLifeTime
-            self.authTokenStorage.store(accessToken, client, scope=scope,
-                                        additionalData=additionalData, expireTime=expireTime)
+            self.getTokenStorageSingleton().store(
+                accessToken, client, scope=scope,
+                additionalData=additionalData, expireTime=expireTime)
             return self.buildResponse(request, accessToken)
         elif request.args['grant_type'][0] == 'authorization_code':
             for argument in ['client_id', 'client_secret', 'code', 'redirect_uri']:
@@ -118,8 +120,9 @@ class TokenResource(Resource, object):
             expireTime = None
             if self.authTokenLifeTime > 0:
                 expireTime = int(time.time()) + self.authTokenLifeTime
-            self.authTokenStorage.store(accessToken, client, scope=scope,
-                                        additionalData=additionalData, expireTime=expireTime)
+            self.getTokenStorageSingleton().store(
+                accessToken, client, scope=scope,
+                additionalData=additionalData, expireTime=expireTime)
             refreshToken = None
             if self.authTokenLifeTime > 0:
                 refreshToken = self.tokenFactory.generateToken(client, scope=scope,
@@ -152,3 +155,9 @@ class TokenResource(Resource, object):
         request.setHeader("Cache-Control", "no-store")
         request.setHeader("Pragma", "no-cache")
         return json.dumps(result).encode("utf-8")
+
+    @staticmethod
+    def getTokenStorageSingleton():
+        if TokenResource._OAuthTokenStorage is None:
+            raise ValueError('The access token storage is not initialized')
+        return TokenResource._OAuthTokenStorage

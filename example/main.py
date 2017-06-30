@@ -15,7 +15,7 @@ import time
 from oauth2 import oauth2, isAuthorized
 from oauth2.clients import Client
 from oauth2.resource import OAuth2
-from oauth2.token import TokenStorage, PersistentStorage
+from oauth2.token import TokenStorage, PersistentStorage, TokenResource
 from oauth2.imp import UUIDTokenFactory, SimpleClientStorage
 
 
@@ -115,11 +115,6 @@ class OAuth2Endpoint(OAuth2):
     to redirect to a different resource and call grantAccess from there.
     """
 
-    def __init__(self, clientStorage):
-        super(OAuth2Endpoint, self).__init__(
-            UUIDTokenFactory(), PersistentStorageImp(), TokenStorageImp(), TokenStorageImp(),
-            clientStorage, allowInsecureRequestDebug=True)
-
     def onAuthenticate(self, request, client, responseType, scope, redirectUri, state):
         return """
 <!DOCTYPE html>
@@ -179,9 +174,11 @@ def setupTestServerResource():
     :return: The root resource of the test server
     """
     clientStorage = setupOAuth2Clients()
+    tokenResource = TokenResource(UUIDTokenFactory(), PersistentStorageImp(), TokenStorageImp(),
+                                  TokenStorageImp(), clientStorage, allowInsecureRequestDebug=True)
     root = Resource()
     root.putChild("clock", ClockPage())
-    root.putChild("oauth2", OAuth2Endpoint(clientStorage))
+    root.putChild("oauth2", OAuth2Endpoint.initFromTokenResource(tokenResource, subPath="token"))
     return root
 
 
