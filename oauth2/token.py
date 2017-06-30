@@ -83,12 +83,12 @@ class TokenResource(Resource, object):
                 scope = request.args['scope'][0]
             if not self.refreshTokenStorage.contains(refreshToken, scope):
                 return InvalidTokenError("refresh token").generate(request)
-            accessToken = self.tokenFactory.generateToken(client, scope=scope,
-                                                          additionalData=additionalData)
+            accessToken = self.tokenFactory.generateToken(
+                self.authTokenLifeTime, client, scope=scope, additionalData=additionalData)
             if not self.isValidToken(accessToken):
                 raise ValueError('Generated token is invalid: {token}'.format(token=accessToken))
             expireTime = None
-            if self.authTokenLifeTime > 0:
+            if self.authTokenLifeTime is not None:
                 expireTime = int(time.time()) + self.authTokenLifeTime
             self.getTokenStorageSingleton().store(
                 accessToken, client, scope=scope,
@@ -105,7 +105,7 @@ class TokenResource(Resource, object):
             if data['client_id'] != request.args['client_id'][0] or\
                data['redirect_uri'] != request.args['redirect_uri'][0]:
                 return InvalidParameterError("client_id or redirect_uri").generate(request)
-            try:
+            try: # TODO: Support client id and secret in HTTP Authentication
                 client = self.clientStorage.getClient(request.args['client_id'][0])
             except KeyError:
                 return InvalidParameterError("client_id").generate(request)
@@ -113,19 +113,19 @@ class TokenResource(Resource, object):
                 return InvalidParameterError("client_secret").generate(request)
             additionalData = data['additional_data']
             scope = data['scope']
-            accessToken = self.tokenFactory.generateToken(client, scope=scope,
-                                                          additionalData=additionalData)
+            accessToken = self.tokenFactory.generateToken(
+                self.authTokenLifeTime, client, scope=scope, additionalData=additionalData)
             if not self.isValidToken(accessToken):
                 raise ValueError('Generated token is invalid: {token}'.format(token=accessToken))
             expireTime = None
-            if self.authTokenLifeTime > 0:
+            if self.authTokenLifeTime is not None:
                 expireTime = int(time.time()) + self.authTokenLifeTime
             self.getTokenStorageSingleton().store(
                 accessToken, client, scope=scope,
                 additionalData=additionalData, expireTime=expireTime)
             refreshToken = None
-            if self.authTokenLifeTime > 0:
-                refreshToken = self.tokenFactory.generateToken(client, scope=scope,
+            if self.authTokenLifeTime is not None:
+                refreshToken = self.tokenFactory.generateToken(None, client, scope=scope,
                                                                additionalData=additionalData)
                 if not self.isValidToken(refreshToken):
                     raise ValueError('Generated token is invalid: {token}'
@@ -147,7 +147,7 @@ class TokenResource(Resource, object):
             "access_token": accessToken,
             "token_type": "Bearer"
         }
-        if self.authTokenLifeTime > 0:
+        if self.authTokenLifeTime is not None:
             result["expires_in"] = self.authTokenLifeTime
         if refreshToken is not None:
             result["refresh_token"] = refreshToken
