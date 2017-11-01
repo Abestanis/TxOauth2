@@ -15,14 +15,14 @@ class ExampleTestCase(unittest.TestCase):
         self.server = DummySite(setupTestServerResource())
 
     def testClockResourceNoAccessToken(self):
-        response = self.server.get("clock")
+        response = self.server.get('clock')
         def callback(result):
             print(dir(result))
             print(result.value())
             self.assertEqual(401, result.responseCode)
             header = result.getHeader('WWW-Authenticate')
             self.assertIsNotNone(header)
-            self.assertTrue(header.startsWith("Bearer"))
+            self.assertTrue(header.startsWith('Bearer'))
 
             self.assertNotSubstring('<html><body>', result.value())
         response.addCallback(callback)

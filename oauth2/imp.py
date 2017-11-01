@@ -72,7 +72,7 @@ class SimpleClientStorage(ClientStorage):
         :param client: The client to update or add.
         """
         if not all(uri.startswith('https') for uri in client.redirectUris):
-            raise ValueError("All redirectUris must be https")
+            raise ValueError('All redirectUris must be https')
         sectionName = 'client_' + client.clientId
         if not self._configParser.has_section(sectionName):
             self._configParser.add_section(sectionName)

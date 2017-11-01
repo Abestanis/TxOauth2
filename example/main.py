@@ -38,7 +38,7 @@ class ClockPage(Resource):
         # decorator. It is included here to show of the two ways of protecting a resource.
         if not isAuthorized(request, 'VIEW_CLOCK'):
             return NOT_DONE_YET
-        return "<html><body>{time}</body></html>".format(time=time.ctime())
+        return '<html><body>{time}</body></html>'.format(time=time.ctime())
 
 
 class TokenStorageImp(TokenStorage):
@@ -134,7 +134,7 @@ class OAuth2Endpoint(OAuth2):
 <input type="submit" name="confirm" value="no">
 </form>
 </body>
-</html>""".format(client_id=client.clientId, scope=" ".join(scope), response_type=responseType,
+</html>""".format(client_id=client.clientId, scope=' '.join(scope), response_type=responseType,
                   state=state, redirect_uri=redirectUri)
 
     def render_POST(self, request):
@@ -177,8 +177,8 @@ def setupTestServerResource():
     tokenResource = TokenResource(UUIDTokenFactory(), PersistentStorageImp(), TokenStorageImp(),
                                   TokenStorageImp(), clientStorage, allowInsecureRequestDebug=True)
     root = Resource()
-    root.putChild(b"clock", ClockPage())
-    root.putChild(b"oauth2", OAuth2Endpoint.initFromTokenResource(tokenResource, subPath=b"token"))
+    root.putChild(b'clock', ClockPage())
+    root.putChild(b'oauth2', OAuth2Endpoint.initFromTokenResource(tokenResource, subPath=b'token'))
     return root
 
 

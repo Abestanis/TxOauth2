@@ -34,12 +34,12 @@ def isAuthorized(request, scope, allowInsecureRequestDebug=False):
     """
     if allowInsecureRequestDebug or request.isSecure():
         requestToken = _getToken(request)
-        if requestToken is not None and requestToken.startswith(b"Bearer "):
+        if requestToken is not None and requestToken.startswith(b'Bearer '):
             requestToken = requestToken[7:]
             scope = scope if type(scope) == list else [scope]
             if TokenResource.getTokenStorageSingleton().contains(requestToken, scope):
                 return True
-    request.write(InvalidTokenError("auth token").generate(request))
+    request.write(InvalidTokenError('auth token').generate(request))
     request.finish()
     return False
 

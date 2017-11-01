@@ -277,17 +277,17 @@ class TokenResource(Resource, object):
         :return: A response as as a json string.
         """
         result = {
-            "access_token": accessToken,
-            "token_type": "Bearer"
+            'access_token': accessToken,
+            'token_type': 'Bearer'
         }
         if self.authTokenLifeTime is not None:
-            result["expires_in"] = self.authTokenLifeTime
+            result['expires_in'] = self.authTokenLifeTime
         if refreshToken is not None:
-            result["refresh_token"] = refreshToken
-        request.setHeader("Content-Type", "application/json;charset=UTF-8")
-        request.setHeader("Cache-Control", "no-store")
-        request.setHeader("Pragma", "no-cache")
-        return json.dumps(result).encode("utf-8")
+            result['refresh_token'] = refreshToken
+        request.setHeader('Content-Type', 'application/json;charset=UTF-8')
+        request.setHeader('Cache-Control', 'no-store')
+        request.setHeader('Pragma', 'no-cache')
+        return json.dumps(result).encode('utf-8')
 
     @staticmethod
     def getTokenStorageSingleton():

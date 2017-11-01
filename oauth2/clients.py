@@ -25,16 +25,13 @@ class Client(object):
     A client is an entity, which is given access to a scope
     by the user. He proves his identity and his rights by
     sending a key with every request, the token.
+
+    :cvar redirectUris: A list of urls, which we can redirect to after
+                        authorization. These are provided by the client.
+    :cvar name: A human readable name that identifies the client.
+                The user must be absolutely clear who he is giving access to a scope.
     """
     clientId = None
     clientSecret = None
     redirectUris = None
-    """
-    A list of urls, which we can redirect to after
-    authorization. These are provided by the client.
-    """
     name = None
-    """
-    A human readable name that identifies the client.
-    The user must be absolutely clear who he is giving access to a scope.
-    """
