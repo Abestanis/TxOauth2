@@ -99,15 +99,15 @@ class OAuth2(Resource, object):
         # First check for errors where we should not redirect
         if b'client_id' not in request.args:
             return MissingParameterError(name='client_id').generate(request)
-        clientId = request.args[b'client_id'][0]
         try:
+            clientId = request.args[b'client_id'][0].decode('utf-8')
             client = self.clientStorage.getClient(clientId)
-        except KeyError:
+        except (KeyError, UnicodeDecodeError):
             return InvalidClientIdError().generate(request)
         if b'redirect_uri' not in request.args:
             return MissingParameterError(name='redirect_uri').generate(request)
-        redirectUri = request.args[b'redirect_uri'][0]
-        if not redirectUri.startswith(b'https') or redirectUri not in client.redirectUris:
+        redirectUri = request.args[b'redirect_uri'][0].decode('utf-8')
+        if not redirectUri.startswith('https') or redirectUri not in client.redirectUris:
             return InvalidRedirectUriError().generate(request)
         # No validate the other requirements
         if not self.allowInsecureRequestDebug and not request.isSecure():
@@ -116,8 +116,9 @@ class OAuth2(Resource, object):
             if argument not in request.args:
                 return MissingParameterError(name=argument).generate(request, redirectUri)
         return self.onAuthenticate(
-            request, client, request.args[b'response_type'][0],
-            request.args[b'scope'][0].split(), redirectUri, request.args[b'state'][0])
+            request, client, request.args[b'response_type'][0].decode('utf-8'),
+            request.args[b'scope'][0].decode('utf-8').split(),
+            redirectUri, request.args[b'state'][0])
 
     def onAuthenticate(self, request, client, responseType, scope, redirectUri, state):
         """

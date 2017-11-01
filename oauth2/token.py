@@ -157,7 +157,7 @@ class TokenResource(Resource, object):
                                           Do NOT use in production!
         """
         super(TokenResource, self).__init__()
-        self.allowedMethods = ['POST']
+        self.allowedMethods = [b'POST']
         self.allowInsecureRequestDebug = allowInsecureRequestDebug
         self.refreshTokenStorage = refreshTokenStorage
         self.tokenFactory = tokenFactory
@@ -177,26 +177,25 @@ class TokenResource(Resource, object):
         if not self.allowInsecureRequestDebug and not request.isSecure():
             return InsecureConnectionError().generate(request)
         if b'grant_type' not in request.args:
-            return MissingParameterError(name='grant_type')
+            return MissingParameterError(name='grant_type').generate(request)
         if request.args[b'grant_type'][0] == b'refresh_token':
             for argument in [b'client_id', b'client_secret', b'refresh_token']:
                 if argument not in request.args:
                     return MissingParameterError(name=argument).generate(request)
             try: # TODO: Support client id and secret in HTTP Authentication
-                client = self.clientStorage.getClient(request.args[b'client_id'][0])
-            except KeyError:
+                client = self.clientStorage.getClient(request.args[b'client_id'][0].decode('utf-8'))
+            except (KeyError, UnicodeDecodeError):
                 return InvalidParameterError('client_id').generate(request)
-            if client.clientSecret != request.args[b'client_secret'][0]:
+            if client.clientSecret.encode('utf-8') != request.args[b'client_secret'][0]:
                 return InvalidParameterError('client_secret').generate(request)
-            refreshToken = request.args[b'refresh_token'][0]
             try:
+                refreshToken = request.args[b'refresh_token'][0].decode('utf-8')
                 scope, additionalData = self.refreshTokenStorage.getTokenData(refreshToken)
-            except KeyError:
+            except (KeyError, UnicodeDecodeError):
                 return InvalidTokenError('refresh token').generate(request)
             if b'scope' in request.args:
-                if scope != request.args[b'scope'][0]: # TODO: Support multiple scopes
+                if scope != request.args[b'scope'][0].decode('utf-8'): # TODO: Support multiple scopes
                     return InvalidScopeError(request.args[b'scope'][0]).generate(request)
-                scope = request.args[b'scope'][0]
             if not self.refreshTokenStorage.contains(refreshToken, scope):
                 return InvalidTokenError('refresh token').generate(request)
             accessToken = self.tokenFactory.generateToken(
@@ -215,18 +214,18 @@ class TokenResource(Resource, object):
                 if argument not in request.args:
                     return MissingParameterError(name=argument).generate(request)
             try:
-                data = self.persistentStorage.get(request.args[b'code'][0])
-            except KeyError:
+                data = self.persistentStorage.get(request.args[b'code'][0].decode('utf-8'))
+            except (KeyError, UnicodeDecodeError):
                 return InvalidTokenError('authorization code').generate(request)
-            if data['client_id'] != request.args[b'client_id'][0]:
+            if data['client_id'] != request.args[b'client_id'][0].decode('utf-8'):
                 return InvalidParameterError('client_id').generate(request)
-            if data['redirect_uri'] != request.args[b'redirect_uri'][0]:
+            if data['redirect_uri'] != request.args[b'redirect_uri'][0].decode('utf-8'):
                 return InvalidParameterError('redirect_uri').generate(request)
             try:
-                client = self.clientStorage.getClient(request.args[b'client_id'][0])
-            except KeyError:
+                client = self.clientStorage.getClient(request.args[b'client_id'][0].decode('utf-8'))
+            except (KeyError, UnicodeDecodeError):
                 return InvalidParameterError('client_id').generate(request)
-            if client.clientSecret != request.args[b'client_secret'][0]:
+            if client.clientSecret.encode('utf-8') != request.args[b'client_secret'][0]:
                 return InvalidParameterError('client_secret').generate(request)
             additionalData = data['additional_data']
             scope = data['scope']

@@ -36,9 +36,9 @@ class ClockPage(Resource):
     def render_GET(self, request):
         # This check is not necessary, because this method is already protected by the @oauth
         # decorator. It is included here to show of the two ways of protecting a resource.
-        if not isAuthorized(request, 'VIEW_CLOCK'):
+        if not isAuthorized(request, 'VIEW_CLOCK', allowInsecureRequestDebug=True):
             return NOT_DONE_YET
-        return '<html><body>{time}</body></html>'.format(time=time.ctime())
+        return '<html><body>{time}</body></html>'.format(time=time.ctime()).encode('utf-8')
 
 
 class TokenStorageImp(TokenStorage):
@@ -65,7 +65,7 @@ class TokenStorageImp(TokenStorage):
             for scopeType in scope:
                 if scopeType not in tokenEntry['scope']:
                     return False
-            return False
+            return True
         return False
 
     def getTokenData(self, token):
@@ -135,7 +135,7 @@ class OAuth2Endpoint(OAuth2):
 </form>
 </body>
 </html>""".format(client_id=client.clientId, scope=' '.join(scope), response_type=responseType,
-                  state=state, redirect_uri=redirectUri)
+                  state=state.decode('utf-8'), redirect_uri=redirectUri).encode('utf-8')
 
     def render_POST(self, request):
         """
@@ -143,11 +143,11 @@ class OAuth2Endpoint(OAuth2):
         returned by onAuthenticate.
         """
         state = request.args[b'state'][0]
-        responseType = request.args[b'response_type'][0]
-        redirectUri = request.args[b'redirect_uri'][0]
+        responseType = request.args[b'response_type'][0].decode('utf-8')
+        redirectUri = request.args[b'redirect_uri'][0].decode('utf-8')
         if len(request.args.get(b'confirm', [])) > 0 and request.args[b'confirm'][0] == b'yes':
-            scope = request.args[b'scope'][0].split()
-            client = self.clientStorage.getClient(request.args[b'client_id'][0])
+            scope = request.args[b'scope'][0].decode('utf-8').split()
+            client = self.clientStorage.getClient(request.args[b'client_id'][0].decode('utf-8'))
             return self.grantAccess(request, client, scope, state, redirectUri, responseType)
         else:
             return self.denyAccess(request, state, redirectUri)
