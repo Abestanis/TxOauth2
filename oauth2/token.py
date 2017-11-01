@@ -176,29 +176,29 @@ class TokenResource(Resource, object):
         """
         if not self.allowInsecureRequestDebug and not request.isSecure():
             return InsecureConnectionError().generate(request)
-        if 'grant_type' not in request.args:
+        if b'grant_type' not in request.args:
             return MissingParameterError(name='grant_type')
-        if request.args['grant_type'][0] == 'refresh_token':
-            for argument in ['client_id', 'client_secret', 'refresh_token']:
+        if request.args[b'grant_type'][0] == b'refresh_token':
+            for argument in [b'client_id', b'client_secret', b'refresh_token']:
                 if argument not in request.args:
                     return MissingParameterError(name=argument).generate(request)
             try: # TODO: Support client id and secret in HTTP Authentication
-                client = self.clientStorage.getClient(request.args['client_id'][0])
+                client = self.clientStorage.getClient(request.args[b'client_id'][0])
             except KeyError:
-                return InvalidParameterError("client_id").generate(request)
-            if client.clientSecret != request.args['client_secret'][0]:
-                return InvalidParameterError("client_secret").generate(request)
-            refreshToken = request.args['refresh_token'][0]
+                return InvalidParameterError('client_id').generate(request)
+            if client.clientSecret != request.args[b'client_secret'][0]:
+                return InvalidParameterError('client_secret').generate(request)
+            refreshToken = request.args[b'refresh_token'][0]
             try:
                 scope, additionalData = self.refreshTokenStorage.getTokenData(refreshToken)
             except KeyError:
-                return InvalidTokenError("refresh token").generate(request)
-            if 'scope' in request.args:
-                if scope != request.args['scope'][0]: # TODO: Support multiple scopes
-                    return InvalidScopeError(request.args['scope'][0]).generate(request)
-                scope = request.args['scope'][0]
+                return InvalidTokenError('refresh token').generate(request)
+            if b'scope' in request.args:
+                if scope != request.args[b'scope'][0]: # TODO: Support multiple scopes
+                    return InvalidScopeError(request.args[b'scope'][0]).generate(request)
+                scope = request.args[b'scope'][0]
             if not self.refreshTokenStorage.contains(refreshToken, scope):
-                return InvalidTokenError("refresh token").generate(request)
+                return InvalidTokenError('refresh token').generate(request)
             accessToken = self.tokenFactory.generateToken(
                 self.authTokenLifeTime, client, scope=scope, additionalData=additionalData)
             if not self.isValidToken(accessToken):
@@ -210,23 +210,24 @@ class TokenResource(Resource, object):
                 accessToken, client, scope=scope,
                 additionalData=additionalData, expireTime=expireTime)
             return self.buildResponse(request, accessToken)
-        elif request.args['grant_type'][0] == 'authorization_code':
-            for argument in ['client_id', 'client_secret', 'code', 'redirect_uri']:
+        elif request.args[b'grant_type'][0] == b'authorization_code':
+            for argument in [b'client_id', b'client_secret', b'code', b'redirect_uri']:
                 if argument not in request.args:
                     return MissingParameterError(name=argument).generate(request)
             try:
-                data = self.persistentStorage.get(request.args['code'][0])
+                data = self.persistentStorage.get(request.args[b'code'][0])
             except KeyError:
-                return InvalidTokenError("authorization code").generate(request)
-            if data['client_id'] != request.args['client_id'][0] or\
-               data['redirect_uri'] != request.args['redirect_uri'][0]:
-                return InvalidParameterError("client_id or redirect_uri").generate(request)
+                return InvalidTokenError('authorization code').generate(request)
+            if data['client_id'] != request.args[b'client_id'][0]:
+                return InvalidParameterError('client_id').generate(request)
+            if data['redirect_uri'] != request.args[b'redirect_uri'][0]:
+                return InvalidParameterError('redirect_uri').generate(request)
             try:
-                client = self.clientStorage.getClient(request.args['client_id'][0])
+                client = self.clientStorage.getClient(request.args[b'client_id'][0])
             except KeyError:
-                return InvalidParameterError("client_id").generate(request)
-            if client.clientSecret != request.args['client_secret'][0]:
-                return InvalidParameterError("client_secret").generate(request)
+                return InvalidParameterError('client_id').generate(request)
+            if client.clientSecret != request.args[b'client_secret'][0]:
+                return InvalidParameterError('client_secret').generate(request)
             additionalData = data['additional_data']
             scope = data['scope']
             accessToken = self.tokenFactory.generateToken(

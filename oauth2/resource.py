@@ -97,27 +97,27 @@ class OAuth2(Resource, object):
         :return: A response or NOT_DONE_YET
         """
         # First check for errors where we should not redirect
-        if 'client_id' not in request.args:
+        if b'client_id' not in request.args:
             return MissingParameterError(name='client_id').generate(request)
-        clientId = request.args['client_id'][0]
+        clientId = request.args[b'client_id'][0]
         try:
             client = self.clientStorage.getClient(clientId)
         except KeyError:
             return InvalidClientIdError().generate(request)
-        if 'redirect_uri' not in request.args:
+        if b'redirect_uri' not in request.args:
             return MissingParameterError(name='redirect_uri').generate(request)
-        redirectUri = request.args['redirect_uri'][0]
-        if not redirectUri.startswith('https') or redirectUri not in client.redirectUris:
+        redirectUri = request.args[b'redirect_uri'][0]
+        if not redirectUri.startswith(b'https') or redirectUri not in client.redirectUris:
             return InvalidRedirectUriError().generate(request)
         # No validate the other requirements
         if not self.allowInsecureRequestDebug and not request.isSecure():
             return InsecureConnectionError().generate(request, redirectUri)
-        for argument in ['state', 'response_type', 'scope']:
+        for argument in [b'state', b'response_type', b'scope']:
             if argument not in request.args:
                 return MissingParameterError(name=argument).generate(request, redirectUri)
         return self.onAuthenticate(
-            request, client, request.args['response_type'][0],
-            request.args['scope'][0].split(), redirectUri, request.args['state'][0])
+            request, client, request.args[b'response_type'][0],
+            request.args[b'scope'][0].split(), redirectUri, request.args[b'state'][0])
 
     def onAuthenticate(self, request, client, responseType, scope, redirectUri, state):
         """

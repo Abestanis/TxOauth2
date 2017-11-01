@@ -14,7 +14,7 @@ def _getToken(request):
     :param request: The request.
     :return: A token that was send with the request or None.
     """
-    return request.getHeader('Authorization')
+    return request.getHeader(b'Authorization')
 
 
 def isAuthorized(request, scope, allowInsecureRequestDebug=False):
@@ -33,11 +33,11 @@ def isAuthorized(request, scope, allowInsecureRequestDebug=False):
     :return: True, if the request is authorized, False otherwise.
     """
     if allowInsecureRequestDebug or request.isSecure():
-        tokenStr = _getToken(request)
-        if tokenStr is not None and tokenStr.startswith("Bearer "):
-            tokenStr = tokenStr[7:]
+        requestToken = _getToken(request)
+        if requestToken is not None and requestToken.startswith(b"Bearer "):
+            requestToken = requestToken[7:]
             scope = scope if type(scope) == list else [scope]
-            if TokenResource.getTokenStorageSingleton().contains(tokenStr, scope):
+            if TokenResource.getTokenStorageSingleton().contains(requestToken, scope):
                 return True
     request.write(InvalidTokenError("auth token").generate(request))
     request.finish()

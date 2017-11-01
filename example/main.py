@@ -4,13 +4,12 @@
 # This is an example of how to implement oauth2 with this library and twisted.
 # It should not be used as is in a real server and is meant as a starting point
 # to build your own implementation
-
 import os
+import time
 
 from twisted.internet import reactor, endpoints
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
-import time
 
 from oauth2 import oauth2, isAuthorized
 from oauth2.clients import Client
@@ -143,12 +142,12 @@ class OAuth2Endpoint(OAuth2):
         This will be called when the user clicks on the "yes" or "no" button in the page
         returned by onAuthenticate.
         """
-        state = request.args['state'][0]
-        responseType = request.args['response_type'][0]
-        redirectUri = request.args['redirect_uri'][0]
-        if len(request.args.get("confirm", [])) > 0 and request.args["confirm"][0] == "yes":
-            scope = request.args['scope'][0].split()
-            client = self.clientStorage.getClient(request.args['client_id'][0])
+        state = request.args[b'state'][0]
+        responseType = request.args[b'response_type'][0]
+        redirectUri = request.args[b'redirect_uri'][0]
+        if len(request.args.get(b'confirm', [])) > 0 and request.args[b'confirm'][0] == b'yes':
+            scope = request.args[b'scope'][0].split()
+            client = self.clientStorage.getClient(request.args[b'client_id'][0])
             return self.grantAccess(request, client, scope, state, redirectUri, responseType)
         else:
             return self.denyAccess(request, state, redirectUri)
@@ -178,8 +177,8 @@ def setupTestServerResource():
     tokenResource = TokenResource(UUIDTokenFactory(), PersistentStorageImp(), TokenStorageImp(),
                                   TokenStorageImp(), clientStorage, allowInsecureRequestDebug=True)
     root = Resource()
-    root.putChild("clock", ClockPage())
-    root.putChild("oauth2", OAuth2Endpoint.initFromTokenResource(tokenResource, subPath="token"))
+    root.putChild(b"clock", ClockPage())
+    root.putChild(b"oauth2", OAuth2Endpoint.initFromTokenResource(tokenResource, subPath=b"token"))
     return root
 
 
@@ -190,7 +189,9 @@ def main():
     factory = Site(setupTestServerResource())
     endpoint = endpoints.TCP4ServerEndpoint(reactor, 8880)
     endpoint.listen(factory)
+    # noinspection PyUnresolvedReferences
     reactor.run()
+
 
 if __name__ == '__main__':
     main()
