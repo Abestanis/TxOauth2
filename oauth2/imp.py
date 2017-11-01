@@ -1,9 +1,13 @@
 # Copyright (c) Sebastian Scholz
 # See LICENSE for details.
 
-from uuid import uuid4
 import os
-from ConfigParser import RawConfigParser
+
+from uuid import uuid4
+try:
+    from ConfigParser import RawConfigParser
+except ImportError:
+    from configparser import RawConfigParser
 
 from oauth2.clients import ClientStorage, Client
 from oauth2.token import TokenFactory

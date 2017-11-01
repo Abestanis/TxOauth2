@@ -1,9 +1,13 @@
 # Copyright (c) Sebastian Scholz
 # See LICENSE for details.
 import time
-from twisted.web.resource import Resource
-from urllib import urlencode
 
+try:
+    from urllib import urlencode
+except ImportError:
+    from urllib.parse import urlencode
+
+from twisted.web.resource import Resource
 from twisted.web.server import NOT_DONE_YET
 
 from .errors import MissingParameterError, InsecureConnectionError, InvalidRedirectUriError,\

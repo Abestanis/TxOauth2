@@ -2,11 +2,18 @@
 # See LICENSE for details.
 
 import json
-from httplib import BAD_REQUEST, UNAUTHORIZED, OK
-from urllib import urlencode
-
 import logging
+
+try:
+    from urllib import urlencode
+except ImportError:
+    from urllib.parse import urlencode
+
 from twisted.web.server import NOT_DONE_YET
+
+OK = 200
+BAD_REQUEST = 400
+UNAUTHORIZED = 401
 
 
 class OAuth2Error(object):
