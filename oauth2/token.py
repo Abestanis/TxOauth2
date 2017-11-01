@@ -185,20 +185,20 @@ class TokenResource(Resource, object):
             try: # TODO: Support client id and secret in HTTP Authentication
                 client = self.clientStorage.getClient(request.args['client_id'][0])
             except KeyError:
-                return InvalidParameterError("client_id").generate(request)
+                return InvalidParameterError('client_id').generate(request)
             if client.clientSecret != request.args['client_secret'][0]:
-                return InvalidParameterError("client_secret").generate(request)
+                return InvalidParameterError('client_secret').generate(request)
             refreshToken = request.args['refresh_token'][0]
             try:
                 scope, additionalData = self.refreshTokenStorage.getTokenData(refreshToken)
             except KeyError:
-                return InvalidTokenError("refresh token").generate(request)
+                return InvalidTokenError('refresh token').generate(request)
             if 'scope' in request.args:
                 if scope != request.args['scope'][0]: # TODO: Support multiple scopes
                     return InvalidScopeError(request.args['scope'][0]).generate(request)
                 scope = request.args['scope'][0]
             if not self.refreshTokenStorage.contains(refreshToken, scope):
-                return InvalidTokenError("refresh token").generate(request)
+                return InvalidTokenError('refresh token').generate(request)
             accessToken = self.tokenFactory.generateToken(
                 self.authTokenLifeTime, client, scope=scope, additionalData=additionalData)
             if not self.isValidToken(accessToken):
@@ -217,16 +217,16 @@ class TokenResource(Resource, object):
             try:
                 data = self.persistentStorage.get(request.args['code'][0])
             except KeyError:
-                return InvalidTokenError("authorization code").generate(request)
+                return InvalidTokenError('authorization code').generate(request)
             if data['client_id'] != request.args['client_id'][0] or\
                data['redirect_uri'] != request.args['redirect_uri'][0]:
-                return InvalidParameterError("client_id or redirect_uri").generate(request)
+                return InvalidParameterError('client_id or redirect_uri').generate(request)
             try:
                 client = self.clientStorage.getClient(request.args['client_id'][0])
             except KeyError:
-                return InvalidParameterError("client_id").generate(request)
+                return InvalidParameterError('client_id').generate(request)
             if client.clientSecret != request.args['client_secret'][0]:
-                return InvalidParameterError("client_secret").generate(request)
+                return InvalidParameterError('client_secret').generate(request)
             additionalData = data['additional_data']
             scope = data['scope']
             accessToken = self.tokenFactory.generateToken(
@@ -276,17 +276,17 @@ class TokenResource(Resource, object):
         :return: A response as as a json string.
         """
         result = {
-            "access_token": accessToken,
-            "token_type": "Bearer"
+            'access_token': accessToken,
+            'token_type': 'Bearer'
         }
         if self.authTokenLifeTime is not None:
-            result["expires_in"] = self.authTokenLifeTime
+            result['expires_in'] = self.authTokenLifeTime
         if refreshToken is not None:
-            result["refresh_token"] = refreshToken
-        request.setHeader("Content-Type", "application/json;charset=UTF-8")
-        request.setHeader("Cache-Control", "no-store")
-        request.setHeader("Pragma", "no-cache")
-        return json.dumps(result).encode("utf-8")
+            result['refresh_token'] = refreshToken
+        request.setHeader('Content-Type', 'application/json;charset=UTF-8')
+        request.setHeader('Cache-Control', 'no-store')
+        request.setHeader('Pragma', 'no-cache')
+        return json.dumps(result).encode('utf-8')
 
     @staticmethod
     def getTokenStorageSingleton():

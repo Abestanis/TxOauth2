@@ -17,15 +17,15 @@ class SmartDummyRequest(DummyRequest):
             self.addArg(k, v)
 
     def value(self):
-        return "".join(self.written)
+        return ''.join(self.written)
 
 
 class DummySite(server.Site):
     def get(self, url, args=None, headers=None):
-        return self._request("GET", url, args, headers)
+        return self._request('GET', url, args, headers)
 
     def post(self, url, args=None, headers=None):
-        return self._request("POST", url, args, headers)
+        return self._request('POST', url, args, headers)
 
     def _request(self, method, url, args, headers):
         request = SmartDummyRequest(method, url, args, headers)
@@ -44,4 +44,4 @@ class DummySite(server.Site):
             else:
                 return request.notifyFinish().addCallback(lambda _: request)
         else:
-            raise ValueError("Unexpected return value: {result}".format(result=result))
+            raise ValueError('Unexpected return value: {result}'.format(result=result))

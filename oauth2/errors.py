@@ -31,11 +31,11 @@ class OAuth2Error(object):
         self.errorUri = errorUri
 
     def _generateErrorBody(self):
-        error = {"error": self.message}
+        error = {'error': self.message}
         if self.detail is not None:
-            error["error_description"] = self.detail
+            error['error_description'] = self.detail
         if self.errorUri is not None:
-            error["error_uri"] = self.errorUri
+            error['error_uri'] = self.errorUri
         return error
 
     def generate(self, request):
@@ -46,10 +46,10 @@ class OAuth2Error(object):
         :return: A string representing the error.
         """
         request.setResponseCode(self.code)
-        request.setHeader("Content-Type", "application/json;charset=UTF-8")
-        request.setHeader("Cache-Control", "no-store")
-        request.setHeader("Pragma", "no-cache")
-        result = json.dumps(self._generateErrorBody()).encode("utf-8")
+        request.setHeader('Content-Type', 'application/json;charset=UTF-8')
+        request.setHeader('Cache-Control', 'no-store')
+        request.setHeader('Pragma', 'no-cache')
+        result = json.dumps(self._generateErrorBody()).encode('utf-8')
         self.logger.debug('OAuth2 Error: {result}'.format(result=result))
         return result
 
@@ -95,55 +95,55 @@ class AuthorizationError(OAuth2Error):
 class MissingParameterError(AuthorizationError):
     def __init__(self, name=None, state=None):
         if name is None:
-            message = "A required parameter was missing from the request."
+            message = 'A required parameter was missing from the request.'
         else:
-            message = "Request was missing the '{name}' parameter.".format(name=name)
-        super(MissingParameterError, self).__init__(BAD_REQUEST, "invalid_request",
+            message = 'Request was missing the \'{name}\' parameter.'.format(name=name)
+        super(MissingParameterError, self).__init__(BAD_REQUEST, 'invalid_request',
                                                     message, state=state)
 
 
 class InvalidParameterError(AuthorizationError):
     def __init__(self, name=None, state=None):
         if name is None:
-            message = "A required parameter was invalid."
+            message = 'A required parameter was invalid.'
         else:
-            message = "The parameter '{name}' is invalid.".format(name=name)
-        super(InvalidParameterError, self).__init__(BAD_REQUEST, "invalid_request",
+            message = 'The parameter \'{name}\' is invalid.'.format(name=name)
+        super(InvalidParameterError, self).__init__(BAD_REQUEST, 'invalid_request',
                                                     message, state=state)
 
 
 class InsecureConnectionError(AuthorizationError):
     def __init__(self, state=None):
-        message = "OAuth 2.0 requires calls over HTTPS."
-        super(InsecureConnectionError, self).__init__(BAD_REQUEST, "invalid_request",
+        message = 'OAuth 2.0 requires calls over HTTPS.'
+        super(InsecureConnectionError, self).__init__(BAD_REQUEST, 'invalid_request',
                                                       message, state=state)
 
 
 class InvalidRedirectUriError(OAuth2Error):
     def __init__(self):
-        message = "Invalid redirection URI."
-        super(InvalidRedirectUriError, self).__init__(BAD_REQUEST, "invalid_request", message)
+        message = 'Invalid redirection URI.'
+        super(InvalidRedirectUriError, self).__init__(BAD_REQUEST, 'invalid_request', message)
 
 
 class InvalidClientIdError(OAuth2Error):
     def __init__(self):
-        message = "Invalid client_id"
-        super(InvalidClientIdError, self).__init__(UNAUTHORIZED, "invalid_client", message)
+        message = 'Invalid client_id'
+        super(InvalidClientIdError, self).__init__(UNAUTHORIZED, 'invalid_client', message)
 
 
 class InvalidTokenError(OAuth2Error):
     def __init__(self, tokenType):
         # tokenType: ["authorization code", "refresh token", "auth token", "credentials"]
-        message = "The provided {type} is invalid".format(type=tokenType)
-        super(InvalidTokenError, self).__init__(BAD_REQUEST, "invalid_grant", message)
+        message = 'The provided {type} is invalid'.format(type=tokenType)
+        super(InvalidTokenError, self).__init__(BAD_REQUEST, 'invalid_grant', message)
 
 
 class InvalidScopeError(OAuth2Error):
     def __init__(self, scope):
-        message = "The provided scope is invalid: {scope}".format(scope=scope)
-        super(InvalidScopeError, self).__init__(BAD_REQUEST, "invalid_scope", message)
+        message = 'The provided scope is invalid: {scope}'.format(scope=scope)
+        super(InvalidScopeError, self).__init__(BAD_REQUEST, 'invalid_scope', message)
 
 
 class UserDeniesAuthorization(AuthorizationError):
     def __init__(self, state=None):
-        super(UserDeniesAuthorization, self).__init__(OK, "access_denied", None, state=state)
+        super(UserDeniesAuthorization, self).__init__(OK, 'access_denied', None, state=state)

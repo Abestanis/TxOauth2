@@ -193,10 +193,10 @@ class OAuth2(Resource, object):
         code = self.tokenFactory.generateToken(client, codeLifeTime, scope,
                                                additionalData=additionalData)
         self.persistentStorage.put(code, {
-            "redirect_uri": redirectUri,
-            "client_id": client.clientId,
-            "scope": scope,
-            "additional_data": additionalData
+            'redirect_uri': redirectUri,
+            'client_id': client.clientId,
+            'scope': scope,
+            'additional_data': additionalData
         }, expireTime=int(time.time()) + codeLifeTime)
         queryParameter = urlencode({'state': state, 'code': code})
         request.redirect(redirectUri + '?' + queryParameter)
