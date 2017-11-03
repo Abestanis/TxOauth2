@@ -50,7 +50,7 @@ class TestIsAuthorized(TwistedTestCase):
 
     def testMalformedAccessToken(self):
         request = MockRequest('GET', 'protectedResource')
-        request.setRequestHeader(b'Authorization', b'a malformed token \xFF\xFF\xFF\xFF')
+        request.setRequestHeader(b'Authorization', b'Bearer malformed token \xFF\xFF\xFF\xFF')
         self.assertFalse(isAuthorized(request, 'scope'),
                          msg='Expected isAuthorized to reject a request with a malformed token.')
         self.assertFailedProtectedResourceRequest(request, InvalidTokenRequestError(['scope']))
