@@ -1,47 +1,63 @@
-from twisted.internet.defer import succeed
+from twisted.trial.unittest import TestCase
+from twisted.internet.defer import succeed, inlineCallbacks, returnValue
 from twisted.web import server
 from twisted.web.test.test_web import DummyRequest
 
 
-class SmartDummyRequest(DummyRequest):
-    def __init__(self, method, url, args=None, headers=None):
-        DummyRequest.__init__(self, url.split('/'))
+class TwistedTestCase(TestCase):
+    longMessage = True
+
+
+class MockRequest(DummyRequest):
+    def __init__(self, method, url, args=None, headers=None, isSecure=True):
+        super(MockRequest, self).__init__(url.split('/'))
+        self._url = url
+        self._isSecure = isSecure
         self.method = method
         if headers is not None:
             for key, value in headers.items():
                 self.requestHeaders.addRawHeader(key, value)
+        if args is not None:
+            for key, value in args.items():
+                self.addArg(key, value)
 
-        # set args
-        args = args or {}
-        for k, v in args.items():
-            self.addArg(k, v)
+    def getResponse(self):
+        return b''.join(self.written)
 
-    def value(self):
-        return ''.join(self.written)
+    def prePathURL(self):
+        return 'http://server.com/' + self._url
+
+    def isSecure(self):
+        return self._isSecure
+
+    def getResponseHeader(self, name):
+        return self.responseHeaders.getRawHeaders(name.lower(), [None])[0]
+
+    def setRequestHeader(self, name, value):
+        return self.requestHeaders.addRawHeader(name, value)
 
 
-class DummySite(server.Site):
-    def get(self, url, args=None, headers=None):
-        return self._request('GET', url, args, headers)
-
-    def post(self, url, args=None, headers=None):
-        return self._request('POST', url, args, headers)
-
-    def _request(self, method, url, args, headers):
-        request = SmartDummyRequest(method, url, args, headers)
+class MockSite(server.Site):
+    def makeRequest(self, request):
         resource = self.getResourceFor(request)
-        result = resource.render(request)
-        return self._resolveResult(request, result)
+        return self._render(resource, request)
 
-    def _resolveResult(self, request, result):
-        if isinstance(result, str):
+    @inlineCallbacks
+    def makeSynchronousRequest(self, request):
+        result = yield self.makeRequest(request)
+        returnValue(result)
+
+    @staticmethod
+    def _render(resource, request):
+        result = resource.render(request)
+        if isinstance(result, bytes):
             request.write(result)
             request.finish()
-            return succeed(request)
+            return succeed(None)
         elif result is server.NOT_DONE_YET:
             if request.finished:
-                return succeed(request)
+                return succeed(result)
             else:
-                return request.notifyFinish().addCallback(lambda _: request)
+                return request.notifyFinish()
         else:
-            raise ValueError('Unexpected return value: {result}'.format(result=result))
+            raise ValueError("Unexpected return value: {result!r}".format(result=result))

@@ -7,6 +7,7 @@ import logging
 try:
     from urllib import urlencode
 except ImportError:
+    # noinspection PyUnresolvedReferences
     from urllib.parse import urlencode
 
 from twisted.web.server import NOT_DONE_YET
@@ -99,6 +100,28 @@ class AuthorizationError(OAuth2Error):
             return NOT_DONE_YET
 
 
+class OAuth2RequestError(OAuth2Error):
+    """ An error that happens during a request to a protected resource. """
+    _wwwAuthenticateContent = ''
+    scope = []
+
+    def __init__(self, code, message, detail, scope, errorUri=None, addDetailsToHeader=True):
+        super(OAuth2RequestError, self).__init__(code, message, detail, errorUri)
+        self.scope = scope
+        if addDetailsToHeader:
+            self._wwwAuthenticateContent += ',scope="' + ' '.join(scope) + '"'
+            self._wwwAuthenticateContent += ',error="' + message + '"'
+            self._wwwAuthenticateContent += ',error_description="' + detail + '"'
+            if errorUri is not None:
+                self._wwwAuthenticateContent += ',error_uri="' + errorUri + '"'
+
+    def generate(self, request):
+        content = 'Bearer realm="{realm}"'.format(realm=request.prePathURL())\
+                  + self._wwwAuthenticateContent
+        request.setHeader('WWW-Authenticate', content)
+        return super(OAuth2RequestError, self).generate(request)
+
+
 class MissingParameterError(AuthorizationError):
     def __init__(self, name=None, state=None):
         if name is None:
@@ -154,3 +177,17 @@ class InvalidScopeError(OAuth2Error):
 class UserDeniesAuthorization(AuthorizationError):
     def __init__(self, state=None):
         super(UserDeniesAuthorization, self).__init__(OK, 'access_denied', None, state=state)
+
+
+class MissingTokenError(OAuth2RequestError):
+    def __init__(self, scope):
+        message = 'No access token provided'
+        super(MissingTokenError, self).__init__(
+            UNAUTHORIZED, 'invalid_request', message, scope, addDetailsToHeader=False)
+
+
+class InvalidTokenRequestError(OAuth2RequestError):
+    def __init__(self, scope):
+        message = 'The access token is invalid'
+        super(InvalidTokenRequestError, self).__init__(
+            UNAUTHORIZED, 'invalid_token', message, scope)

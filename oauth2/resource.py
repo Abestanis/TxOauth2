@@ -5,6 +5,7 @@ import time
 try:
     from urllib import urlencode
 except ImportError:
+    # noinspection PyUnresolvedReferences
     from urllib.parse import urlencode
 
 from twisted.web.resource import Resource
