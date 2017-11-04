@@ -65,32 +65,3 @@ class MockSite(server.Site):
                 return request.notifyFinish()
         else:
             raise ValueError("Unexpected return value: {result!r}".format(result=result))
-
-
-class MockTokenStorage(TokenStorage):
-    _tokens = {}
-
-    def contains(self, token):
-        return token in self._tokens
-
-    def hasAccess(self, token, scope):
-        if token not in self._tokens:
-            return False
-        expireTime = self._tokens[token]['expireTime']
-        if expireTime is not None and time.time() > expireTime:
-            del self._tokens[token]
-            return False
-        for scopeItem in scope:
-            if scopeItem not in self._tokens[token]['scope']:
-                return False
-        return True
-
-    def getTokenData(self, token):
-        return self._tokens[token]['data']
-
-    def store(self, token, client, scope, additionalData=None, expireTime=None):
-        self._tokens[token] = {
-            'data': additionalData,
-            'expireTime': expireTime,
-            'scope': scope
-        }

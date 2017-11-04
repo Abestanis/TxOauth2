@@ -1,8 +1,9 @@
 from oauth2 import isAuthorized
+from oauth2.imp import DictTokenStorage
 from oauth2.token import TokenResource
 from oauth2.errors import MissingTokenError, InvalidTokenRequestError,\
     InsufficientScopeRequestError
-from tests import MockRequest, TwistedTestCase, MockTokenStorage
+from tests import MockRequest, TwistedTestCase
 
 
 class TestIsAuthorized(TwistedTestCase):
@@ -10,7 +11,7 @@ class TestIsAuthorized(TwistedTestCase):
     VALID_TOKEN_SCOPE = ['All', 'scope1']
 
     def setUp(self):
-        tokenStorage = MockTokenStorage()
+        tokenStorage = DictTokenStorage()
         setattr(TokenResource, '_OAuthTokenStorage', tokenStorage)
         tokenStorage.store(self.VALID_TOKEN, None, self.VALID_TOKEN_SCOPE)
 

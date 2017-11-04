@@ -14,8 +14,8 @@ from twisted.web.resource import Resource
 from oauth2 import oauth2, isAuthorized
 from oauth2.clients import Client
 from oauth2.resource import OAuth2
-from oauth2.token import TokenStorage, PersistentStorage, TokenResource
-from oauth2.imp import UUIDTokenFactory, SimpleClientStorage
+from oauth2.token import PersistentStorage, TokenResource
+from oauth2.imp import UUIDTokenFactory, SimpleClientStorage, DictTokenStorage
 
 
 class ClockPage(Resource):
@@ -39,47 +39,6 @@ class ClockPage(Resource):
         if not isAuthorized(request, 'VIEW_CLOCK', allowInsecureRequestDebug=True):
             return NOT_DONE_YET
         return '<html><body>{time}</body></html>'.format(time=time.ctime()).encode('utf-8')
-
-
-class TokenStorageImp(TokenStorage):
-    """
-    This is an implementation of the TokenStorage interface.
-    Check out the base class for more detail.
-
-    This implementation does not implement any type of persistence, because it is not required
-    for this example. Any real implementation will likely want to implement persistence to preserve
-    tokens between server restarts.
-    """
-    tokens = {}
-
-    def contains(self, token):
-        return token in self.tokens
-
-    def hasAccess(self, token, scope):
-        tokenEntry = self.tokens.get(token, None)
-        if tokenEntry is not None:
-            if tokenEntry['expires'] is not None and time.time() > tokenEntry['expires']:
-                # The token expired
-                del self.tokens[token]
-                return False
-            # Check if the token allows access to the scope
-            if type(scope) != list:
-                scope = [scope]
-            for scopeType in scope:
-                if scopeType not in tokenEntry['scope']:
-                    return False
-            return True
-        return False
-
-    def getTokenData(self, token):
-        return self.tokens[token]['scope'], self.tokens[token]['additionalData']
-
-    def store(self, token, client, scope, additionalData=None, expireTime=None):
-        self.tokens[token] = {
-            'scope': scope,
-            'expires': expireTime,
-            'additionalData': additionalData
-        }
 
 
 class PersistentStorageImp(PersistentStorage):
@@ -177,8 +136,8 @@ def setupTestServerResource():
     :return: The root resource of the test server
     """
     clientStorage = setupOAuth2Clients()
-    tokenResource = TokenResource(UUIDTokenFactory(), PersistentStorageImp(), TokenStorageImp(),
-                                  TokenStorageImp(), clientStorage, allowInsecureRequestDebug=True)
+    tokenResource = TokenResource(UUIDTokenFactory(), PersistentStorageImp(), DictTokenStorage(),
+                                  DictTokenStorage(), clientStorage, allowInsecureRequestDebug=True)
     root = Resource()
     root.putChild(b'clock', ClockPage())
     root.putChild(b'oauth2', OAuth2Endpoint.initFromTokenResource(tokenResource, subPath=b'token'))
