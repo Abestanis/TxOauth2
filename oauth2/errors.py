@@ -150,7 +150,7 @@ class InvalidParameterError(AuthorizationError):
 
 class InsecureConnectionError(AuthorizationError):
     def __init__(self, state=None):
-        message = 'OAuth 2.0 requires calls over HTTPS'
+        message = 'OAuth 2.0 requires requests over HTTPS'
         super(InsecureConnectionError, self).__init__(BAD_REQUEST, 'invalid_request',
                                                       message, state=state)
 
