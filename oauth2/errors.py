@@ -15,6 +15,7 @@ from twisted.web.server import NOT_DONE_YET
 OK = 200
 BAD_REQUEST = 400
 UNAUTHORIZED = 401
+FORBIDDEN = 403
 
 
 class OAuth2Error(object):
@@ -115,6 +116,11 @@ class OAuth2RequestError(OAuth2Error):
             if errorUri is not None:
                 self._wwwAuthenticateContent += ',error_uri="' + errorUri + '"'
 
+    def _generateErrorBody(self):
+        body = super(OAuth2RequestError, self)._generateErrorBody()
+        body['scope'] = self.scope[0] if len(self.scope) == 1 else self.scope
+        return body
+
     def generate(self, request):
         content = 'Bearer realm="{realm}"'.format(realm=request.prePathURL())\
                   + self._wwwAuthenticateContent
@@ -125,9 +131,9 @@ class OAuth2RequestError(OAuth2Error):
 class MissingParameterError(AuthorizationError):
     def __init__(self, name=None, state=None):
         if name is None:
-            message = 'A required parameter was missing from the request.'
+            message = 'A required parameter was missing from the request'
         else:
-            message = 'Request was missing the \'{name}\' parameter.'.format(name=name)
+            message = 'Request was missing the \'{name}\' parameter'.format(name=name)
         super(MissingParameterError, self).__init__(BAD_REQUEST, 'invalid_request',
                                                     message, state=state)
 
@@ -135,23 +141,23 @@ class MissingParameterError(AuthorizationError):
 class InvalidParameterError(AuthorizationError):
     def __init__(self, name=None, state=None):
         if name is None:
-            message = 'A required parameter was invalid.'
+            message = 'A required parameter was invalid'
         else:
-            message = 'The parameter \'{name}\' is invalid.'.format(name=name)
+            message = 'The parameter \'{name}\' is invalid'.format(name=name)
         super(InvalidParameterError, self).__init__(BAD_REQUEST, 'invalid_request',
                                                     message, state=state)
 
 
 class InsecureConnectionError(AuthorizationError):
     def __init__(self, state=None):
-        message = 'OAuth 2.0 requires calls over HTTPS.'
+        message = 'OAuth 2.0 requires calls over HTTPS'
         super(InsecureConnectionError, self).__init__(BAD_REQUEST, 'invalid_request',
                                                       message, state=state)
 
 
 class InvalidRedirectUriError(OAuth2Error):
     def __init__(self):
-        message = 'Invalid redirection URI.'
+        message = 'Invalid redirection URI'
         super(InvalidRedirectUriError, self).__init__(BAD_REQUEST, 'invalid_request', message)
 
 
@@ -191,3 +197,10 @@ class InvalidTokenRequestError(OAuth2RequestError):
         message = 'The access token is invalid'
         super(InvalidTokenRequestError, self).__init__(
             UNAUTHORIZED, 'invalid_token', message, scope)
+
+
+class InsufficientScopeRequestError(OAuth2RequestError): 
+    def __init__(self, scope):
+        message = 'The request requires higher privileges than provided by the access token'
+        super(InsufficientScopeRequestError, self).__init__(
+            FORBIDDEN, 'insufficient_scope', message, scope)

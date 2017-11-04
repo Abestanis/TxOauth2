@@ -3,6 +3,7 @@ import sys
 import importlib
 
 from tests import MockSite, MockRequest, TwistedTestCase
+from oauth2.token import TokenResource
 
 
 class FullExampleTestCase(TwistedTestCase):
@@ -16,6 +17,9 @@ class FullExampleTestCase(TwistedTestCase):
         sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'example')))
         exampleModule = importlib.import_module('main')
         self.server = MockSite(exampleModule.setupTestServerResource())
+
+    def tearDown(self):
+        setattr(TokenResource, '_OAuthTokenStorage', None)
 
     def assertFailedProtectedResourceRequest(self, request, scope, error, errorDescription):
         self.assertEqual(401, request.responseCode,
