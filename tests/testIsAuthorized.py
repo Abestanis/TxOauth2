@@ -47,6 +47,8 @@ class TestIsAuthorized(TwistedTestCase):
             self.assertIn('{key}="{value}"'.format(key=key, value=content), header,
                           msg='The "{key}" auth-parameter does not contain the expected value.'
                           .format(key=key))
+        self.assertTrue(request.finished, msg='Expected the request to be closed '
+                                              'after it has been rejected.')
 
     def testNoAccessToken(self):
         request = MockRequest('GET', 'protectedResource')

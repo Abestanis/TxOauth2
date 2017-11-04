@@ -70,7 +70,10 @@ class MockSite(server.Site):
 class MockTokenStorage(TokenStorage):
     _tokens = {}
 
-    def contains(self, token, scope):
+    def contains(self, token):
+        return token in self._tokens
+
+    def hasAccess(self, token, scope):
         if token not in self._tokens:
             return False
         expireTime = self._tokens[token]['expireTime']

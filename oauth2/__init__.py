@@ -3,7 +3,8 @@
 from functools import wraps
 from twisted.web.server import NOT_DONE_YET
 
-from oauth2.errors import MissingTokenError, InvalidTokenRequestError, InsecureConnectionError
+from oauth2.errors import MissingTokenError, InvalidTokenRequestError, InsecureConnectionError,\
+    InsufficientScopeRequestError
 from oauth2.resource import OAuth2
 from oauth2.token import TokenResource
 
@@ -34,6 +35,7 @@ def isAuthorized(request, scope, allowInsecureRequestDebug=False):
            insecure connections. Only use for local testing!
     :return: True, if the request is authorized, False otherwise.
     """
+    error = None
     scope = scope if type(scope) == list else [scope]
     if not (allowInsecureRequestDebug or request.isSecure()):
         error = InsecureConnectionError()
@@ -48,9 +50,14 @@ def isAuthorized(request, scope, allowInsecureRequestDebug=False):
                 except UnicodeDecodeError:
                     pass
                 else:
-                    if TokenResource.getTokenStorageSingleton().contains(requestToken, scope):
-                        return True
-            error = InvalidTokenRequestError(scope)
+                    tokenStorage = TokenResource.getTokenStorageSingleton()
+                    if tokenStorage.contains(requestToken):
+                        if tokenStorage.hasAccess(requestToken, scope):
+                            return True
+                        else:
+                            error = InsufficientScopeRequestError(scope)
+            if error is None:
+                error = InvalidTokenRequestError(scope)
     request.write(error.generate(request))
     request.finish()
     return False

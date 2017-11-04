@@ -52,7 +52,10 @@ class TokenStorageImp(TokenStorage):
     """
     tokens = {}
 
-    def contains(self, token, scope):
+    def contains(self, token):
+        return token in self.tokens
+
+    def hasAccess(self, token, scope):
         tokenEntry = self.tokens.get(token, None)
         if tokenEntry is not None:
             if tokenEntry['expires'] is not None and time.time() > tokenEntry['expires']:

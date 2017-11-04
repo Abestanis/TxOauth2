@@ -31,13 +31,20 @@ class TokenStorage(object):
     """
     An object that stores and manages tokens.
     """
-    def contains(self, token, scope):
+    def contains(self, token):
+        """
+        :param token: The token to validate.
+        :return: True if the token is stored in this token storage, False otherwise.
+        """
+        raise NotImplementedError()
+
+    def hasAccess(self, token, scope):
         """
         Return True if the token is stored in this token storage
         and grants access to the given list of scopes (e.g. was
         store called with the token and at least the give scopes).
 
-        :param token: The token to validate
+        :param token: The token to validate.
         :param scope: The scopes the token must grant access to.
         :return: True, if the token grants access to the scopes, False otherwise.
         """
