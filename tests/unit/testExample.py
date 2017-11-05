@@ -14,11 +14,13 @@ class FullExampleTestCase(TwistedTestCase):
     server = None
 
     def setUp(self):
-        sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'example')))
+        sys.path.append(os.path.abspath(os.path.join(
+            os.path.dirname(__file__), '..', '..', 'example')))
         exampleModule = importlib.import_module('main')
         self.server = MockSite(exampleModule.setupTestServerResource())
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(cls):
         setattr(TokenResource, '_OAuthTokenStorage', None)
 
     def assertFailedProtectedResourceRequest(self, request, scope, error, errorDescription):

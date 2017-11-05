@@ -132,7 +132,7 @@ class TestIsAuthorized(TwistedTestCase):
     def testAccessTokenInBodyWrongMethod(self):
         """
         Test the rejection of a request to a protected resource with a valid token
-        in the request body but a request that was not made with the POST method. 
+        in the request body but a request that was not made with the POST method.
         """
         request = MockRequest(
             'GET', 'protectedResource', arguments={'access_token': self.VALID_TOKEN})
@@ -178,7 +178,7 @@ class TestIsAuthorized(TwistedTestCase):
     def testInvalidScope(self):
         """
         Test the rejection of a request to a protected resource
-        with a valid token that does not grant access to the necessary scopes. 
+        with a valid token that does not grant access to the necessary scopes.
         """
         request = MockRequest('GET', 'protectedResource')
         request.setRequestHeader(b'Authorization', 'Bearer ' + self.VALID_TOKEN)
@@ -191,7 +191,7 @@ class TestIsAuthorized(TwistedTestCase):
     def testRequestOverInsecureTransport(self):
         """
         Test the rejection of a request to a protected resource
-        with a valid token that was made over an insecure protocol. 
+        with a valid token that was made over an insecure protocol.
         """
         request = MockRequest('GET', 'protectedResource', isSecure=False)
         request.setRequestHeader(b'Authorization', 'Bearer ' + self.VALID_TOKEN)
