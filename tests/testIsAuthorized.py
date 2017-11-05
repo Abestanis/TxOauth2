@@ -82,18 +82,47 @@ class TestIsAuthorized(TwistedTestCase):
 
     def testWithAccessTokenInBody(self):
         # See https://tools.ietf.org/html/rfc6750#section-2.2
+        request = MockRequest(
+            'POST', 'protectedResource', arguments={'access_token': self.VALID_TOKEN})
+        request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded')
+        self.assertTrue(isAuthorized(request, self.VALID_TOKEN_SCOPE[0]),
+                        msg='Expected isAuthorized to accept a request '
+                            'with a valid token in the request body.')
+        self.assertFalse(request.finished,
+                         msg='isAuthorized should not finish the request if it\'s valid.')
+
+    def testWithAccessTokenInQuery(self):
+        # See https://tools.ietf.org/html/rfc6750#section-2.3
         request = MockRequest('GET', 'protectedResource?access_token=' + self.VALID_TOKEN)
         self.assertTrue(isAuthorized(request, self.VALID_TOKEN_SCOPE[0]),
-                        msg='Expected isAuthorized to accept a request with a valid token.')
+                        msg='Expected isAuthorized to accept a request '
+                            'with a valid token as a query parameter.')
         self.assertFalse(request.finished,
                          msg='isAuthorized should not finish the request if it\'s valid.')
         self.assertIn('private', request.getResponseHeader('Cache-Control'),
                       msg='The response to a request with the access token as a query parameter '
                           'should contain a Cache-Control header with the "private" option.')
 
-    def testWithAccessTokenInQuery(self):
-        # See https://tools.ietf.org/html/rfc6750#section-2.3
-        pass
+    def testAccessTokenInBodyWrongMethod(self):
+        request = MockRequest(
+            'GET', 'protectedResource', arguments={'access_token': self.VALID_TOKEN})
+        request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded')
+        self.assertFalse(isAuthorized(request, self.VALID_TOKEN_SCOPE),
+                        msg='Expected isAuthorized to reject a request with a valid token '
+                            'in the request body that was not send with the POST method.')
+        self.assertFailedProtectedResourceRequest(
+            request, MissingTokenError(self.VALID_TOKEN_SCOPE))
+
+    def testAccessTokenInBodyWrongContentType(self):
+        request = MockRequest(
+            'POST', 'protectedResource', arguments={'access_token': self.VALID_TOKEN})
+        request.setRequestHeader('Content-Type', 'application/other')
+        self.assertFalse(isAuthorized(request, self.VALID_TOKEN_SCOPE),
+                        msg='Expected isAuthorized to reject a request '
+                            'with a valid token in the request body with a content type '
+                            'that is not "application/x-www-form-urlencoded".')
+        self.assertFailedProtectedResourceRequest(
+            request, MissingTokenError(self.VALID_TOKEN_SCOPE))
 
     def testMultipleAccessTokens(self):
         request = MockRequest('GET', 'protectedResource?access_token=' + self.VALID_TOKEN
