@@ -1,4 +1,8 @@
-from urlparse import urlparse, parse_qs
+try:
+    from urlparse import urlparse, parse_qs
+except ImportError:
+    # noinspection PyUnresolvedReferences
+    from urllib.parse import urlparse, parse_qs
 
 from twisted.trial.unittest import TestCase
 from twisted.internet.defer import succeed, inlineCallbacks, returnValue
@@ -12,8 +16,10 @@ class TwistedTestCase(TestCase):
 
 class MockRequest(DummyRequest):
     def __init__(self, method, url, arguments=None, headers=None, isSecure=True):
+        url = _ensureByteString(url)
+        method = _ensureByteString(method)
         parsedUrl = urlparse(url)
-        super(MockRequest, self).__init__(parsedUrl.path.split('/'))
+        super(MockRequest, self).__init__(parsedUrl.path.split(b'/'))
         self.uri = url
         self._isSecure = isSecure
         self.method = method
@@ -22,7 +28,7 @@ class MockRequest(DummyRequest):
                 self.requestHeaders.addRawHeader(key, value)
         if arguments is not None:
             for key, value in arguments.items():
-                self.addArg(key, value)
+                self.addArg(_ensureByteString(key), _ensureByteString(value))
         for key, value in parse_qs(parsedUrl.query).items():
             self.addArg(key, value)
 
@@ -30,8 +36,8 @@ class MockRequest(DummyRequest):
         return b''.join(self.written)
 
     def prePathURL(self):
-        transport = 'https' if self.isSecure() else 'http'
-        return transport + '://server.com/' + self.uri
+        transport = b'https' if self.isSecure() else b'http'
+        return transport + b'://server.com/' + self.uri
 
     def isSecure(self):
         return self._isSecure
@@ -67,3 +73,11 @@ class MockSite(server.Site):
                 return request.notifyFinish()
         else:
             raise ValueError("Unexpected return value: {result!r}".format(result=result))
+
+
+def _ensureByteString(string):
+    """
+    :param string: A string.
+    :return: The string as a byte string.
+    """
+    return string if isinstance(string, bytes) else string.encode('utf-8')

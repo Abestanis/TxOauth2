@@ -1,7 +1,11 @@
 # Copyright (c) Sebastian Scholz
 # See LICENSE for details.
 from functools import wraps
-from urlparse import urlparse, parse_qs
+try:
+    from urlparse import urlparse, parse_qs
+except ImportError:
+    # noinspection PyUnresolvedReferences
+    from urllib.parse import urlparse, parse_qs
 
 from twisted.web.server import NOT_DONE_YET
 
