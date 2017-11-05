@@ -15,7 +15,8 @@ $RECYCLE.BIN/
 *.py[cod]
 
 #IDE
-.idea
+.idea/*
+!.idea/runConfigurations/
 
 example/clientStorage
 tests/_trial*
