@@ -10,15 +10,23 @@ class TestIsAuthorized(TwistedTestCase):
     VALID_TOKEN = 'valid_token'
     VALID_TOKEN_SCOPE = ['All', 'scope1']
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         tokenStorage = DictTokenStorage()
         setattr(TokenResource, '_OAuthTokenStorage', tokenStorage)
-        tokenStorage.store(self.VALID_TOKEN, None, self.VALID_TOKEN_SCOPE)
+        tokenStorage.store(cls.VALID_TOKEN, None, cls.VALID_TOKEN_SCOPE)
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(cls):
         setattr(TokenResource, '_OAuthTokenStorage', None)
 
     def assertFailedProtectedResourceRequest(self, request, expectedError):
+        """
+        Assert that request has been closed and
+        that the expected error has been send as a response.
+        :param request: The request to check.
+        :param expectedError: The error that should have been written as the response.
+        """
         self.assertEqual(
             expectedError.code, request.responseCode,
             msg='The HTTP response code should be {code}, if a protected resource receives a '
@@ -26,8 +34,8 @@ class TestIsAuthorized(TwistedTestCase):
         header = request.getResponseHeader('WWW-Authenticate')
         self.assertIsNotNone(header, msg='Responses to requests without or with invalid tokens '
                                          'must contain a "WWW-Authenticate" header.')
-        self.assertTrue(header.startswith('Bearer'),msg='The "WWW-Authenticate" header must start '
-                                                        'with the auth-scheme value "Bearer".')
+        self.assertTrue(header.startswith('Bearer'), msg='The "WWW-Authenticate" header must start '
+                                                         'with the auth-scheme value "Bearer".')
         self.assertTrue(header.strip() != 'Bearer' and '=' in header,
                         msg='The "WWW-Authenticate" header must '
                             'have one or more auth-param values.')
@@ -52,12 +60,18 @@ class TestIsAuthorized(TwistedTestCase):
                                               'after it has been rejected.')
 
     def testNoAccessToken(self):
+        """
+        Test the rejection of a request to a protected resource without a token.
+        """
         request = MockRequest('GET', 'protectedResource')
         self.assertFalse(isAuthorized(request, 'scope'),
                          msg='Expected isAuthorized to reject a request without a token.')
         self.assertFailedProtectedResourceRequest(request, MissingTokenError(['scope']))
 
     def testWrongAccessToken(self):
+        """
+        Test the rejection of a request to a protected resource with an invalid token.
+        """
         request = MockRequest('GET', 'protectedResource')
         request.setRequestHeader(b'Authorization', b'an invalid token')
         self.assertFalse(isAuthorized(request, 'scope'),
@@ -65,6 +79,9 @@ class TestIsAuthorized(TwistedTestCase):
         self.assertFailedProtectedResourceRequest(request, InvalidTokenRequestError(['scope']))
 
     def testMalformedAccessToken(self):
+        """
+        Test the rejection of a request to a protected resource with a malformed token.
+        """
         request = MockRequest('GET', 'protectedResource')
         request.setRequestHeader(b'Authorization', b'Bearer malformed token \xFF\xFF\xFF\xFF')
         self.assertFalse(isAuthorized(request, 'scope'),
@@ -72,7 +89,10 @@ class TestIsAuthorized(TwistedTestCase):
         self.assertFailedProtectedResourceRequest(request, InvalidTokenRequestError(['scope']))
 
     def testWithAccessTokenInHeader(self):
-        # See https://tools.ietf.org/html/rfc6750#section-2.1
+        """
+        Test a request to a protected resource with a valid token in the Authorization header.
+        See https://tools.ietf.org/html/rfc6750#section-2.1
+        """
         request = MockRequest('GET', 'protectedResource')
         request.setRequestHeader(b'Authorization', 'Bearer ' + self.VALID_TOKEN)
         self.assertTrue(isAuthorized(request, self.VALID_TOKEN_SCOPE[0]),
@@ -81,7 +101,10 @@ class TestIsAuthorized(TwistedTestCase):
                          msg='isAuthorized should not finish the request if it\'s valid.')
 
     def testWithAccessTokenInBody(self):
-        # See https://tools.ietf.org/html/rfc6750#section-2.2
+        """
+        Test a request to a protected resource with a valid token in the request body.
+        See https://tools.ietf.org/html/rfc6750#section-2.2
+        """
         request = MockRequest(
             'POST', 'protectedResource', arguments={'access_token': self.VALID_TOKEN})
         request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded')
@@ -92,7 +115,10 @@ class TestIsAuthorized(TwistedTestCase):
                          msg='isAuthorized should not finish the request if it\'s valid.')
 
     def testWithAccessTokenInQuery(self):
-        # See https://tools.ietf.org/html/rfc6750#section-2.3
+        """
+        Test a request to a protected resource with a valid token in the request query.
+        See https://tools.ietf.org/html/rfc6750#section-2.3
+        """
         request = MockRequest('GET', 'protectedResource?access_token=' + self.VALID_TOKEN)
         self.assertTrue(isAuthorized(request, self.VALID_TOKEN_SCOPE[0]),
                         msg='Expected isAuthorized to accept a request '
@@ -104,27 +130,38 @@ class TestIsAuthorized(TwistedTestCase):
                           'should contain a Cache-Control header with the "private" option.')
 
     def testAccessTokenInBodyWrongMethod(self):
+        """
+        Test the rejection of a request to a protected resource with a valid token
+        in the request body but a request that was not made with the POST method. 
+        """
         request = MockRequest(
             'GET', 'protectedResource', arguments={'access_token': self.VALID_TOKEN})
         request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded')
         self.assertFalse(isAuthorized(request, self.VALID_TOKEN_SCOPE),
-                        msg='Expected isAuthorized to reject a request with a valid token '
-                            'in the request body that was not send with the POST method.')
+                         msg='Expected isAuthorized to reject a request with a valid token '
+                             'in the request body that was not send with the POST method.')
         self.assertFailedProtectedResourceRequest(
             request, MissingTokenError(self.VALID_TOKEN_SCOPE))
 
     def testAccessTokenInBodyWrongContentType(self):
+        """
+        Test the rejection of a request to a protected resource
+        with a valid token but an invalid content type.
+        """
         request = MockRequest(
             'POST', 'protectedResource', arguments={'access_token': self.VALID_TOKEN})
         request.setRequestHeader('Content-Type', 'application/other')
         self.assertFalse(isAuthorized(request, self.VALID_TOKEN_SCOPE),
-                        msg='Expected isAuthorized to reject a request '
-                            'with a valid token in the request body with a content type '
-                            'that is not "application/x-www-form-urlencoded".')
+                         msg='Expected isAuthorized to reject a request '
+                             'with a valid token in the request body with a content type '
+                             'that is not "application/x-www-form-urlencoded".')
         self.assertFailedProtectedResourceRequest(
             request, MissingTokenError(self.VALID_TOKEN_SCOPE))
 
     def testMultipleAccessTokens(self):
+        """
+        Test the rejection of a request to a protected resource with multiple tokens.
+        """
         request = MockRequest('GET', 'protectedResource?access_token=' + self.VALID_TOKEN
                               + '&access_token=' + self.VALID_TOKEN)
         self.assertFalse(isAuthorized(request, self.VALID_TOKEN_SCOPE),
@@ -139,6 +176,10 @@ class TestIsAuthorized(TwistedTestCase):
             request, MultipleTokensError(self.VALID_TOKEN_SCOPE))
 
     def testInvalidScope(self):
+        """
+        Test the rejection of a request to a protected resource
+        with a valid token that does not grant access to the necessary scopes. 
+        """
         request = MockRequest('GET', 'protectedResource')
         request.setRequestHeader(b'Authorization', 'Bearer ' + self.VALID_TOKEN)
         self.assertFalse(isAuthorized(request, 'someOtherScope'),
@@ -148,6 +189,10 @@ class TestIsAuthorized(TwistedTestCase):
             request, InsufficientScopeRequestError(['someOtherScope']))
 
     def testRequestOverInsecureTransport(self):
+        """
+        Test the rejection of a request to a protected resource
+        with a valid token that was made over an insecure protocol. 
+        """
         request = MockRequest('GET', 'protectedResource', isSecure=False)
         request.setRequestHeader(b'Authorization', 'Bearer ' + self.VALID_TOKEN)
         self.assertTrue(isAuthorized(request, self.VALID_TOKEN_SCOPE,
