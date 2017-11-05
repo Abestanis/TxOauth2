@@ -5,9 +5,9 @@ from urlparse import urlparse, parse_qs
 
 from twisted.web.server import NOT_DONE_YET
 
-from oauth2.errors import MissingTokenError, InvalidTokenRequestError, InsecureConnectionError, \
+from txoauth2.errors import MissingTokenError, InvalidTokenRequestError, InsecureConnectionError, \
     InsufficientScopeRequestError, MultipleTokensError
-from oauth2.token import TokenResource
+from txoauth2.token import TokenResource
 
 
 def _getToken(request):

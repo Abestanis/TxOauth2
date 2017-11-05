@@ -10,8 +10,8 @@ try:
 except ImportError:
     from configparser import RawConfigParser
 
-from oauth2.clients import ClientStorage, Client
-from oauth2.token import TokenFactory, TokenStorage
+from txoauth2.clients import ClientStorage, Client
+from txoauth2.token import TokenFactory, TokenStorage
 
 
 class UUIDTokenFactory(TokenFactory):

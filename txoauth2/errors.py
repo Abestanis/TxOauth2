@@ -31,7 +31,7 @@ class OAuth2Error(object):
     detail = None
     errorUri = None
     code = BAD_REQUEST
-    logger = logging.getLogger('oauth2')
+    logger = logging.getLogger('txOauth2')
 
     def __init__(self, code, message, detail, errorUri=None):
         self.code = code

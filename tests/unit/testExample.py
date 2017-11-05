@@ -3,7 +3,7 @@ import sys
 import importlib
 
 from tests import MockSite, MockRequest, TwistedTestCase
-from oauth2.token import TokenResource
+from txoauth2.token import TokenResource
 
 
 class FullExampleTestCase(TwistedTestCase):

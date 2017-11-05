@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(
-    name='TwistedOAuth2',
+    name='txoauth2',
     version='0.3',
     author='Sebastian Scholz',
     author_email='abestanis.gc@gmail.com',
@@ -11,6 +11,6 @@ setup(
     license='MIT',
     keywords=['OAuth2', 'twisted'],
     url='https://github.com/Abestanis/TwistedOAuth2',
-    packages=['oauth2'],
+    packages=['txoauth2'],
     install_requires=['twisted']
 )

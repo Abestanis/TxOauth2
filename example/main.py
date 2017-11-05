@@ -11,11 +11,11 @@ from twisted.internet import reactor, endpoints
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
 
-from oauth2 import oauth2, isAuthorized
-from oauth2.clients import Client
-from oauth2.resource import OAuth2
-from oauth2.token import PersistentStorage, TokenResource
-from oauth2.imp import UUIDTokenFactory, SimpleClientStorage, DictTokenStorage
+from txoauth2 import oauth2, isAuthorized
+from txoauth2.clients import Client
+from txoauth2.resource import OAuth2
+from txoauth2.token import PersistentStorage, TokenResource
+from txoauth2.imp import UUIDTokenFactory, SimpleClientStorage, DictTokenStorage
 
 
 class ClockPage(Resource):

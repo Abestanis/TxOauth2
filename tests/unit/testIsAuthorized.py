@@ -1,7 +1,7 @@
-from oauth2 import isAuthorized
-from oauth2.imp import DictTokenStorage
-from oauth2.token import TokenResource
-from oauth2.errors import MissingTokenError, InvalidTokenRequestError, \
+from txoauth2 import isAuthorized
+from txoauth2.imp import DictTokenStorage
+from txoauth2.token import TokenResource
+from txoauth2.errors import MissingTokenError, InvalidTokenRequestError, \
     InsufficientScopeRequestError, MultipleTokensError
 from tests import MockRequest, TwistedTestCase
 
