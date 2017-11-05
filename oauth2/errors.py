@@ -199,8 +199,14 @@ class InvalidTokenRequestError(OAuth2RequestError):
             UNAUTHORIZED, 'invalid_token', message, scope)
 
 
-class InsufficientScopeRequestError(OAuth2RequestError): 
+class InsufficientScopeRequestError(OAuth2RequestError):
     def __init__(self, scope):
         message = 'The request requires higher privileges than provided by the access token'
         super(InsufficientScopeRequestError, self).__init__(
             FORBIDDEN, 'insufficient_scope', message, scope)
+
+
+class MultipleTokensError(OAuth2RequestError):
+    def __init__(self, scope):
+        message = 'The request contained multiple access tokens'
+        super(MultipleTokensError, self).__init__(BAD_REQUEST, 'invalid_request', message, scope)

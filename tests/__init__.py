@@ -1,11 +1,9 @@
-import time
+from urlparse import urlparse, parse_qs
 
 from twisted.trial.unittest import TestCase
 from twisted.internet.defer import succeed, inlineCallbacks, returnValue
 from twisted.web import server
 from twisted.web.test.test_web import DummyRequest
-
-from oauth2.token import TokenStorage
 
 
 class TwistedTestCase(TestCase):
@@ -13,23 +11,27 @@ class TwistedTestCase(TestCase):
 
 
 class MockRequest(DummyRequest):
-    def __init__(self, method, url, args=None, headers=None, isSecure=True):
-        super(MockRequest, self).__init__(url.split('/'))
+    def __init__(self, method, url, arguments=None, headers=None, isSecure=True):
+        parsedUrl = urlparse(url)
+        super(MockRequest, self).__init__(parsedUrl.path.split('/'))
         self._url = url
         self._isSecure = isSecure
         self.method = method
         if headers is not None:
             for key, value in headers.items():
                 self.requestHeaders.addRawHeader(key, value)
-        if args is not None:
-            for key, value in args.items():
+        if arguments is not None:
+            for key, value in arguments.items():
                 self.addArg(key, value)
+        for key, value in parse_qs(parsedUrl.query):
+            self.addArg(key, value)
 
     def getResponse(self):
         return b''.join(self.written)
 
     def prePathURL(self):
-        return 'http://server.com/' + self._url
+        transport = 'https' if self.isSecure() else 'http'
+        return transport + '://server.com/' + self._url
 
     def isSecure(self):
         return self._isSecure

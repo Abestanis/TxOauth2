@@ -1,8 +1,8 @@
 from oauth2 import isAuthorized
 from oauth2.imp import DictTokenStorage
 from oauth2.token import TokenResource
-from oauth2.errors import MissingTokenError, InvalidTokenRequestError,\
-    InsufficientScopeRequestError
+from oauth2.errors import MissingTokenError, InvalidTokenRequestError, \
+    InsufficientScopeRequestError, MultipleTokensError
 from tests import MockRequest, TwistedTestCase
 
 
@@ -78,18 +78,36 @@ class TestIsAuthorized(TwistedTestCase):
         self.assertTrue(isAuthorized(request, self.VALID_TOKEN_SCOPE[0]),
                         msg='Expected isAuthorized to accept a request with a valid token.')
         self.assertFalse(request.finished,
-                         msg='isAuthorized should not finish the request if its valid.')
+                         msg='isAuthorized should not finish the request if it\'s valid.')
 
     def testWithAccessTokenInBody(self):
         # See https://tools.ietf.org/html/rfc6750#section-2.2
-        pass
+        request = MockRequest('GET', 'protectedResource?access_token=' + self.VALID_TOKEN)
+        self.assertTrue(isAuthorized(request, self.VALID_TOKEN_SCOPE[0]),
+                        msg='Expected isAuthorized to accept a request with a valid token.')
+        self.assertFalse(request.finished,
+                         msg='isAuthorized should not finish the request if it\'s valid.')
+        self.assertIn('private', request.getResponseHeader('Cache-Control'),
+                      msg='The response to a request with the access token as a query parameter '
+                          'should contain a Cache-Control header with the "private" option.')
 
     def testWithAccessTokenInQuery(self):
         # See https://tools.ietf.org/html/rfc6750#section-2.3
         pass
 
     def testMultipleAccessTokens(self):
-        pass
+        request = MockRequest('GET', 'protectedResource?access_token=' + self.VALID_TOKEN
+                              + '&access_token=' + self.VALID_TOKEN)
+        self.assertFalse(isAuthorized(request, self.VALID_TOKEN_SCOPE),
+                         msg='Expected isAuthorized to reject a request with two tokens.')
+        self.assertFailedProtectedResourceRequest(
+            request, MultipleTokensError(self.VALID_TOKEN_SCOPE))
+        request = MockRequest('GET', 'protectedResource?access_token=' + self.VALID_TOKEN)
+        request.setRequestHeader(b'Authorization', 'Bearer ' + self.VALID_TOKEN)
+        self.assertFalse(isAuthorized(request, self.VALID_TOKEN_SCOPE),
+                         msg='Expected isAuthorized to reject a request with two tokens.')
+        self.assertFailedProtectedResourceRequest(
+            request, MultipleTokensError(self.VALID_TOKEN_SCOPE))
 
     def testInvalidScope(self):
         request = MockRequest('GET', 'protectedResource')
