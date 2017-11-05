@@ -73,7 +73,7 @@ class TestIsAuthorized(TwistedTestCase):
         Test the rejection of a request to a protected resource with an invalid token.
         """
         request = MockRequest('GET', 'protectedResource')
-        request.setRequestHeader(b'Authorization', b'an invalid token')
+        request.setRequestHeader(b'Authorization', b'Bearer an invalid token')
         self.assertFalse(isAuthorized(request, 'scope'),
                          msg='Expected isAuthorized to reject a request with an invalid token.')
         self.assertFailedProtectedResourceRequest(request, InvalidTokenRequestError(['scope']))

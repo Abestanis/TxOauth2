@@ -1,19 +1,40 @@
 # Copyright (c) Sebastian Scholz
 # See LICENSE for details.
 from functools import wraps
+from urlparse import urlparse, parse_qs
+
 from twisted.web.server import NOT_DONE_YET
 
 from oauth2.errors import MissingTokenError, InvalidTokenRequestError, InsecureConnectionError, \
-    InsufficientScopeRequestError
+    InsufficientScopeRequestError, MultipleTokensError
 from oauth2.token import TokenResource
+
 
 def _getToken(request):
     """
     Helper method to get a token from a request, if it contains any.
+    :raises ValueError: If more than one token was found in the request.
     :param request: The request.
     :return: A token that was send with the request or None.
     """
-    return request.getHeader(b'Authorization')
+    token = None
+    authHeader = request.getHeader(b'Authorization')
+    if authHeader is not None and authHeader.startswith(b'Bearer '):
+        token = authHeader[7:]
+    if b'access_token' in request.args:
+        if b'POST' == request.method and\
+                request.getHeader(b'Content-Type') == b'application/x-www-form-urlencoded':
+            accessTokenArg = request.args[b'access_token']
+        else:
+            query = parse_qs(urlparse(request.uri).query)
+            accessTokenArg = query.get(b'access_token')
+            if accessTokenArg is not None:
+                request.setHeader(b'Cache-Control', b'private')
+        if accessTokenArg is not None:
+            if token is not None or len(accessTokenArg) != 1:
+                raise ValueError('Found multiple tokens in the request')
+            token = accessTokenArg[0]
+    return token
 
 
 def isAuthorized(request, scope, allowInsecureRequestDebug=False):
@@ -36,13 +57,16 @@ def isAuthorized(request, scope, allowInsecureRequestDebug=False):
     if not (allowInsecureRequestDebug or request.isSecure()):
         error = InsecureConnectionError()
     else:
-        requestToken = _getToken(request)
-        if requestToken is None:
-            error = MissingTokenError(scope)
+        try:
+            requestToken = _getToken(request)
+        except ValueError:
+            error = MultipleTokensError(scope)
         else:
-            if requestToken.startswith(b'Bearer '):
+            if requestToken is None:
+                error = MissingTokenError(scope)
+            else:
                 try:
-                    requestToken = requestToken[7:].decode('utf-8')
+                    requestToken = requestToken.decode('utf-8')
                 except UnicodeDecodeError:
                     pass
                 else:

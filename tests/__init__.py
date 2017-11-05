@@ -14,7 +14,7 @@ class MockRequest(DummyRequest):
     def __init__(self, method, url, arguments=None, headers=None, isSecure=True):
         parsedUrl = urlparse(url)
         super(MockRequest, self).__init__(parsedUrl.path.split('/'))
-        self._url = url
+        self.uri = url
         self._isSecure = isSecure
         self.method = method
         if headers is not None:
@@ -23,7 +23,7 @@ class MockRequest(DummyRequest):
         if arguments is not None:
             for key, value in arguments.items():
                 self.addArg(key, value)
-        for key, value in parse_qs(parsedUrl.query):
+        for key, value in parse_qs(parsedUrl.query).items():
             self.addArg(key, value)
 
     def getResponse(self):
@@ -31,7 +31,7 @@ class MockRequest(DummyRequest):
 
     def prePathURL(self):
         transport = 'https' if self.isSecure() else 'http'
-        return transport + '://server.com/' + self._url
+        return transport + '://server.com/' + self.uri
 
     def isSecure(self):
         return self._isSecure
