@@ -20,3 +20,6 @@ $RECYCLE.BIN/
 
 example/clientStorage
 tests/_trial*
+build
+dist
+txoauth2.egg-info

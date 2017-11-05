@@ -26,6 +26,10 @@ You will need to implement a [TokenFactory](https://github.com/Abestanis/TxOauth
 [ClientStorage](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/clients.py#L5).
 A few implementations of these interfaces can be found in the [imp package](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/imp.py).
 
+## Installation
+
+Run ```pip install txoauth2``` or download the wheel from [pypi](https://pypi.python.org/pypi/txoauth2/0.4).
+
 ## Terminology
 
 * __User__: A user is the actual owner of a resource and he can grant access to the resource to a client. It is up to you to identify and authenticate a user. You can pass additionalData to ```grantAccess``` that identifies an user. This additional data will be passed to the token generator and storage, which allows for the user information to be encoded into the token.
