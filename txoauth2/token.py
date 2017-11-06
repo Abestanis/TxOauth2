@@ -47,17 +47,18 @@ class TokenStorage(object):
         :param token: The token to validate.
         :param scope: The scopes the token must grant access to.
         :return: True, if the token grants access to the scopes, False otherwise.
+        :raises KeyError: If the token is not in the token store.
         """
         raise NotImplementedError()
 
     def getTokenData(self, token):
         """
-        Get the additional data that was passed to
+        Get the scope and additional data that was passed to
         store together with the given token.
 
         :param token: A token.
-        :return: The additional data that was stored alongside the token.
-        :raises: KeyError, if the token was not found in the token storage
+        :return: A tuple of the scope and the additional data that was stored alongside the token.
+        :raises KeyError: If the token was not found in the token storage
         """
         raise NotImplementedError()
 
@@ -76,6 +77,7 @@ class TokenStorage(object):
                                was passed to OAuth2.grantAccess.
         :param expireTime: Optionally the seconds since the epoch,
                            when the token should expire.
+        :raises ValueError: If the token is not a string.
         """
         raise NotImplementedError()
 
@@ -104,7 +106,7 @@ class PersistentStorage(object):
 
         :param key: The key the data was stored at.
         :return: The data that was stored.
-        :raises: KeyError, if no data was stored at the key.
+        :raises KeyError: If no data was stored with the key.
         """
         raise NotImplementedError()
 

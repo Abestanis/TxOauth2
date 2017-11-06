@@ -60,18 +60,14 @@ class TestIsAuthorized(TwistedTestCase):
                                               'after it has been rejected.')
 
     def testNoAccessToken(self):
-        """
-        Test the rejection of a request to a protected resource without a token.
-        """
+        """ Test the rejection of a request to a protected resource without a token. """
         request = MockRequest('GET', 'protectedResource')
         self.assertFalse(isAuthorized(request, 'scope'),
                          msg='Expected isAuthorized to reject a request without a token.')
         self.assertFailedProtectedResourceRequest(request, MissingTokenError(['scope']))
 
     def testWrongAccessToken(self):
-        """
-        Test the rejection of a request to a protected resource with an invalid token.
-        """
+        """ Test the rejection of a request to a protected resource with an invalid token. """
         request = MockRequest('GET', 'protectedResource')
         request.setRequestHeader(b'Authorization', b'Bearer an invalid token')
         self.assertFalse(isAuthorized(request, 'scope'),
@@ -79,9 +75,7 @@ class TestIsAuthorized(TwistedTestCase):
         self.assertFailedProtectedResourceRequest(request, InvalidTokenRequestError(['scope']))
 
     def testMalformedAccessToken(self):
-        """
-        Test the rejection of a request to a protected resource with a malformed token.
-        """
+        """ Test the rejection of a request to a protected resource with a malformed token. """
         request = MockRequest('GET', 'protectedResource')
         request.setRequestHeader(b'Authorization', b'Bearer malformed token \xFF\xFF\xFF\xFF')
         self.assertFalse(isAuthorized(request, 'scope'),
@@ -159,9 +153,7 @@ class TestIsAuthorized(TwistedTestCase):
             request, MissingTokenError(self.VALID_TOKEN_SCOPE))
 
     def testMultipleAccessTokens(self):
-        """
-        Test the rejection of a request to a protected resource with multiple tokens.
-        """
+        """ Test the rejection of a request to a protected resource with multiple tokens. """
         request = MockRequest('GET', 'protectedResource?access_token=' + self.VALID_TOKEN
                               + '&access_token=' + self.VALID_TOKEN)
         self.assertFalse(isAuthorized(request, self.VALID_TOKEN_SCOPE),

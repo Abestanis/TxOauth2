@@ -94,26 +94,44 @@ class DictTokenStorage(TokenStorage):
     _tokens = {}
 
     def contains(self, token):
-        return token in self._tokens
-
-    def hasAccess(self, token, scope):
         if token not in self._tokens:
             return False
-        expireTime = self._tokens[token]['expireTime']
-        if expireTime is not None and time.time() > expireTime:
-            del self._tokens[token]
-            return False
+        return not self._checkExpire(token)
+
+    def hasAccess(self, token, scope):
+        if self._checkExpire(token):
+            raise KeyError('Token expired')
         for scopeItem in scope:
             if scopeItem not in self._tokens[token]['scope']:
                 return False
         return True
 
     def getTokenData(self, token):
-        return self._tokens[token]['data']
+        self._checkExpire(token)
+        return self._tokens[token]['scope'], self._tokens[token]['data']
 
     def store(self, token, client, scope, additionalData=None, expireTime=None):
+        if not isinstance(token, str):
+            raise ValueError('Token parameter is not a string')
+        if not isinstance(scope, list):
+            scope = [scope]
+        if expireTime is not None and expireTime <= time.time():
+            return
         self._tokens[token] = {
             'data': additionalData,
             'expireTime': expireTime,
             'scope': scope
         }
+
+    def _checkExpire(self, token):
+        """
+        Check if a token has expired and remove it if necessary.
+        :param token: The token to check.
+        :return: True if the token has expired.
+        :raises KeyError: If the token is not in the token storage.
+        """
+        expireTime = self._tokens[token]['expireTime']
+        if expireTime is not None and time.time() > expireTime:
+            del self._tokens[token]
+            return True
+        return False
