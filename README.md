@@ -10,7 +10,7 @@ and insert it somewhere into your server hierarchy (e.g. add both at the same pl
 ```python
 root.putChild(b"oauth2", OAuth2SubclassInstance.initFromTokenResource(tokenResource, subPath=b"token"))
 ```
-, see [the example](https://github.com/Abestanis/TxOauth2/blob/master/example/main.py#L143)).
+see [the example](https://github.com/Abestanis/TxOauth2/blob/master/example/main.py#L143)).
 
 The OAuth2 subclass will need to overwrite the [onAuthenticate](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/resource.py#L118) method.
 This method will be called, when a [User](#terminology) is redirected to your server by a [Client](#terminology) to authorize access to some scope by the client.
