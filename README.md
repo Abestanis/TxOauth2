@@ -6,7 +6,11 @@ This Python module helps to implement an OAuth2 Endpoint in Twisted and provides
 A sample usage can be found in the [example folder](https://github.com/Abestanis/TxOauth2/blob/master/example/main.py).
 
 You will need to create a [TokenResource](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/token.py#L112) and an OAuth2 endpoint by subclassing the [OAuth2 class](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/resource.py#L18)
-and insert it somewhere into your server hierarchy (e.g. add both at the same place by using ```root.putChild("oauth2", OAuth2SubclassInstance.initFromTokenResource(tokenResource, subPath="token"))```, see [the example](https://github.com/Abestanis/TxOauth2/blob/master/example/main.py#L143)).
+and insert it somewhere into your server hierarchy (e.g. add both at the same place by using
+```python
+root.putChild(b"oauth2", OAuth2SubclassInstance.initFromTokenResource(tokenResource, subPath=b"token"))
+```
+, see [the example](https://github.com/Abestanis/TxOauth2/blob/master/example/main.py#L143)).
 
 The OAuth2 subclass will need to overwrite the [onAuthenticate](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/resource.py#L118) method.
 This method will be called, when a [User](#terminology) is redirected to your server by a [Client](#terminology) to authorize access to some scope by the client.
@@ -28,7 +32,7 @@ A few implementations of these interfaces can be found in the [imp package](http
 
 ## Installation
 
-Run ```pip install txoauth2``` or download the wheel from [pypi](https://pypi.python.org/pypi/txoauth2/0.4).
+Run ```pip install txoauth2``` or download the wheel from [PyPI](https://pypi.python.org/pypi/txoauth2/0.4).
 
 ## Terminology
 
