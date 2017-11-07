@@ -15,9 +15,7 @@ from txoauth2.token import TokenFactory, TokenStorage
 
 
 class UUIDTokenFactory(TokenFactory):
-    """
-    A TokenFactory that generates UUID tokens.
-    """
+    """ A TokenFactory that generates UUID tokens. """
     def generateToken(self, lifetime, client, scope, additionalData=None):
         """
         Generate an UUID toke.
@@ -31,9 +29,7 @@ class UUIDTokenFactory(TokenFactory):
 
 
 class SimpleClientStorage(ClientStorage):
-    """
-    A ClientStorage using a ConfigParser.
-    """
+    """ A ClientStorage using a ConfigParser. """
     _configParser = None
     path = None
 

@@ -10,9 +10,7 @@ from .errors import InsecureConnectionError, MissingParameterError, \
 
 
 class TokenFactory(object):
-    """
-    A factory that can generate tokens.
-    """
+    """ A factory that can generate tokens. """
     def generateToken(self, lifetime, client, scope, additionalData=None):
         """
         Generate a new token. The generated token must comply to the specification
@@ -28,9 +26,7 @@ class TokenFactory(object):
 
 
 class TokenStorage(object):
-    """
-    An object that stores and manages tokens.
-    """
+    """ An object that stores and manages tokens. """
     def contains(self, token):
         """
         :param token: The token to validate.
