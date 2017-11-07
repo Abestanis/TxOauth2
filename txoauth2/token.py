@@ -136,7 +136,7 @@ class TokenResource(Resource, object):
           passing the refresh token as an argument.
        3. This resource creates and stores another access token and returns it.
     """
-    VALID_TOKEN_CHARS = string.digits + string.ascii_letters + '-.~+/'
+    VALID_TOKEN_CHARS = string.digits + string.ascii_letters + '-._~+/'
     tokenFactory = None
     persistentStorage = None
     allowInsecureRequestDebug = False
