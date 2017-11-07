@@ -56,7 +56,7 @@ class OAuth2Error(object):
         request.setHeader('Cache-Control', 'no-store')
         request.setHeader('Pragma', 'no-cache')
         result = json.dumps(self._generateErrorBody()).encode('utf-8')
-        self.logger.debug('OAuth2 Error: {result}'.format(result=result))
+        self.logger.debug('OAuth2 error: {msg}'.format(msg=result))
         return result
 
 
@@ -91,6 +91,7 @@ class AuthorizationError(OAuth2Error):
         else:
             request.setResponseCode(self.code)
             queryParameter = urlencode(self._generateErrorBody())
+            self.logger.debug('OAuth2 error: {msg}'.format(msg=queryParameter))
             request.redirect(redirectUri + '?' + queryParameter)
             request.finish()
             return NOT_DONE_YET
