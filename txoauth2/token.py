@@ -257,7 +257,8 @@ class TokenResource(Resource, object):
         else:
             return NoResource() # TODO
 
-    def isValidToken(self, token):
+    @classmethod
+    def isValidToken(cls, token):
         """
         Check if a token conforms tho the OAuth2 specification.
         See https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/#token
@@ -266,7 +267,7 @@ class TokenResource(Resource, object):
         :return: True, if the token conforms to the specification, False otherwise
         """
         for char in token:
-            if char not in self.VALID_TOKEN_CHARS:
+            if char not in cls.VALID_TOKEN_CHARS:
                 return False
         return True
 

@@ -1,3 +1,5 @@
+from txoauth2.clients import Client
+
 try:
     from urlparse import urlparse, parse_qs
 except ImportError:
@@ -73,6 +75,18 @@ class MockSite(server.Site):
                 return request.notifyFinish()
         else:
             raise ValueError("Unexpected return value: {result!r}".format(result=result))
+
+
+def getDummyClient():
+    """
+    :return: A dummy client that can be used in the tests.
+    """
+    client = Client()
+    client.clientId = 'ClientId'
+    client.clientSecret = 'ClientSecret'
+    client.name = 'ClientName'
+    client.redirectUris = ['https://return.nonexistent']
+    return client
 
 
 def _ensureByteString(string):
