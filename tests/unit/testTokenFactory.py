@@ -20,7 +20,6 @@ class AbstractTokenFactoryTest(TwistedTestCase):
     def setupTokenFactory(cls, tokenFactory, client=_DUMMY_CLIENT):
         """
         Set the token factory implementation to use for the tests.
-        :param cls: The subclass of this test.
         :param tokenFactory: The token factory implementation to test.
         :param client: The client to use for token generation.
         """
@@ -28,6 +27,7 @@ class AbstractTokenFactoryTest(TwistedTestCase):
         cls._DUMMY_CLIENT = client
 
     def testTokenGeneration(self):
+        """ Verify that the token factory generates valid tokens. """
         token = self._TOKEN_FACTORY.generateToken(None, self._DUMMY_CLIENT, self._VALID_SCOPE)
         self.assertIsInstance(token, str, message='Expected the token factory to return a string.')
         self.assertTrue(
@@ -35,6 +35,7 @@ class AbstractTokenFactoryTest(TwistedTestCase):
             msg='The generated token is not valid according to the oauth2 specifications.')
 
     def testTokenUniqueness(self):
+        """ Test that the token factory generates unique tokens. """
         tokens = [
             self._TOKEN_FACTORY.generateToken(None, self._DUMMY_CLIENT, self._VALID_SCOPE),
             self._TOKEN_FACTORY.generateToken(None, self._DUMMY_CLIENT, self._VALID_SCOPE),

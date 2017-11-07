@@ -28,7 +28,7 @@ class UUIDTokenFactory(TokenFactory):
         return str(uuid4())
 
 
-class SimpleClientStorage(ClientStorage):
+class ConfigParserClientStorage(ClientStorage):
     """ A ClientStorage using a ConfigParser. """
     _configParser = None
     path = None
@@ -39,6 +39,7 @@ class SimpleClientStorage(ClientStorage):
         it's clients from the given path.
         :param path: Path to a config file to load and store clients.
         """
+        super(ConfigParserClientStorage, self).__init__()
         self._configParser = RawConfigParser()
         self.path = path
         self._configParser.read(path)

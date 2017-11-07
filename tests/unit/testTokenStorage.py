@@ -22,7 +22,6 @@ class AbstractTokenStorageTest(TwistedTestCase):
         """
         Set the token storage implementation to use for the tests
         and store the valid token in the token storage.
-        :param cls: The subclass of this test.
         :param tokenStorage: The token storage implementation to test.
         :param client: The client to use for storing tokens.
         """

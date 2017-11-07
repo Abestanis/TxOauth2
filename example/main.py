@@ -15,7 +15,7 @@ from txoauth2 import oauth2, isAuthorized
 from txoauth2.clients import Client
 from txoauth2.resource import OAuth2
 from txoauth2.token import PersistentStorage, TokenResource
-from txoauth2.imp import UUIDTokenFactory, SimpleClientStorage, DictTokenStorage
+from txoauth2.imp import UUIDTokenFactory, ConfigParserClientStorage, DictTokenStorage
 
 
 class ClockPage(Resource):
@@ -120,7 +120,8 @@ def setupOAuth2Clients():
     Setup a client storage with a test client.
     :return: The client storage
     """
-    clientStorage = SimpleClientStorage(os.path.join(os.path.dirname(__file__), 'clientStorage'))
+    clientStoragePath = os.path.join(os.path.dirname(__file__), 'clientStorage')
+    clientStorage = ConfigParserClientStorage(clientStoragePath)
     testClient = Client()
     testClient.clientId = 'test'
     testClient.clientSecret = 'test_secret'
