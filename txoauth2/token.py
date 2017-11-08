@@ -185,6 +185,7 @@ class TokenResource(Resource, object):
         self.clientStorage = clientStorage
         self.authTokenLifeTime = authTokenLifeTime
         TokenResource._OAuthTokenStorage = authTokenStorage
+        self.render_HEAD = None  # Disable automatic HEAD handling.
 
     def render_POST(self, request):
         """
