@@ -224,7 +224,7 @@ class TokenResource(Resource, object):
                 raise ValueError('Generated token is invalid: {token}'.format(token=accessToken))
             expireTime = None
             if self.authTokenLifeTime is not None:
-                expireTime = int(time.time()) + self.authTokenLifeTime
+                expireTime = time.time() + self.authTokenLifeTime
             self.getTokenStorageSingleton().store(
                 accessToken, client, scope=scope,
                 additionalData=additionalData, expireTime=expireTime)
@@ -255,7 +255,7 @@ class TokenResource(Resource, object):
                 raise ValueError('Generated token is invalid: {token}'.format(token=accessToken))
             expireTime = None
             if self.authTokenLifeTime is not None:
-                expireTime = int(time.time()) + self.authTokenLifeTime
+                expireTime = time.time() + self.authTokenLifeTime
             self.getTokenStorageSingleton().store(
                 accessToken, client, scope=scope,
                 additionalData=additionalData, expireTime=expireTime)
@@ -303,7 +303,7 @@ class TokenResource(Resource, object):
             'scope': ' '.join(scope)
         }
         if self.authTokenLifeTime is not None:
-            result['expires_in'] = self.authTokenLifeTime
+            result['expires_in'] = int(self.authTokenLifeTime)
         if refreshToken is not None:
             result['refresh_token'] = refreshToken
         request.setHeader('Content-Type', 'application/json;charset=UTF-8')
