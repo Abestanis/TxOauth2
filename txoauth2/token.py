@@ -214,7 +214,7 @@ class TokenResource(Resource, object):
             self.getTokenStorageSingleton().store(
                 accessToken, client, scope=scope,
                 additionalData=additionalData, expireTime=expireTime)
-            return self.buildResponse(request, accessToken)
+            return self.buildResponse(request, accessToken, scope)
         elif grantType == b'authorization_code':
             for argument in [b'client_id', b'client_secret', b'code', b'redirect_uri']:
                 if argument not in request.args:
@@ -254,7 +254,7 @@ class TokenResource(Resource, object):
                                      .format(token=refreshToken))
                 self.refreshTokenStorage.store(refreshToken, client, scope=scope,
                                                additionalData=additionalData)
-            return self.buildResponse(request, accessToken, refreshToken)
+            return self.buildResponse(request, accessToken, scope, refreshToken)
         else:
             return UnsupportedGrantType(grantType).generate(request)
 
@@ -272,19 +272,21 @@ class TokenResource(Resource, object):
                 return False
         return True
 
-    def buildResponse(self, request, accessToken, refreshToken=None):
+    def buildResponse(self, request, accessToken, scope, refreshToken=None):
         """
         Helper method for render_POST to generate a response
         with an access token and an optional refresh token.
 
         :param request: The POST request.
         :param accessToken: The access token to send back.
+        :param scope: The scope of the access token to send back.
         :param refreshToken: An optional refresh token to send back.
         :return: A response as as a json string.
         """
         result = {
             'access_token': accessToken,
-            'token_type': 'Bearer'
+            'token_type': 'Bearer',
+            'scope': ' '.join(scope)
         }
         if self.authTokenLifeTime is not None:
             result['expires_in'] = self.authTokenLifeTime
