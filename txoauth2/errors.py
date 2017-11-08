@@ -176,6 +176,14 @@ class InvalidScopeError(OAuth2Error):
         super(InvalidScopeError, self).__init__(BAD_REQUEST, 'invalid_scope', message)
 
 
+class UnsupportedGrantType(OAuth2Error):
+    def __init__(self, grantType=None):
+        message = 'The authorization grant type is not supported'
+        if grantType is not None:
+            message += ': ' + grantType
+        super(UnsupportedGrantType, self).__init__(BAD_REQUEST, 'unsupported_grant_type', message)
+
+
 class UserDeniesAuthorization(AuthorizationError):
     def __init__(self, state=None):
         super(UserDeniesAuthorization, self).__init__(OK, 'access_denied', None, state=state)

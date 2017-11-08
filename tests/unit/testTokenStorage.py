@@ -53,7 +53,8 @@ class AbstractTokenStorageTest(TwistedTestCase):
                              'for a valid token and an invalid scope.')
         self.assertFalse(
             self._TOKEN_STORAGE.hasAccess(self._VALID_TOKEN, [self._VALID_SCOPE[0].upper()]),
-            msg='Expected hasAccess to return False for a valid token and an invalid scope.')
+            msg='Expected hasAccess to return False for a valid token '
+                'and an invalid scope (scopes must be case sensitive).')
         self.assertFalse(
             self._TOKEN_STORAGE.hasAccess(self._VALID_TOKEN, self._VALID_SCOPE + ['invalidScope']),
             msg='Expected hasAccess to return False for a valid token and an invalid scope.')

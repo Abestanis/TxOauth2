@@ -2,11 +2,11 @@
 # See LICENSE for details.
 import string
 import time
-from twisted.web.resource import Resource, NoResource
+from twisted.web.resource import Resource
 import json
 
 from .errors import InsecureConnectionError, MissingParameterError, \
-    InvalidParameterError, InvalidTokenError, InvalidScopeError
+    InvalidParameterError, InvalidTokenError, InvalidScopeError, UnsupportedGrantType, OK
 
 
 class TokenFactory(object):
@@ -183,7 +183,8 @@ class TokenResource(Resource, object):
             return InsecureConnectionError().generate(request)
         if b'grant_type' not in request.args:
             return MissingParameterError(name='grant_type').generate(request)
-        if request.args[b'grant_type'][0] == b'refresh_token':
+        grantType = request.args[b'grant_type'][0]
+        if grantType == b'refresh_token':
             for argument in [b'client_id', b'client_secret', b'refresh_token']:
                 if argument not in request.args:
                     return MissingParameterError(name=argument).generate(request)
@@ -214,7 +215,7 @@ class TokenResource(Resource, object):
                 accessToken, client, scope=scope,
                 additionalData=additionalData, expireTime=expireTime)
             return self.buildResponse(request, accessToken)
-        elif request.args[b'grant_type'][0] == b'authorization_code':
+        elif grantType == b'authorization_code':
             for argument in [b'client_id', b'client_secret', b'code', b'redirect_uri']:
                 if argument not in request.args:
                     return MissingParameterError(name=argument).generate(request)
@@ -255,7 +256,7 @@ class TokenResource(Resource, object):
                                                additionalData=additionalData)
             return self.buildResponse(request, accessToken, refreshToken)
         else:
-            return NoResource() # TODO
+            return UnsupportedGrantType(grantType).generate(request)
 
     @classmethod
     def isValidToken(cls, token):
@@ -292,6 +293,7 @@ class TokenResource(Resource, object):
         request.setHeader('Content-Type', 'application/json;charset=UTF-8')
         request.setHeader('Cache-Control', 'no-store')
         request.setHeader('Pragma', 'no-cache')
+        request.setResponseCode(OK)
         return json.dumps(result).encode('utf-8')
 
     @staticmethod
