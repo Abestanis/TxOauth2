@@ -201,7 +201,7 @@ class TokenResource(Resource, object):
             if b'scope' in request.args:
                 if scope != request.args[b'scope'][0].decode('utf-8'): # TODO: Support multiple scopes
                     return InvalidScopeError(request.args[b'scope'][0]).generate(request)
-            if not self.refreshTokenStorage.contains(refreshToken, scope):
+            if not self.refreshTokenStorage.contains(refreshToken):
                 return InvalidTokenError('refresh token').generate(request)
             accessToken = self.tokenFactory.generateToken(
                 self.authTokenLifeTime, client, scope=scope, additionalData=additionalData)
