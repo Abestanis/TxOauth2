@@ -2,12 +2,13 @@
 # See LICENSE for details.
 import string
 import time
-from twisted.web.resource import Resource
 import json
 
-from .errors import InsecureConnectionError, MissingParameterError, \
-    InvalidParameterError, InvalidTokenError, InvalidScopeError, UnsupportedGrantType, OK
 from abc import ABCMeta, abstractmethod
+from twisted.web.resource import Resource
+
+from .errors import InsecureConnectionError, MissingParameterError, InvalidParameterError, \
+    InvalidTokenError, InvalidScopeError, UnsupportedGrantType, OK, MultipleParameterError
 
 
 class TokenFactory(object):
@@ -197,6 +198,8 @@ class TokenResource(Resource, object):
             return InsecureConnectionError().generate(request)
         if b'grant_type' not in request.args:
             return MissingParameterError(name='grant_type').generate(request)
+        if len(request.args[b'grant_type']) != 1:
+            return MultipleParameterError('grant_type').generate(request)
         grantType = request.args[b'grant_type'][0]
         if grantType == b'refresh_token':
             for argument in [b'client_id', b'client_secret', b'refresh_token']:

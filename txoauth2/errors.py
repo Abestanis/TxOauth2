@@ -184,6 +184,14 @@ class UnsupportedGrantType(OAuth2Error):
         super(UnsupportedGrantType, self).__init__(BAD_REQUEST, 'unsupported_grant_type', message)
 
 
+class MultipleParameterError(OAuth2Error):
+    def __init__(self, parameter=None):
+        message = 'The request contained a duplicate parameter'
+        if parameter is not None:
+            message += ': ' + parameter
+        super(MultipleParameterError, self).__init__(BAD_REQUEST, 'invalid_request', message)
+
+
 class UserDeniesAuthorization(AuthorizationError):
     def __init__(self, state=None):
         super(UserDeniesAuthorization, self).__init__(OK, 'access_denied', None, state=state)
