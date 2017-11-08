@@ -7,10 +7,14 @@ import json
 
 from .errors import InsecureConnectionError, MissingParameterError, \
     InvalidParameterError, InvalidTokenError, InvalidScopeError, UnsupportedGrantType, OK
+from abc import ABCMeta, abstractmethod
 
 
 class TokenFactory(object):
     """ A factory that can generate tokens. """
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
     def generateToken(self, lifetime, client, scope, additionalData=None):
         """
         Generate a new token. The generated token must comply to the specification
@@ -27,6 +31,9 @@ class TokenFactory(object):
 
 class TokenStorage(object):
     """ An object that stores and manages tokens. """
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
     def contains(self, token):
         """
         :param token: The token to validate.
@@ -34,6 +41,7 @@ class TokenStorage(object):
         """
         raise NotImplementedError()
 
+    @abstractmethod
     def hasAccess(self, token, scope):
         """
         Return True if the token is stored in this token storage
@@ -47,6 +55,7 @@ class TokenStorage(object):
         """
         raise NotImplementedError()
 
+    @abstractmethod
     def getTokenData(self, token):
         """
         Get the scope and additional data that was passed to
@@ -58,6 +67,7 @@ class TokenStorage(object):
         """
         raise NotImplementedError()
 
+    @abstractmethod
     def store(self, token, client, scope, additionalData=None, expireTime=None):
         """
         Store the given token in the token storage alongside
@@ -83,6 +93,9 @@ class PersistentStorage(object):
     A key value storage that can store data between a call to OAuth2.grantAccess
     and the corresponding POST request to the TokenResource from the client.
     """
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
     def put(self, key, data, expireTime=None):
         """
         Store the given data with the given key.
@@ -96,6 +109,7 @@ class PersistentStorage(object):
         """
         raise NotImplementedError()
 
+    @abstractmethod
     def get(self, key):
         """
         Return the data that was previously stored with the given key.

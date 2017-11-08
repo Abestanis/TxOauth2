@@ -1,5 +1,6 @@
 # Copyright (c) Sebastian Scholz
 # See LICENSE for details.
+from abc import abstractmethod, ABCMeta
 
 
 class ClientStorage(object):
@@ -7,6 +8,9 @@ class ClientStorage(object):
     This class's purpose is to manage and give access
     to the clients that the server knows via their clientId.
     """
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
     def getClient(self, clientId):
         """
         Return a Client object representing the client with
