@@ -5,7 +5,7 @@ from tempfile import NamedTemporaryFile
 from txoauth2.clients import Client
 from txoauth2.imp import ConfigParserClientStorage
 
-from tests import TwistedTestCase, getDummyClient
+from tests import TwistedTestCase, getDummyClient, assertClientEquals
 
 
 class AbstractClientStorageTest(TwistedTestCase):
@@ -31,21 +31,15 @@ class AbstractClientStorageTest(TwistedTestCase):
         client = self._CLIENT_STORAGE.getClient(self._VALID_CLIENT.clientId)
         self.assertIsInstance(
             client, Client, message='Expected the client storage to return a client object.')
-        self.assertEquals(client.clientId, self._VALID_CLIENT.clientId,
-                          msg='Expected the client storage to return a client '
-                              'with the same client id as the one that was stored.')
+        assertClientEquals(self, client, self._VALID_CLIENT,
+                           msg='Expected the client storage to return a client '
+                               'with the same attributes as the one stored')
         self.assertIsInstance(client.clientId, str,
                               message='Expected the client id of the client returned '
                                       'by the client storage to be a string.')
-        self.assertEquals(client.clientSecret, self._VALID_CLIENT.clientSecret,
-                          msg='Expected the client storage to return a client '
-                              'with the same client secret as the one that was stored.')
         self.assertIsInstance(client.clientSecret, str,
                               message='Expected the client secret of the client returned '
                                       'by the client storage to be a string.')
-        self.assertEquals(client.redirectUris, self._VALID_CLIENT.redirectUris,
-                          msg='Expected the client storage to return a client '
-                              'with the same redirect uris as the one that was stored.')
         self.assertIsInstance(client.redirectUris, list,
                               message='Expected the redirect uris of the client returned '
                                       'by the client storage to be a list.')

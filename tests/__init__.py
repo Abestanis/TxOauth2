@@ -89,6 +89,24 @@ def getDummyClient():
     return client
 
 
+def assertClientEquals(testCase, client, expectedClient, msg):
+    """
+    Assert that the client equals the expected client.
+    :param testCase: The current test case.
+    :param client: The client to compare.
+    :param expectedClient: The client to compare the first client against.
+    :param msg: The assertion message.
+    """
+    testCase.assertEquals(client.clientId, expectedClient.clientId,
+                          msg=msg + ': The client id differs.')
+    testCase.assertEquals(client.clientSecret, expectedClient.clientSecret,
+                          msg=msg + ': The client secret differs.')
+    testCase.assertEquals(client.redirectUris, expectedClient.redirectUris,
+                          msg=msg + ': The redirect uris are not the same.')
+    testCase.assertEquals(client.name, expectedClient.name,
+                          msg=msg + ': The client name differs.')
+
+
 def _ensureByteString(string):
     """
     :param string: A string.
