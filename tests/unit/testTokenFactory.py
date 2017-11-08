@@ -10,7 +10,6 @@ class AbstractTokenFactoryTest(TwistedTestCase):
     An abstract test case for TokenFactory implementations. A subclass must set __test__
     to True and call setupTokenFactory with an instance of the token factory to test.
     """
-    __test__ = False  # This is an abstract test.
     _TOKEN_FACTORY = None
     _VALID_SCOPE = ['All', 'Scope1']
     _VALID_ADDITIONAL_DATA = 'additionalData'
@@ -52,7 +51,6 @@ class AbstractTokenFactoryTest(TwistedTestCase):
 
 class UUIDTokenFactoryTest(AbstractTokenFactoryTest):
     """ Test the UUIDTokenFactory. """
-    __test__ = True
 
     @classmethod
     def setUpClass(cls):

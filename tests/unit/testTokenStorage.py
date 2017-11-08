@@ -10,7 +10,6 @@ class AbstractTokenStorageTest(TwistedTestCase):
     An abstract test case for TokenStorage implementations. A subclass must set __test__
     to True and call setupTokenStorage with an instance of the token storage to test.
     """
-    __test__ = False  # This is an abstract test.
     _TOKEN_STORAGE = None
     _VALID_TOKEN = 'ValidToken'
     _VALID_SCOPE = ['All', 'Scope1']
@@ -174,7 +173,6 @@ class AbstractTokenStorageTest(TwistedTestCase):
 
 class DictTokenStorageTest(AbstractTokenStorageTest):
     """ Test the DictTokenStorage. """
-    __test__ = True
 
     @classmethod
     def setUpClass(cls):

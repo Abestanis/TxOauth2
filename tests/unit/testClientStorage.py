@@ -13,7 +13,6 @@ class AbstractClientStorageTest(TwistedTestCase):
     An abstract test case for ClientStorage implementations. A subclass must set __test__
     to True and call setupClientStorage with an instance of the client storage to test.
     """
-    __test__ = False  # This is an abstract test.
     _CLIENT_STORAGE = None
     _VALID_CLIENT = getDummyClient()
 
@@ -58,7 +57,6 @@ class AbstractClientStorageTest(TwistedTestCase):
 
 class ConfigParserClientStorageTest(AbstractClientStorageTest):
     """ Test the ConfigParserClientStorage. """
-    __test__ = True
 
     @classmethod
     def setUpClass(cls):

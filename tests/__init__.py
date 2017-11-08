@@ -12,7 +12,16 @@ from twisted.web import server
 from twisted.web.test.test_web import DummyRequest
 
 
+class AbstractTestCase(type):
+    """ Metaclass that prevents abstract tests classes from being executed. """
+    def __getattribute__(self, name):
+        if '__test__' == name:
+            return not (self.__name__.startswith('Abstract') or self.__name__ == 'TwistedTestCase')
+        return super(AbstractTestCase, self).__getattribute__(name)
+
+
 class TwistedTestCase(TestCase):
+    __metaclass__ = AbstractTestCase
     longMessage = True
 
 
