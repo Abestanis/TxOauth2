@@ -1,6 +1,3 @@
-from txoauth2.clients import Client
-from txoauth2.token import TokenFactory
-
 try:
     from urlparse import urlparse, parse_qs
 except ImportError:
@@ -11,6 +8,9 @@ from twisted.trial.unittest import TestCase
 from twisted.internet.defer import succeed, inlineCallbacks, returnValue
 from twisted.web import server
 from twisted.web.test.test_web import DummyRequest
+
+from txoauth2.token import TokenFactory
+from txoauth2.clients import Client, ClientStorage, ClientAuthType
 
 
 class AbstractTestCase(type):
@@ -152,16 +152,26 @@ class TestTokenFactory(TokenFactory):
         self._testCase = testCase
 
 
+class TestClientStorage(ClientStorage):
+    """ A client storage that can be used for tests. """
+    _clients = {}
+
+    def addClient(self, client):
+        """
+        Add a new client to the storage.
+        :param client: The new client.
+        """
+        self._clients[client.id] = client
+
+    def getClient(self, clientId):
+        return self._clients[clientId]
+
+
 def getDummyClient():
     """
     :return: A dummy client that can be used in the tests.
     """
-    client = Client()
-    client.clientId = 'ClientId'
-    client.clientSecret = 'ClientSecret'
-    client.name = 'ClientName'
-    client.redirectUris = ['https://return.nonexistent']
-    return client
+    return Client('ClientId', ['https://return.nonexistent'], ClientAuthType.SECRET, 'ClientSecret')
 
 
 def assertClientEquals(testCase, client, expectedClient, msg):

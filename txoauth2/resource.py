@@ -200,7 +200,7 @@ class OAuth2(Resource, object):
                                                additionalData=additionalData)
         self.persistentStorage.put(code, {
             'redirect_uri': redirectUri,
-            'client_id': client.clientId,
+            'client_id': client.id,
             'scope': scope,
             'additional_data': additionalData
         }, expireTime=int(time.time()) + codeLifeTime)

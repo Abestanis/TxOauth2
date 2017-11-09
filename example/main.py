@@ -12,7 +12,7 @@ from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
 
 from txoauth2 import oauth2, isAuthorized
-from txoauth2.clients import Client
+from txoauth2.clients import Client, ClientAuthType
 from txoauth2.resource import OAuth2
 from txoauth2.token import PersistentStorage, TokenResource
 from txoauth2.imp import UUIDTokenFactory, ConfigParserClientStorage, DictTokenStorage
@@ -96,7 +96,7 @@ class OAuth2Endpoint(OAuth2):
 <input type="submit" name="confirm" value="no">
 </form>
 </body>
-</html>""".format(client_id=client.clientId, scope=' '.join(scope), response_type=responseType,
+</html>""".format(client_id=client.id, scope=' '.join(scope), response_type=responseType,
                   state=state.decode('utf-8'), redirect_uri=redirectUri).encode('utf-8')
 
     def render_POST(self, request):
@@ -122,11 +122,8 @@ def setupOAuth2Clients():
     """
     clientStoragePath = os.path.join(os.path.dirname(__file__), 'clientStorage')
     clientStorage = ConfigParserClientStorage(clientStoragePath)
-    testClient = Client()
-    testClient.clientId = 'test'
-    testClient.clientSecret = 'test_secret'
-    testClient.name = 'Test Client'
-    testClient.redirectUris = ['https://clientServer.com/return']
+    testClient = Client(clientId='test', redirectUris=['https://clientServer.com/return'],
+                        authType=ClientAuthType.SECRET, authToken='test_secret')
     clientStorage.addClient(testClient)
     return clientStorage
 

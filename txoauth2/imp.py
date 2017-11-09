@@ -10,7 +10,7 @@ try:
 except ImportError:
     from configparser import RawConfigParser
 
-from txoauth2.clients import ClientStorage, Client
+from txoauth2.clients import ClientStorage, Client, ClientAuthType
 from txoauth2.token import TokenFactory, TokenStorage
 
 
@@ -55,12 +55,10 @@ class ConfigParserClientStorage(ClientStorage):
         sectionName = 'client_' + clientId
         if not self._configParser.has_section(sectionName):
             raise KeyError('No client with id "{id}" exists'.format(id=clientId))
-        client = Client()
-        client.clientId = clientId
-        client.name = self._configParser.get(sectionName, 'name')
-        client.clientSecret = self._configParser.get(sectionName, 'secret')
-        client.redirectUris = self._configParser.get(sectionName, 'redirect_uris').split()
-        return client
+        redirectUris = self._configParser.get(sectionName, 'redirect_uris').split()
+        authType = ClientAuthType(self._configParser.getint(sectionName, 'auth_type'))
+        authToken = self._configParser.get(sectionName, 'auth_token')
+        return Client(clientId, redirectUris, authType, authToken)
 
     def addClient(self, client):
         """
@@ -69,13 +67,11 @@ class ConfigParserClientStorage(ClientStorage):
         :raises ValueError: If the data in the client is not valid.
         :param client: The client to update or add.
         """
-        if not all(uri.startswith('https') for uri in client.redirectUris):
-            raise ValueError('All redirectUris must be https')
-        sectionName = 'client_' + client.clientId
+        sectionName = 'client_' + client.id
         if not self._configParser.has_section(sectionName):
             self._configParser.add_section(sectionName)
-        self._configParser.set(sectionName, 'name', client.name)
-        self._configParser.set(sectionName, 'secret', client.clientSecret)
+        self._configParser.set(sectionName, 'auth_type', client.authType.value)
+        self._configParser.set(sectionName, 'auth_token', client.authToken)
         self._configParser.set(sectionName, 'redirect_uris', ' '.join(client.redirectUris))
         if not os.path.exists(os.path.dirname(self.path)):
             os.makedirs(os.path.dirname(self.path))
