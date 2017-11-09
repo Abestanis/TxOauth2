@@ -44,6 +44,15 @@ class MockRequest(DummyRequest):
         for key, value in parse_qs(parsedUrl.query).items():
             self.addArg(key, value)
 
+    def addArg(self, name, value):
+        if isinstance(value, list):
+            for val in value:
+                self.addArg(name, val)
+        elif name in self.args:
+            self.args[name].append(value)
+        else:
+            super(MockRequest, self).addArg(name, value)
+
     def getResponse(self):
         return b''.join(self.written)
 
