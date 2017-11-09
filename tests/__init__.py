@@ -1,4 +1,5 @@
 from txoauth2.clients import Client
+from txoauth2.token import TokenFactory
 
 try:
     from urlparse import urlparse, parse_qs
@@ -86,6 +87,62 @@ class MockSite(server.Site):
             raise ValueError("Unexpected return value: {result!r}".format(result=result))
 
 
+class TestTokenFactory(TokenFactory):
+    """ A token factory that can be used for tests. """
+    _tokens = []
+    _testCase = None
+
+    def generateToken(self, lifetime, client, scope, additionalData=None):
+        token, expectedLifetime, expectedClient, expectedScope, expectedAdditionalData\
+            = self._tokens.pop(0)
+        self._testCase.assertEquals(
+            lifetime, expectedLifetime,
+            msg='generateToken was called with a different the lifetime than '
+                'expected for the requested token {token}'.format(token=token))
+        assertClientEquals(self._testCase, client, expectedClient,
+                           msg='generateToken was called with a different client than '
+                               'expected for the requested token {token}'.format(token=token))
+        self._testCase.assertListEqual(
+            scope, expectedScope,
+            msg='generateToken was called with a different scope than '
+                'expected for the requested token {token}'.format(token=token))
+        self._testCase.assertEquals(
+            additionalData, expectedAdditionalData,
+            msg='generateToken was called with different additional data than '
+                'expected for the requested token {token}'.format(token=token))
+        return token
+
+    def expectTokenRequest(self, token, lifetime, client, scope, additionalData=None):
+        """
+        Enqueue a token and its expected parameters.
+        The token is returned by the generateToken method after it has checked
+        that it was called with the same parameters that are supplied to this call.
+        Tokens are used in the order they are expected.
+        :param token: The token that should get returned from the expected generateToken call.
+        :param lifetime: The lifetime that should get passed to the generateToken function.
+        :param client: The client that should get passed to the generateToken function.
+        :param scope: The scope that should get passed to the generateToken function.
+        :param additionalData: The additional data that should get
+                               passed to the generateToken function.
+        """
+        self._tokens.append((token, lifetime, client, scope, additionalData))
+
+    def assertAllTokensRequested(self):
+        """ Assert that all expected tokens have been requested from the token factory. """
+        self._testCase.assertTrue(
+            len(self._tokens) == 0,
+            msg='Not all expected tokens have been requested from the token factory: {tokens}'
+                .format(tokens=', '.join(data[0] for data in self._tokens)))
+
+    def reset(self, testCase):
+        """
+        Reset the token factory.
+        :param testCase: The current test case.
+        """
+        self._tokens = []
+        self._testCase = testCase
+
+
 def getDummyClient():
     """
     :return: A dummy client that can be used in the tests.
@@ -106,14 +163,14 @@ def assertClientEquals(testCase, client, expectedClient, msg):
     :param expectedClient: The client to compare the first client against.
     :param msg: The assertion message.
     """
-    testCase.assertEquals(client.clientId, expectedClient.clientId,
+    testCase.assertEquals(client.id, expectedClient.id,
                           msg=msg + ': The client id differs.')
-    testCase.assertEquals(client.clientSecret, expectedClient.clientSecret,
-                          msg=msg + ': The client secret differs.')
+    testCase.assertIs(client.authType, expectedClient.authType,
+                      msg=msg + ': The client authentication type differs.')
+    testCase.assertEquals(client.authToken, expectedClient.authToken,
+                          msg=msg + ': The client authentication token differs.')
     testCase.assertEquals(client.redirectUris, expectedClient.redirectUris,
                           msg=msg + ': The redirect uris are not the same.')
-    testCase.assertEquals(client.name, expectedClient.name,
-                          msg=msg + ': The client name differs.')
 
 
 def _ensureByteString(string):
