@@ -383,6 +383,11 @@ class TokenResource(Resource, object):
         return json.dumps(result).encode('utf-8')
 
     def _authenticateClient(self, request):
+        """
+        Identify and authenticate a client by the credentials in the request.
+        :param request: The request.
+        :return: The authenticated client or an OAuth2Error.
+        """
         clientCredentials = self._getClientCredentials(request)
         if isinstance(clientCredentials, OAuth2Error):
             return clientCredentials
@@ -409,9 +414,9 @@ class TokenResource(Resource, object):
     @staticmethod
     def _getClientCredentials(request):
         """
+        Parse the client id and secret from the request, if the request contains them.
         :param request: The request that may contain client credentials.
-        :return: An OAuth2Error or the authType used and
-                 the optional user id and an optional client secret.
+        :return: An OAuth2Error or an optional user id and an optional client secret.
         """
         clientId = None
         secret = None
