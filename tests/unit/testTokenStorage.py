@@ -2,7 +2,7 @@ import time
 
 from txoauth2.imp import DictTokenStorage
 
-from tests import TwistedTestCase, getDummyClient
+from tests import TwistedTestCase, getTestPasswordClient
 
 
 class AbstractTokenStorageTest(TwistedTestCase):
@@ -14,7 +14,7 @@ class AbstractTokenStorageTest(TwistedTestCase):
     _VALID_TOKEN = 'ValidToken'
     _VALID_SCOPE = ['All', 'Scope1']
     _VALID_ADDITIONAL_DATA = 'additionalData'
-    _DUMMY_CLIENT = getDummyClient()
+    _DUMMY_CLIENT = getTestPasswordClient()
 
     @classmethod
     def setupTokenStorage(cls, tokenStorage, client=_DUMMY_CLIENT):

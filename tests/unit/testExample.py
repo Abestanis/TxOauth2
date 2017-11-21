@@ -2,8 +2,9 @@ import os
 import sys
 import importlib
 
-from tests import MockSite, MockRequest, TwistedTestCase
 from txoauth2.token import TokenResource
+
+from tests import MockSite, MockRequest, TwistedTestCase
 
 
 class FullExampleTestCase(TwistedTestCase):

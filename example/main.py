@@ -11,8 +11,8 @@ from twisted.internet import reactor, endpoints
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
 
-from txoauth2 import oauth2, isAuthorized
-from txoauth2.clients import Client, ClientAuthType
+from txoauth2 import oauth2, isAuthorized, GrantTypes
+from txoauth2.clients import PasswordClient
 from txoauth2.resource import OAuth2
 from txoauth2.token import PersistentStorage, TokenResource
 from txoauth2.imp import UUIDTokenFactory, ConfigParserClientStorage, DictTokenStorage
@@ -57,10 +57,9 @@ class PersistentStorageImp(PersistentStorage):
             'expires': expireTime
         }
 
-    def get(self, key):
-        entry = self.storage[key]
+    def pop(self, key):
+        entry = self.storage.pop(key)
         if entry['expires'] is not None and time.time() > entry['expires']:
-            del self.storage[key]
             raise KeyError(key)
         return entry['data']
 
@@ -76,7 +75,7 @@ class OAuth2Endpoint(OAuth2):
     to redirect to a different resource and call grantAccess from there.
     """
 
-    def onAuthenticate(self, request, client, responseType, scope, redirectUri, state):
+    def onAuthenticate(self, request, client, responseType, scope, redirectUri, state, dataKey):
         return """
 <!DOCTYPE html>
 <html lang="en">
@@ -86,33 +85,24 @@ class OAuth2Endpoint(OAuth2):
 </head>
 <body>
 <form action="/oauth2" method="post">
-<p>Allow access?</p>
-<input type="hidden" name="client_id" value="{client_id}">
-<input type="hidden" name="scope" value="{scope}">
-<input type="hidden" name="response_type" value="{response_type}">
-<input type="hidden" name="state" value="{state}">
-<input type="hidden" name="redirect_uri" value="{redirect_uri}">
+<p>Allow {client} access to {scope}?</p>
+<input type="hidden" name="data_key" value="{dataKey}">
 <input type="submit" name="confirm" value="yes">
 <input type="submit" name="confirm" value="no">
 </form>
 </body>
-</html>""".format(client_id=client.id, scope=' '.join(scope), response_type=responseType,
-                  state=state.decode('utf-8'), redirect_uri=redirectUri).encode('utf-8')
+</html>""".format(client=client.id, scope=', '.join(scope), dataKey=dataKey)
 
     def render_POST(self, request):
         """
         This will be called when the user clicks on the "yes" or "no" button in the page
         returned by onAuthenticate.
         """
-        state = request.args[b'state'][0]
-        responseType = request.args[b'response_type'][0].decode('utf-8')
-        redirectUri = request.args[b'redirect_uri'][0].decode('utf-8')
+        dataKey = request.args[b'data_key'][0].decode('utf-8')
         if len(request.args.get(b'confirm', [])) > 0 and request.args[b'confirm'][0] == b'yes':
-            scope = request.args[b'scope'][0].decode('utf-8').split()
-            client = self.clientStorage.getClient(request.args[b'client_id'][0].decode('utf-8'))
-            return self.grantAccess(request, client, scope, state, redirectUri, responseType)
+            return self.grantAccess(request, dataKey)
         else:
-            return self.denyAccess(request, state, redirectUri)
+            return self.denyAccess(request, dataKey)
 
 
 def setupOAuth2Clients():
@@ -122,8 +112,9 @@ def setupOAuth2Clients():
     """
     clientStoragePath = os.path.join(os.path.dirname(__file__), 'clientStorage')
     clientStorage = ConfigParserClientStorage(clientStoragePath)
-    testClient = Client(clientId='test', redirectUris=['https://clientServer.com/return'],
-                        authType=ClientAuthType.SECRET, authToken='test_secret')
+    testClient = PasswordClient(
+        clientId='test', redirectUris=['https://clientServer.com/return'], secret='test_secret',
+        authorizedGrantTypes=[GrantTypes.RefreshToken, GrantTypes.AuthorizationCode])
     clientStorage.addClient(testClient)
     return clientStorage
 
@@ -134,11 +125,14 @@ def setupTestServerResource():
     :return: The root resource of the test server
     """
     clientStorage = setupOAuth2Clients()
-    tokenResource = TokenResource(UUIDTokenFactory(), PersistentStorageImp(), DictTokenStorage(),
-                                  DictTokenStorage(), clientStorage, allowInsecureRequestDebug=True)
+    enabledGrantTypes = [GrantTypes.AuthorizationCode, GrantTypes.RefreshToken]
+    tokenResource = TokenResource(
+        UUIDTokenFactory(), PersistentStorageImp(), DictTokenStorage(), DictTokenStorage(),
+        clientStorage, allowInsecureRequestDebug=True, grantTypes=enabledGrantTypes)
     root = Resource()
     root.putChild(b'clock', ClockPage())
-    root.putChild(b'oauth2', OAuth2Endpoint.initFromTokenResource(tokenResource, subPath=b'token'))
+    root.putChild(b'oauth2', OAuth2Endpoint.initFromTokenResource(tokenResource, subPath=b'token',
+                                                                  grantTypes=enabledGrantTypes))
     return root
 
 

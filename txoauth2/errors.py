@@ -12,10 +12,14 @@ except ImportError:
 
 from twisted.web.server import NOT_DONE_YET
 
+from txoauth2.util import addToUrl
+
 OK = 200
 BAD_REQUEST = 400
 UNAUTHORIZED = 401
 FORBIDDEN = 403
+INTERNAL_SERVER_ERROR = 500
+SERVICE_UNAVAILABLE = 503
 
 
 class OAuth2Error(object):
@@ -78,21 +82,26 @@ class AuthorizationError(OAuth2Error):
             error['state'] = self.state
         return error
 
-    def generate(self, request, redirectUri=None):
+    def generate(self, request, redirectUri=None, errorInFragment=False):
         """
         If a redirectUri is given, the request is redirected to the url with the error details
         encoded into the url parameter. Otherwise it behaves like generate in OAuth2Error.
         :param request: The request.
         :param redirectUri: An optional redirect uri.
+        :param errorInFragment: Whether or not the error shout be send in the query or fragment.
         :return: NOT_DONE_YET or a string representing the error.
         """
         if redirectUri is None:
             return super(AuthorizationError, self).generate(request)
         else:
             request.setResponseCode(self.code)
-            queryParameter = urlencode(self._generateErrorBody())
-            self.logger.debug('OAuth2 error: {msg}'.format(msg=queryParameter))
-            request.redirect(redirectUri + '?' + queryParameter)
+            errorParameter = self._generateErrorBody()
+            self.logger.debug('OAuth2 error: {msg}'.format(msg=errorParameter))
+            for key, value in errorParameter.items():
+                if not (isinstance(value, str) or isinstance(value, bytes)):
+                    errorParameter[key] = value.encode('utf-8')  # For Python 2 unicode strings
+            destination = 'fragment' if errorInFragment else 'query'
+            request.redirect(addToUrl(redirectUri, **{destination: errorParameter}))
             request.finish()
             return NOT_DONE_YET
 
@@ -124,6 +133,21 @@ class OAuth2RequestError(OAuth2Error):
         return super(OAuth2RequestError, self).generate(request)
 
 
+class UnauthorizedOAuth2Error(OAuth2Error):
+    """ Error during a request to the token resource without valid client credentials. """
+
+    def __init__(self, code, message, detail, errorUri=None):
+        super(UnauthorizedOAuth2Error, self).__init__(code, message, detail, errorUri)
+
+    def generate(self, request):
+        authorizationHeader = request.getHeader(b'Authorization')
+        if authorizationHeader is not None:
+            authType = authorizationHeader.strip().split(b' ', 1)[0]
+            request.setHeader(b'WWW-Authenticate',
+                              authType + b' realm="' + request.prePathURL() + b'"')
+        return super(UnauthorizedOAuth2Error, self).generate(request)
+
+
 class MissingParameterError(AuthorizationError):
     def __init__(self, name=None, state=None):
         if name is None:
@@ -139,7 +163,7 @@ class InvalidParameterError(AuthorizationError):
         if name is None:
             message = 'A required parameter was invalid'
         else:
-            message = 'The parameter \'{name}\' is invalid'.format(name=name)
+            message = 'The parameter "{name}" is invalid'.format(name=name)
         super(InvalidParameterError, self).__init__(BAD_REQUEST, 'invalid_request',
                                                     message, state=state)
 
@@ -151,29 +175,98 @@ class InsecureConnectionError(AuthorizationError):
                                                       message, state=state)
 
 
+class UnsupportedResponseTypeError(AuthorizationError):
+    def __init__(self, responseType, state=None):
+        message = 'Obtaining an authorization code using this method ' \
+                  'is not supported: ' + responseType
+        super(UnsupportedResponseTypeError, self).__init__(
+            BAD_REQUEST, 'unsupported_response_type', message, state=state)
+
+
+class ServerError(AuthorizationError):
+    def __init__(self, state=None):
+        message = 'An unexpected condition was encountered and the request could not get fulfilled.'
+        super(ServerError, self).__init__(
+            SERVICE_UNAVAILABLE, 'server_error', message, state=state)
+
+
+class TemporarilyUnavailableError(AuthorizationError):
+    def __init__(self, state=None):
+        message = 'The request could not be handled due to a temporary overloading or maintenance.'
+        super(TemporarilyUnavailableError, self).__init__(
+            BAD_REQUEST, 'temporarily_unavailable', message, state=state)
+
+
+class MultipleParameterError(AuthorizationError):
+    def __init__(self, parameter=None, state=None):
+        message = 'The request contained a duplicate parameter'
+        if parameter is not None:
+            message += ': ' + parameter
+        super(MultipleParameterError, self).__init__(
+            BAD_REQUEST, 'invalid_request', message, state=state)
+
+
+class MalformedParameterError(AuthorizationError):
+    def __init__(self, name, state=None):
+        message = 'The parameter "{name}" was malformed'.format(name=name)
+        super(MalformedParameterError, self).__init__(
+            BAD_REQUEST, 'invalid_request', message, state=state)
+
+
+class UnauthorizedClientError(AuthorizationError):
+    def __init__(self, grantType=None, state=None):
+        message = 'The authenticated client is not authorized to use this authorization grant type'
+        if grantType is not None:
+            message += ': ' + grantType
+        super(UnauthorizedClientError, self).__init__(
+            BAD_REQUEST, 'unauthorized_client', message, state=state)
+
+
 class InvalidRedirectUriError(OAuth2Error):
     def __init__(self):
         message = 'Invalid redirection URI'
         super(InvalidRedirectUriError, self).__init__(BAD_REQUEST, 'invalid_request', message)
 
 
-class InvalidClientIdError(OAuth2Error):
+class InvalidClientIdError(UnauthorizedOAuth2Error):
     def __init__(self):
         message = 'Invalid client_id'
         super(InvalidClientIdError, self).__init__(UNAUTHORIZED, 'invalid_client', message)
 
 
+class NoClientAuthenticationError(UnauthorizedOAuth2Error):
+    def __init__(self):
+        message = 'The request was missing client authentication'
+        super(NoClientAuthenticationError, self).__init__(UNAUTHORIZED, 'invalid_client', message)
+
+
+class InvalidClientAuthenticationError(UnauthorizedOAuth2Error):
+    def __init__(self):
+        super(InvalidClientAuthenticationError, self).__init__(
+            UNAUTHORIZED, 'invalid_client', 'The client could not get authenticated.')
+
+
 class InvalidTokenError(OAuth2Error):
     def __init__(self, tokenType):
-        # tokenType: ["authorization code", "refresh token", "auth token", "credentials"]
         message = 'The provided {type} is invalid'.format(type=tokenType)
         super(InvalidTokenError, self).__init__(BAD_REQUEST, 'invalid_grant', message)
 
 
-class InvalidScopeError(OAuth2Error):
-    def __init__(self, scope):
-        message = 'The provided scope is invalid: {scope}'.format(scope=scope)
-        super(InvalidScopeError, self).__init__(BAD_REQUEST, 'invalid_scope', message)
+class DifferentRedirectUriError(OAuth2Error):
+    def __init__(self):
+        message = 'The redirect_uri does not match the ' \
+                  'redirection URI used in the authorization request'
+        super(DifferentRedirectUriError, self).__init__(BAD_REQUEST, 'invalid_grant', message)
+
+
+class InvalidScopeError(AuthorizationError):
+    def __init__(self, scope, state=None):
+        if isinstance(scope, list):
+            scope = ' '.join(scope)
+        if isinstance(scope, bytes):
+            scope = scope.decode('utf-8', errors='replace')
+        message = 'The provided scope is invalid: ' + scope
+        super(InvalidScopeError, self).__init__(BAD_REQUEST, 'invalid_scope', message, state=state)
 
 
 class UnsupportedGrantType(OAuth2Error):
@@ -184,17 +277,31 @@ class UnsupportedGrantType(OAuth2Error):
         super(UnsupportedGrantType, self).__init__(BAD_REQUEST, 'unsupported_grant_type', message)
 
 
-class MultipleParameterError(OAuth2Error):
-    def __init__(self, parameter=None):
-        message = 'The request contained a duplicate parameter'
-        if parameter is not None:
-            message += ': ' + parameter
-        super(MultipleParameterError, self).__init__(BAD_REQUEST, 'invalid_request', message)
+class MultipleClientCredentialsError(OAuth2Error):
+    def __init__(self):
+        super(MultipleClientCredentialsError, self).__init__(
+            BAD_REQUEST, 'invalid_request', 'The request contained multiple client credentials')
+
+
+class MultipleClientAuthenticationError(OAuth2Error):
+    def __init__(self):
+        message = 'The request utilized more than one mechanism for authenticating the client'
+        super(MultipleClientAuthenticationError, self).__init__(
+            BAD_REQUEST, 'invalid_request', message)
+
+
+class MalformedRequestError(OAuth2Error):
+    def __init__(self, msg=None):
+        message = 'The request was malformed'
+        if msg is not None:
+            message += ': ' + msg
+        super(MalformedRequestError, self).__init__(BAD_REQUEST, 'invalid_request', message)
 
 
 class UserDeniesAuthorization(AuthorizationError):
     def __init__(self, state=None):
-        super(UserDeniesAuthorization, self).__init__(OK, 'access_denied', None, state=state)
+        message = 'The resource owner denied the request'
+        super(UserDeniesAuthorization, self).__init__(OK, 'access_denied', message, state=state)
 
 
 class MissingTokenError(OAuth2RequestError):

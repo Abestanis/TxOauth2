@@ -1,8 +1,7 @@
 from txoauth2.token import TokenResource
-
 from txoauth2.imp import UUIDTokenFactory
 
-from tests import TwistedTestCase, getDummyClient
+from tests import TwistedTestCase, getTestPasswordClient
 
 
 class AbstractTokenFactoryTest(TwistedTestCase):
@@ -13,7 +12,7 @@ class AbstractTokenFactoryTest(TwistedTestCase):
     _TOKEN_FACTORY = None
     _VALID_SCOPE = ['All', 'Scope1']
     _VALID_ADDITIONAL_DATA = 'additionalData'
-    _DUMMY_CLIENT = getDummyClient()
+    _DUMMY_CLIENT = getTestPasswordClient()
 
     @classmethod
     def setupTokenFactory(cls, tokenFactory, client=_DUMMY_CLIENT):

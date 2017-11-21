@@ -7,15 +7,8 @@ except ImportError:
     # noinspection PyUnresolvedReferences
     from urllib.parse import urlparse
 
-from enum import Enum
-
-
-class ClientAuthType(Enum):
-    """ Indicate the type of authentication used to authenticate a client. """
-    PUBLIC = -1
-    PASSWORD = 0
-    SECRET = 1
-    CUSTOM = 2
+from txoauth2 import GrantTypes
+from txoauth2.errors import InvalidClientAuthenticationError, NoClientAuthenticationError
 
 
 class ClientStorage(object):
@@ -24,6 +17,22 @@ class ClientStorage(object):
     to the clients that the server knows via their clientId.
     """
     __metaclass__ = ABCMeta
+
+    @staticmethod
+    def authenticateClient(client, request, secret=None):
+        """
+        Authenticate a given client.
+        :param client: The client that should get authenticated.
+        :param request: The request that may contain the credentials for a client.
+        :param secret: The client secret, if it could get extracted from the request.
+        :return: The client that was authenticated by the request or an OAuth2Error.
+        """
+        del request  # Unused
+        if secret is not None:
+            if isinstance(client, PasswordClient) and client.secret == secret:
+                return client
+            return InvalidClientAuthenticationError()
+        return NoClientAuthenticationError()
 
     @abstractmethod
     def getClient(self, clientId):
@@ -41,20 +50,19 @@ class Client(object):
     """
     This class represents a client.
 
-    A client is an entity, which is given access to a scope by the user. He proves
-    his right to access a resource by sending an authentication token with every request.
-    He identifies himself with the clientId and the authToken, which is specific to the authType.
+    A client is an entity, which is given access to a scope by the user.
+    He can use a grant type he is authorized to use to request an access token
+    with which he can access resources on behalf of the user.
     """
 
-    def __init__(self, clientId, redirectUris, authType=ClientAuthType.PUBLIC, authToken=None):
+    def __init__(self, clientId, redirectUris, authorizedGrantTypes):
         """
         :raises ValueError: If one of the argument is not of the expected type
                             or one of the redirect uris has a fragment.
         :param clientId: The id of this client.
         :param redirectUris: A list of urls, which we can redirect to after authorization.
-        :param authType: The type of authentication used to authenticate the client
-                         or PUBLIC if the client is a public client.
-        :param authToken: The token specific to the authentication type.
+        :param authorizedGrantTypes: A list of grant types that this client is authorized
+                                     to use to get an access token.
         """
         super(Client, self).__init__()
         if not isinstance(clientId, str):
@@ -62,8 +70,6 @@ class Client(object):
         if not isinstance(redirectUris, list):
             raise ValueError('Expected redirectUris to be of type list, got '
                              + str(type(redirectUris)))
-        if not all(isinstance(uri, str) for uri in redirectUris):
-                raise ValueError('Expected the redirectUris to be of type str')
         for uri in redirectUris:
             if not isinstance(uri, str):
                 raise ValueError('Expected the redirectUris to be of type str, got '
@@ -71,15 +77,37 @@ class Client(object):
             parsedUri = urlparse(uri)
             if parsedUri.fragment != '':
                 raise ValueError('Got a redirect uri with a fragment: ' + uri)
-            if parsedUri.netloc != '':
+            if parsedUri.netloc == '':
                 raise ValueError('Got a redirect uri that is not absolute: ' + uri)
-        if not isinstance(authType, ClientAuthType):
-            raise ValueError('Expected authType to be of type ClientAuthType, got '
-                             + str(type(authType)))
-        if authType in [ClientAuthType.PASSWORD, ClientAuthType.SECRET] and\
-                not isinstance(authToken, str):
-            raise ValueError('Expected authToken to be of type str, got ' + str(type(authToken)))
+        authorizedGrantTypes = [grantType.value if isinstance(grantType, GrantTypes) else grantType
+                                for grantType in authorizedGrantTypes]
+        if not isinstance(authorizedGrantTypes, list):
+            raise ValueError('Expected authorizedGrantTypes to be of type list, got '
+                             + str(type(authorizedGrantTypes)))
+        for grantType in authorizedGrantTypes:
+            if not isinstance(grantType, str):
+                raise ValueError('Expected the grant types to be of type str, got '
+                                 + str(type(grantType)))
         self.id = clientId
         self.redirectUris = redirectUris
-        self.authType = authType
-        self.authToken = authToken
+        self.authorizedGrantTypes = authorizedGrantTypes
+
+
+class PublicClient(Client):
+    """
+    This is a public client which is not able to maintain the confidentiality of their
+    credentials and thus are not required to authenticate themselves.
+    See: https://tools.ietf.org/html/rfc6749#section-2.1
+    """
+    def __init__(self, clientId, redirectUris, authorizedGrantTypes):
+        super(PublicClient, self).__init__(clientId, redirectUris, authorizedGrantTypes)
+
+
+class PasswordClient(Client):
+    """
+    This is a confidential client which authenticates himself with a password/secret.
+    See: https://tools.ietf.org/html/rfc6749#section-2.3.1
+    """
+    def __init__(self, clientId, redirectUris, authorizedGrantTypes, secret):
+        super(PasswordClient, self).__init__(clientId, redirectUris, authorizedGrantTypes)
+        self.secret = secret

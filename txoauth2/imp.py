@@ -3,6 +3,7 @@
 
 import os
 import time
+import inspect
 
 from uuid import uuid4
 try:
@@ -10,7 +11,8 @@ try:
 except ImportError:
     from configparser import RawConfigParser
 
-from txoauth2.clients import ClientStorage, Client, ClientAuthType
+from txoauth2 import clients
+from txoauth2.clients import ClientStorage, Client
 from txoauth2.token import TokenFactory, TokenStorage
 
 
@@ -55,10 +57,20 @@ class ConfigParserClientStorage(ClientStorage):
         sectionName = 'client_' + clientId
         if not self._configParser.has_section(sectionName):
             raise KeyError('No client with id "{id}" exists'.format(id=clientId))
+        clientClasses = [cls[1] for cls in inspect.getmembers(clients)
+                         if inspect.isclass(cls[1]) and issubclass(cls[1], Client)]
+        clientType = self._configParser.get(sectionName, 'type')
+        for cls in clientClasses:
+            if cls.__name__ == clientType:
+                clientClass = cls
+                break
+        else:
+            raise ValueError('Unable to find client class ' + clientType)
         redirectUris = self._configParser.get(sectionName, 'redirect_uris').split()
-        authType = ClientAuthType(self._configParser.getint(sectionName, 'auth_type'))
-        authToken = self._configParser.get(sectionName, 'auth_token')
-        return Client(clientId, redirectUris, authType, authToken)
+        authorizedGrantTypes = self._configParser.get(sectionName, 'authorized_grant_types').split()
+        kwargs = {key: value for key, value in self._configParser.items(sectionName)
+                  if key not in ['type', 'redirect_uris', 'authorized_grant_types']}
+        return clientClass(clientId, redirectUris, authorizedGrantTypes, **kwargs)
 
     def addClient(self, client):
         """
@@ -70,9 +82,13 @@ class ConfigParserClientStorage(ClientStorage):
         sectionName = 'client_' + client.id
         if not self._configParser.has_section(sectionName):
             self._configParser.add_section(sectionName)
-        self._configParser.set(sectionName, 'auth_type', client.authType.value)
-        self._configParser.set(sectionName, 'auth_token', client.authToken)
+        self._configParser.set(sectionName, 'type', client.__class__.__name__)
         self._configParser.set(sectionName, 'redirect_uris', ' '.join(client.redirectUris))
+        self._configParser.set(sectionName, 'authorized_grant_types',
+                               ' '.join(client.authorizedGrantTypes))
+        for name, value in client.__dict__.items():
+            if name not in ['id', 'redirectUris', 'authorizedGrantTypes']:
+                self._configParser.set(sectionName, name, value)
         if not os.path.exists(os.path.dirname(self.path)):
             os.makedirs(os.path.dirname(self.path))
         with open(self.path, 'w') as configFile:
@@ -119,9 +135,9 @@ class DictTokenStorage(TokenStorage):
     def _checkExpire(self, token):
         """
         Check if a token has expired and remove it if necessary.
+        :raises KeyError: If the token is not in the token storage.
         :param token: The token to check.
         :return: True if the token has expired.
-        :raises KeyError: If the token is not in the token storage.
         """
         expireTime = self._tokens[token]['expireTime']
         if expireTime is not None and time.time() > expireTime:

@@ -8,7 +8,7 @@ A sample usage can be found in the [example folder](https://github.com/Abestanis
 You will need to create a [TokenResource](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/token.py#L112) and an OAuth2 endpoint by subclassing the [OAuth2 class](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/resource.py#L18)
 and insert it somewhere into your server hierarchy (e.g. add both at the same place by using
 ```python
-root.putChild(b"oauth2", OAuth2SubclassInstance.initFromTokenResource(tokenResource, subPath=b"token"))
+root.putChild(b"oauth2", OAuth2Subclass.initFromTokenResource(tokenResource, subPath=b"token"))
 ```
 see [the example](https://github.com/Abestanis/TxOauth2/blob/master/example/main.py#L143)).
 
@@ -36,7 +36,7 @@ Run ```pip install txoauth2``` or download the wheel from [PyPI](https://pypi.py
 
 ## Terminology
 
-* __User__: A user is the actual owner of a resource and he can grant access to the resource to a client. It is up to you to identify and authenticate a user. You can pass additionalData to ```grantAccess``` that identifies an user. This additional data will be passed to the token generator and storage, which allows for the user information to be encoded into the token.
+* __User__: A user, also called the resource owner, is the actual owner of a resource and he can grant access to the resource to a client. It is up to you to identify and authenticate a user. You can pass additionalData to ```grantAccess``` that identifies an user. This additional data will be passed to the token generator and storage, which allows for the user information to be encoded into the token.
 * __Client__: A client is an other application that wants to access a protected resource that is owned by the user. The client has no rights if they have not been explicitly granted by the user. Clients are represented by [Client objects](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/clients.py#L21).
 * __Token__: There are two types of tokens: Access Tokens and Refresh Tokens. Access Tokens allow access to a protected resource. If they expire, the client can use the Refresh Token to generate a new Access Token. [A token can only contain alphanumeric and the following characters](https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/#token): ```-._~+/```
 

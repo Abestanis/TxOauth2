@@ -3,6 +3,7 @@ from txoauth2.imp import DictTokenStorage
 from txoauth2.token import TokenResource
 from txoauth2.errors import MissingTokenError, InvalidTokenRequestError, \
     InsufficientScopeRequestError, MultipleTokensError
+
 from tests import MockRequest, TwistedTestCase
 
 
