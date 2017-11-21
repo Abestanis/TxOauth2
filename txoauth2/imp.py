@@ -1,6 +1,5 @@
 # Copyright (c) Sebastian Scholz
 # See LICENSE for details.
-
 import os
 import time
 import inspect

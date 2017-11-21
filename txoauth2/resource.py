@@ -1,3 +1,5 @@
+# Copyright (c) Sebastian Scholz
+# See LICENSE for details.
 import logging
 import time
 

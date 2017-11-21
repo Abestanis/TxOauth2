@@ -1,6 +1,5 @@
 # Copyright (c) Sebastian Scholz
 # See LICENSE for details.
-
 import json
 import logging
 
