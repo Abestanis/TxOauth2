@@ -12,6 +12,7 @@ from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
 
 from txoauth2 import oauth2, isAuthorized, GrantTypes
+from txoauth2.errors import InvalidScopeError
 from txoauth2.clients import PasswordClient
 from txoauth2.resource import OAuth2
 from txoauth2.token import PersistentStorage, TokenResource
@@ -74,8 +75,12 @@ class OAuth2Endpoint(OAuth2):
     You are not limited to display a simple web page in onAuthenticate. It is totally valid
     to redirect to a different resource and call grantAccess from there.
     """
+    _VALID_SCOPES = ['All', 'VIEW_CLOCK']
 
     def onAuthenticate(self, request, client, responseType, scope, redirectUri, state, dataKey):
+        for scopeItem in scope:
+            if scopeItem not in self._VALID_SCOPES:
+                return InvalidScopeError(scope, state)
         return """
 <!DOCTYPE html>
 <html lang="en">
