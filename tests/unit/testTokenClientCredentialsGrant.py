@@ -19,7 +19,7 @@ class TestClientCredentialsGrant(AbstractTokenResourceTest):
         """
         client = getTestPasswordClient('unauthorizedClientCredentialsGrantClient',
                                        authorizedGrantTypes=[])
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'client_credentials',
             'scope': ' '.join(self._VALID_SCOPE),
         }, authentication=client)
@@ -34,7 +34,7 @@ class TestClientCredentialsGrant(AbstractTokenResourceTest):
         """ Test the rejection of a request with a public client. """
         client = PublicClient('unauthorizedClientCredentialsGrantClient',
                               ['https://return.nonexistent'], ['client_credentials'])
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'client_credentials',
             'scope': ' '.join(self._VALID_SCOPE),
             'client_id': client.id
@@ -55,7 +55,7 @@ class TestClientCredentialsGrant(AbstractTokenResourceTest):
         tokenResource = TokenResource(
             self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._REFRESH_TOKEN_STORAGE,
             self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE, defaultScope=defaultScope)
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'client_credentials',
         }, authentication=self._VALID_CLIENT)
         self._TOKEN_FACTORY.expectTokenRequest(
@@ -70,8 +70,8 @@ class TestClientCredentialsGrant(AbstractTokenResourceTest):
         Test the rejection of a request without a scope
         when the token resource has no default scope.
         """
-        request = self._generateValidTokenRequest(arguments={'grant_type': 'client_credentials'},
-                                                  authentication=self._VALID_CLIENT)
+        request = self.generateValidTokenRequest(arguments={'grant_type': 'client_credentials'},
+                                                 authentication=self._VALID_CLIENT)
         result = self._TOKEN_RESOURCE.render_POST(request)
         self.assertFailedTokenRequest(
             request, result, MissingParameterError('scope'),
@@ -81,7 +81,7 @@ class TestClientCredentialsGrant(AbstractTokenResourceTest):
     def testAuthorizedClientWithScope(self):
         """ Test that a valid request is accepted. """
         accessToken = 'clientCredentialsAccessToken'
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'client_credentials',
             'scope': ' '.join(self._VALID_SCOPE),
         }, authentication=self._VALID_CLIENT)
@@ -96,7 +96,7 @@ class TestClientCredentialsGrant(AbstractTokenResourceTest):
     def testAuthorizedClientWithMalformedScope(self):
         """ Test the rejection of a request with a malformed scope parameters. """
         malformedScope = b'malformedScope\xFF\xFF'
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'client_credentials',
             'scope': malformedScope,
         }, authentication=self._VALID_CLIENT)
@@ -108,7 +108,7 @@ class TestClientCredentialsGrant(AbstractTokenResourceTest):
 
     def testAuthorizedClientWithMultipleScope(self):
         """ Test the rejection of a request with multiple scope parameters. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'client_credentials',
             'scope': self._VALID_SCOPE,
         }, authentication=self._VALID_CLIENT)

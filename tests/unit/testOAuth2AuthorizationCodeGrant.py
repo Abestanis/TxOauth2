@@ -33,7 +33,7 @@ class TestAuthorizationCodeGrant(AbstractSharedGrantTest):
         self.assertTrue(request.finished,
                         msg=msg + ': Expected the authorization resource to close the request.')
         redirectUrl = self.assertRedirectsTo(request, data['redirect_uri'], msg)
-        redirectParameter = self._getParameterFromRedirectUrl(redirectUrl, False)
+        redirectParameter = self.getParameterFromRedirectUrl(redirectUrl, False)
         self.assertIn(
             'code', redirectParameter,
             msg=msg + ': Expected the authorization resource to send a code to the redirect uri.')

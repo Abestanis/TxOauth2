@@ -62,7 +62,7 @@ class AbstractAuthResourceTest(TwistedTestCase):
         self._TOKEN_FACTORY.reset(self)
 
     @staticmethod
-    def _createAuthRequest(**kwargs):
+    def createAuthRequest(**kwargs):
         """
         :param kwargs: Arguments to the request.
         :return: A GET request to the OAuth2 resource with the given arguments.
@@ -72,7 +72,7 @@ class AbstractAuthResourceTest(TwistedTestCase):
         return request
 
     @staticmethod
-    def _getParameterFromRedirectUrl(url, parameterInFragment):
+    def getParameterFromRedirectUrl(url, parameterInFragment):
         """
         :param url: The url that the resource redirected to.
         :param parameterInFragment: Whether the parameter should be in the fragment or in the query.
@@ -97,7 +97,7 @@ class AbstractAuthResourceTest(TwistedTestCase):
         :return: The actual url the request is redirecting to.
         """
         self.assertEquals(request.responseCode, 302,
-                          msg=msg + ': Expected the auth token to redirect the resource owner.')
+                          msg=msg + ': Expected the auth resource to redirect the resource owner.')
         redirectUrl = request.getResponseHeader(b'location')
         self.assertIsNotNone(
             redirectUrl, msg=msg + ': Expected the auth resource to redirect the resource owner.')
@@ -134,7 +134,7 @@ class AbstractAuthResourceTest(TwistedTestCase):
                          msg=msg + ': Expected the auth resource not to call onAuthenticate.')
         if redirectUri is not None:
             redirectUrl = self.assertRedirectsTo(request, redirectUri, msg)
-            errorResult = self._getParameterFromRedirectUrl(redirectUrl, parameterInFragment)
+            errorResult = self.getParameterFromRedirectUrl(redirectUrl, parameterInFragment)
         else:
             self.assertEquals(
                 'application/json;charset=UTF-8', request.getResponseHeader('Content-Type'),
@@ -275,7 +275,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
         state = b'state\xFF\xFF'
         client = getTestPasswordClient(authorizedGrantTypes=[])
         redirectUri = client.redirectUris[0]
-        request = self._createAuthRequest(arguments={
+        request = self.createAuthRequest(arguments={
             'response_type': self._RESPONSE_TYPE,
             'client_id': client.id,
             'redirect_uri': redirectUri,
@@ -292,7 +292,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
 
     def testWithoutClientId(self):
         """ Test the rejection of a request without a client id. """
-        request = self._createAuthRequest(arguments={
+        request = self.createAuthRequest(arguments={
             'response_type': self._RESPONSE_TYPE,
             'redirect_uri': self._VALID_CLIENT.redirectUris[0],
             'scope': 'All',
@@ -305,7 +305,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
 
     def testWithInvalidClientId(self):
         """ Test the rejection of a request with an invalid client id. """
-        request = self._createAuthRequest(arguments={
+        request = self.createAuthRequest(arguments={
             'response_type': self._RESPONSE_TYPE,
             'client_id': 'invalidClientId',
             'redirect_uri': self._VALID_CLIENT.redirectUris[0],
@@ -319,7 +319,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
 
     def testWithMalformedClientId(self):
         """ Test the rejection of a request with a malformed client id. """
-        request = self._createAuthRequest(arguments={
+        request = self.createAuthRequest(arguments={
             'response_type': self._RESPONSE_TYPE,
             'client_id': b'malformedClientId\xFF\xFF',
             'redirect_uri': self._VALID_CLIENT.redirectUris[0],
@@ -333,7 +333,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
 
     def testWithMultipleClientIds(self):
         """ Test the rejection of a request with multiple client ids. """
-        request = self._createAuthRequest(arguments={
+        request = self.createAuthRequest(arguments={
             'response_type': self._RESPONSE_TYPE,
             'client_id': [self._VALID_CLIENT.id] * 2,
             'redirect_uri': self._VALID_CLIENT.redirectUris[0],
@@ -360,7 +360,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
             'state': b'state\xFF\xFF'
         }
         self._CLIENT_STORAGE.addClient(client)
-        request = self._createAuthRequest(arguments=parameter)
+        request = self.createAuthRequest(arguments=parameter)
         result = self._AUTH_RESOURCE.render_GET(request)
         parameter['redirect_uri'] = None
         self.assertValidAuthRequest(request, result, parameter,
@@ -374,7 +374,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
         """
         client = PublicClient('clientWithMultipleRedirectUris', ['https://return.nonexistent'] * 2,
                               ['authorization_code'])
-        request = self._createAuthRequest(arguments={
+        request = self.createAuthRequest(arguments={
             'response_type': self._RESPONSE_TYPE,
             'client_id': client.id,
             'scope': 'All',
@@ -388,7 +388,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
 
     def testWithInvalidRedirectUri(self):
         """ Test the rejection of a request with an invalid redirect uri. """
-        request = self._createAuthRequest(arguments={
+        request = self.createAuthRequest(arguments={
             'response_type': self._RESPONSE_TYPE,
             'client_id': self._VALID_CLIENT.id,
             'redirect_uri': 'invalidRedirectUri',
@@ -402,7 +402,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
 
     def testWithMalformedRedirectUri(self):
         """ Test the rejection of a request with a malformed redirect uri. """
-        request = self._createAuthRequest(arguments={
+        request = self.createAuthRequest(arguments={
             'response_type': self._RESPONSE_TYPE,
             'client_id': self._VALID_CLIENT.id,
             'redirect_uri': b'malformedRedirectUri\xFF\xFF',
@@ -416,7 +416,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
 
     def testWithMultipleRedirectUris(self):
         """ Test the rejection of a request with multiple redirect uris. """
-        request = self._createAuthRequest(arguments={
+        request = self.createAuthRequest(arguments={
             'response_type': self._RESPONSE_TYPE,
             'client_id': self._VALID_CLIENT.id,
             'redirect_uri': [self._VALID_CLIENT.redirectUris[0]] * 2,
@@ -440,7 +440,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
             'redirect_uri': self._VALID_CLIENT.redirectUris[0],
             'state': b'state\xFF\xFF'
         }
-        request = self._createAuthRequest(arguments=parameter)
+        request = self.createAuthRequest(arguments=parameter)
         result = authToken.render_GET(request)
         parameter['scope'] = defaultScope
         self.assertValidAuthRequest(request, result, parameter,
@@ -451,7 +451,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
         """ Test the rejection of a request without a scope if no default scope is defined. """
         state = b'state\xFF\xFF'
         redirectUri = self._VALID_CLIENT.redirectUris[0]
-        request = self._createAuthRequest(arguments={
+        request = self.createAuthRequest(arguments={
             'response_type': self._RESPONSE_TYPE,
             'client_id': self._VALID_CLIENT.id,
             'redirect_uri': redirectUri,
@@ -467,7 +467,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
         state = b'state\xFF\xFF'
         scope = b'malformedScope\xFF\xFF'
         redirectUri = self._VALID_CLIENT.redirectUris[0]
-        request = self._createAuthRequest(arguments={
+        request = self.createAuthRequest(arguments={
             'response_type': self._RESPONSE_TYPE,
             'client_id': self._VALID_CLIENT.id,
             'redirect_uri': redirectUri,
@@ -483,7 +483,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
         """ Test the rejection of a request with multiple scopes. """
         state = b'state\xFF\xFF'
         redirectUri = self._VALID_CLIENT.redirectUris[0]
-        request = self._createAuthRequest(arguments={
+        request = self.createAuthRequest(arguments={
             'response_type': self._RESPONSE_TYPE,
             'client_id': self._VALID_CLIENT.id,
             'redirect_uri': redirectUri,
@@ -503,7 +503,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
             'redirect_uri': self._VALID_CLIENT.redirectUris[0],
             'scope': 'All'
         }
-        request = self._createAuthRequest(arguments=parameter)
+        request = self.createAuthRequest(arguments=parameter)
         result = self._AUTH_RESOURCE.render_GET(request)
         parameter['state'] = None
         self.assertValidAuthRequest(
@@ -519,7 +519,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
             'scope': 'All',
             'state': b'someState'
         }
-        request = self._createAuthRequest(arguments=parameter)
+        request = self.createAuthRequest(arguments=parameter)
         result = self._AUTH_RESOURCE.render_GET(request)
         self.assertValidAuthRequest(
             request, result, parameter,
@@ -534,7 +534,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
             'scope': 'All',
             'state': b'someStateNotUnicode\xFF\xFF'
         }
-        request = self._createAuthRequest(arguments=parameter)
+        request = self.createAuthRequest(arguments=parameter)
         result = self._AUTH_RESOURCE.render_GET(request)
         self.assertValidAuthRequest(
             request, result, parameter,
@@ -544,7 +544,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
         """ Test the rejection of a request when the return type is disabled. """
         state = b'state\xFF\xFF'
         redirectUri = self._VALID_CLIENT.redirectUris[0]
-        request = self._createAuthRequest(arguments={
+        request = self.createAuthRequest(arguments={
             'response_type': self._RESPONSE_TYPE,
             'client_id': self._VALID_CLIENT.id,
             'redirect_uri': redirectUri,
@@ -572,7 +572,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
             'scope': 'All',
             'state': b'state\xFF\xFF'
         }
-        request = self._createAuthRequest(arguments=parameter)
+        request = self.createAuthRequest(arguments=parameter)
         authResource = AbstractAuthResourceTest.TestOAuth2Resource(
             self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._CLIENT_STORAGE,
             requestDataLifeTime=lifetime, authTokenStorage=self._TOKEN_STORAGE)
@@ -775,7 +775,7 @@ class AuthResourceTest(AbstractAuthResourceTest):
         """ Test the rejection of a request without a response type. """
         state = b'state\xFF\xFF'
         redirectUri = self._VALID_CLIENT.redirectUris[0]
-        request = self._createAuthRequest(arguments={
+        request = self.createAuthRequest(arguments={
             'client_id': self._VALID_CLIENT.id,
             'redirect_uri': redirectUri,
             'scope': 'All',
@@ -792,7 +792,7 @@ class AuthResourceTest(AbstractAuthResourceTest):
         state = b'state\xFF\xFF'
         responseType = 'invalidResponseType'
         redirectUri = self._VALID_CLIENT.redirectUris[0]
-        request = self._createAuthRequest(arguments={
+        request = self.createAuthRequest(arguments={
             'response_type': responseType,
             'client_id': self._VALID_CLIENT.id,
             'redirect_uri': redirectUri,
@@ -809,7 +809,7 @@ class AuthResourceTest(AbstractAuthResourceTest):
         """ Test the rejection of a request with a malformed response type. """
         state = b'state\xFF\xFF'
         redirectUri = self._VALID_CLIENT.redirectUris[0]
-        request = self._createAuthRequest(arguments={
+        request = self.createAuthRequest(arguments={
             'response_type': b'malformedResponseType\xFF\xFF',
             'client_id': self._VALID_CLIENT.id,
             'redirect_uri': redirectUri,
@@ -826,7 +826,7 @@ class AuthResourceTest(AbstractAuthResourceTest):
         """ Test the rejection of a request with multiple response types. """
         state = b'state\xFF\xFF'
         redirectUri = self._VALID_CLIENT.redirectUris[0]
-        request = self._createAuthRequest(arguments={
+        request = self.createAuthRequest(arguments={
             'response_type': ['code'] * 2,
             'client_id': self._VALID_CLIENT.id,
             'redirect_uri': redirectUri,
@@ -849,7 +849,7 @@ class AuthResourceTest(AbstractAuthResourceTest):
             'scope': 'All',
             'state': b'state\xFF\xFF'
         }
-        request = self._createAuthRequest(arguments=parameters, isSecure=False)
+        request = self.createAuthRequest(arguments=parameters, isSecure=False)
         result = self._AUTH_RESOURCE.render_GET(request)
         self.assertFailedRequest(
             request, result, InsecureConnectionError(), redirectUri=redirectUri,
@@ -857,7 +857,7 @@ class AuthResourceTest(AbstractAuthResourceTest):
         authResource = self.TestOAuth2Resource(
             self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._CLIENT_STORAGE,
             allowInsecureRequestDebug=True, authTokenStorage=self._TOKEN_STORAGE)
-        request = self._createAuthRequest(arguments=parameters, isSecure=False)
+        request = self.createAuthRequest(arguments=parameters, isSecure=False)
         result = authResource.render_GET(request)
         self.assertValidAuthRequest(
             request, result, parameters,
@@ -868,7 +868,7 @@ class AuthResourceTest(AbstractAuthResourceTest):
         """ Test that an error in onAuthenticate is caught and a ServerError is returned. """
         state = b'state\xFF\xFF'
         redirectUri = self._VALID_CLIENT.redirectUris[0]
-        request = self._createAuthRequest(arguments={
+        request = self.createAuthRequest(arguments={
             'response_type': 'code',
             'client_id': self._VALID_CLIENT.id,
             'redirect_uri': redirectUri,
@@ -886,7 +886,7 @@ class AuthResourceTest(AbstractAuthResourceTest):
         state = b'state\xFF\xFF'
         scope = self._AUTH_RESOURCE.UNKNOWN_SCOPE
         redirectUri = self._VALID_CLIENT.redirectUris[0]
-        request = self._createAuthRequest(arguments={
+        request = self.createAuthRequest(arguments={
             'response_type': 'code',
             'client_id': self._VALID_CLIENT.id,
             'redirect_uri': redirectUri,
@@ -924,7 +924,7 @@ class AuthResourceTest(AbstractAuthResourceTest):
             'scope': 'All',
             'state': state
         }
-        request = self._createAuthRequest(arguments=parameters)
+        request = self.createAuthRequest(arguments=parameters)
         self._CLIENT_STORAGE.addClient(client)
         authResource = self.TestOAuth2Resource(
             self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._CLIENT_STORAGE,
@@ -951,7 +951,7 @@ class AuthResourceTest(AbstractAuthResourceTest):
             'scope': 'All',
             'state': state
         }
-        request = self._createAuthRequest(arguments=parameters)
+        request = self.createAuthRequest(arguments=parameters)
         self._CLIENT_STORAGE.addClient(client)
         authResource = self.TestOAuth2Resource(
             self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._CLIENT_STORAGE,
@@ -976,7 +976,7 @@ class AuthResourceTest(AbstractAuthResourceTest):
             'scope': 'All',
             'state': state
         }
-        request = self._createAuthRequest(arguments=parameters)
+        request = self.createAuthRequest(arguments=parameters)
         self._CLIENT_STORAGE.addClient(client)
         result = self._AUTH_RESOURCE.render_GET(request)
         self.assertFailedRequest(

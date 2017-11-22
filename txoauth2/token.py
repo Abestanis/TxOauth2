@@ -220,6 +220,8 @@ class TokenResource(Resource, object):
         self.defaultScope = defaultScope
         TokenResource._OAuthTokenStorage = authTokenStorage
         if grantTypes is not None:
+            if GrantTypes.Implicit in grantTypes:
+                grantTypes.remove(GrantTypes.Implicit)
             grantTypes = [grantType.value if isinstance(grantType, GrantTypes) else grantType
                           for grantType in grantTypes]
             self.acceptedGrantTypes = grantTypes

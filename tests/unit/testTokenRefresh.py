@@ -17,8 +17,8 @@ class TestTokenRefresh(AbstractTokenResourceTest):
 
     def testNoRefreshToken(self):
         """ Test the rejection of a request without a refresh token. """
-        request = self._generateValidTokenRequest(arguments={'grant_type': 'refresh_token'},
-                                                  authentication=self._VALID_CLIENT)
+        request = self.generateValidTokenRequest(arguments={'grant_type': 'refresh_token'},
+                                                 authentication=self._VALID_CLIENT)
         result = self._TOKEN_RESOURCE.render_POST(request)
         self.assertFailedTokenRequest(request, result, MissingParameterError('refresh_token'),
                                       msg='Expected the token resource to reject a refresh_token '
@@ -26,7 +26,7 @@ class TestTokenRefresh(AbstractTokenResourceTest):
 
     def testMultipleRefreshToken(self):
         """ Test the rejection of a request with multiple refresh tokens. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'refresh_token': [self._VALID_REFRESH_TOKEN, self._VALID_REFRESH_TOKEN]
         }, authentication=self._VALID_CLIENT)
@@ -37,7 +37,7 @@ class TestTokenRefresh(AbstractTokenResourceTest):
 
     def testInvalidRefreshToken(self):
         """ Test the rejection of a request with an invalid refresh token. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'refresh_token': 'invalidRefreshToken'
         }, authentication=self._VALID_CLIENT)
@@ -48,7 +48,7 @@ class TestTokenRefresh(AbstractTokenResourceTest):
 
     def testMalformedRefreshToken(self):
         """ Test the rejection of a request with a malformed refresh token. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'refresh_token': b'malformedRefreshToken\xFF\xFF'
         }, authentication=self._VALID_CLIENT)
@@ -60,7 +60,7 @@ class TestTokenRefresh(AbstractTokenResourceTest):
     def testNoScope(self):
         """ Test the acceptance of a valid request with no scope. """
         newAuthToken = 'newAuthTokenWithoutScope'
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'refresh_token': self._VALID_REFRESH_TOKEN
         }, authentication=self._VALID_CLIENT)
@@ -75,7 +75,7 @@ class TestTokenRefresh(AbstractTokenResourceTest):
     def testWithScope(self):
         """ Test the acceptance of a valid request with a valid scope. """
         newAuthToken = 'newAuthTokenWithScope'
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'refresh_token': self._VALID_REFRESH_TOKEN,
             'scope': ' '.join(self._VALID_SCOPE)
@@ -91,7 +91,7 @@ class TestTokenRefresh(AbstractTokenResourceTest):
     def testInvalidScope(self):
         """ Test the rejection of a valid request with an invalid scope. """
         invalidScope = 'invalidScope'
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'refresh_token': self._VALID_REFRESH_TOKEN,
             'scope': invalidScope
@@ -104,7 +104,7 @@ class TestTokenRefresh(AbstractTokenResourceTest):
     def testMalformedScope(self):
         """ Test the rejection of a valid request with a malformed scope. """
         malformedScope = b'malformedScope\xFF\xFF'
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'refresh_token': self._VALID_REFRESH_TOKEN,
             'scope': malformedScope
@@ -120,7 +120,7 @@ class TestTokenRefresh(AbstractTokenResourceTest):
         for scopeSubset in combinations(self._VALID_SCOPE, len(self._VALID_SCOPE) - 1):
             newAuthToken = 'newAuthTokenWithSunsetScope' + str(id(scopeSubset))
             scopeSubset = list(scopeSubset)
-            request = self._generateValidTokenRequest(arguments={
+            request = self.generateValidTokenRequest(arguments={
                 'grant_type': 'refresh_token',
                 'refresh_token': self._VALID_REFRESH_TOKEN,
                 'scope': scopeSubset
@@ -138,7 +138,7 @@ class TestTokenRefresh(AbstractTokenResourceTest):
         """ Test the rejection of a request with a valid refresh token for a different client. """
         client = getTestPasswordClient(
             clientId='differentClient', authorizedGrantTypes=[GrantTypes.RefreshToken])
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'refresh_token': self._VALID_REFRESH_TOKEN,
         }, authentication=client)
@@ -152,7 +152,7 @@ class TestTokenRefresh(AbstractTokenResourceTest):
     def testUnauthorizedGrantTypeClient(self):
         """ Test the rejection of a valid request for an unauthorized client. """
         client = getTestPasswordClient(clientId='unauthorizedClient', authorizedGrantTypes=[])
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'client_id': client.id,
             'client_secret': client.secret,
@@ -173,7 +173,7 @@ class TestTokenRefresh(AbstractTokenResourceTest):
             self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._REFRESH_TOKEN_STORAGE,
             self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE, authTokenLifeTime=tokenLifetime,
             passwordManager=self._PASSWORD_MANAGER)
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'refresh_token': self._VALID_REFRESH_TOKEN
         }, authentication=self._VALID_CLIENT)
@@ -192,7 +192,7 @@ class TestTokenRefresh(AbstractTokenResourceTest):
             self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._REFRESH_TOKEN_STORAGE,
             self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE, authTokenLifeTime=tokenLifetime,
             passwordManager=self._PASSWORD_MANAGER)
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'refresh_token': self._VALID_REFRESH_TOKEN
         }, authentication=self._VALID_CLIENT)

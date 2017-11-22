@@ -4,10 +4,10 @@ from twisted.web.error import UnsupportedMethod
 from twisted.web.server import NOT_DONE_YET
 
 from txoauth2.clients import PublicClient
-from txoauth2.errors import InsecureConnectionError, UnsupportedGrantTypeError, MultipleParameterError, \
+from txoauth2.errors import InsecureConnectionError, UnsupportedGrantTypeError, \
     MalformedRequestError, NoClientAuthenticationError, MultipleClientAuthenticationError, \
     MultipleClientCredentialsError, InvalidClientIdError, InvalidClientAuthenticationError, \
-    MalformedParameterError
+    MalformedParameterError, MultipleParameterError
 from txoauth2.imp import DictTokenStorage
 from txoauth2.token import TokenResource
 
@@ -49,20 +49,21 @@ class AbstractTokenResourceTest(TwistedTestCase):
         """ Add authentication with the clients credentials to the header of the request. """
         request.addAuthorization(client.id, client.secret)
 
-    def _generateValidTokenRequest(self, urlQuery='', authentication=None, **kwargs):
+    @staticmethod
+    def generateValidTokenRequest(url='token', urlQuery='', authentication=None, **kwargs):
         """
+        :param url: The request url.
         :param urlQuery: An optional query part of the request url.
         :param authentication: An optional client to use for header-authentication.
         :param kwargs: Optional arguments to the the request.
         :return: A valid request to the token resource.
         """
-        url = 'token'
         if urlQuery:
             url = '?'.join((url, urlQuery))
         request = MockRequest('POST', url, **kwargs)
         request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded')
         if authentication is not None:
-            self._addAuthenticationToRequestHeader(request, authentication)
+            AbstractTokenResourceTest._addAuthenticationToRequestHeader(request, authentication)
         return request
 
     def assertValidTokenResponse(self, request, result, expectedAccessToken,
@@ -218,7 +219,7 @@ class TestTokenResource(AbstractTokenResourceTest):
         Test the rejection of a request via an insecure transport,
         except if allowInsecureRequestDebug is set to true.
         """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
                 'grant_type': 'refresh_token',
                 'refresh_token': self._VALID_REFRESH_TOKEN
             }, authentication=self._VALID_CLIENT, isSecure=False)
@@ -230,7 +231,7 @@ class TestTokenResource(AbstractTokenResourceTest):
             self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._REFRESH_TOKEN_STORAGE,
             self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE, allowInsecureRequestDebug=True,
             passwordManager=self._PASSWORD_MANAGER)
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
                 'grant_type': 'refresh_token',
                 'refresh_token': self._VALID_REFRESH_TOKEN
             }, authentication=self._VALID_CLIENT, isSecure=False)
@@ -275,7 +276,7 @@ class TestTokenResource(AbstractTokenResourceTest):
 
     def testIgnoresUnrecognizedArgs(self):
         """ Test that unrecognized parameter are ignored. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
                 'grant_type': 'refresh_token',
                 'refresh_token': self._VALID_REFRESH_TOKEN
             }, urlQuery='unrecognized=1', authentication=self._VALID_CLIENT)
@@ -291,15 +292,15 @@ class TestTokenResource(AbstractTokenResourceTest):
     def testDuplicatedGrantType(self):
         """ Test the rejection of a request with multiple grant_type parameters. """
         validArguments = {'grant_type': 'refresh_token', 'refresh_token': self._VALID_REFRESH_TOKEN}
-        request = self._generateValidTokenRequest(
+        request = self.generateValidTokenRequest(
             urlQuery='grant_type=' + validArguments['grant_type'],
             arguments=validArguments, authentication=self._VALID_CLIENT)
         result = self._TOKEN_RESOURCE.render_POST(request)
         self.assertFailedTokenRequest(request, result, MultipleParameterError('grant_type'),
                                       msg='Expected the token resource to reject a request '
                                           'with multiple grant_type parameters')
-        request = self._generateValidTokenRequest(urlQuery='grant_type=1', arguments=validArguments,
-                                                  authentication=self._VALID_CLIENT)
+        request = self.generateValidTokenRequest(urlQuery='grant_type=1', arguments=validArguments,
+                                                 authentication=self._VALID_CLIENT)
         result = self._TOKEN_RESOURCE.render_POST(request)
         self.assertFailedTokenRequest(
             request, result, MultipleParameterError('grant_type'),
@@ -320,8 +321,8 @@ class TestTokenResource(AbstractTokenResourceTest):
     def testUnsupportedGrantType(self):
         """ Test the rejection of a request with an unsupported grant type. """
         grantType = 'someGrantTypeThatIsNotSupported'
-        request = self._generateValidTokenRequest(arguments={'grant_type': grantType},
-                                                  authentication=self._VALID_CLIENT)
+        request = self.generateValidTokenRequest(arguments={'grant_type': grantType},
+                                                 authentication=self._VALID_CLIENT)
         result = self._TOKEN_RESOURCE.render_POST(request)
         self.assertFailedTokenRequest(
             request, result, UnsupportedGrantTypeError(grantType),
@@ -329,7 +330,7 @@ class TestTokenResource(AbstractTokenResourceTest):
 
     def testAuthorizationWithoutClientAuth(self):
         """ Test the rejection of a request without client authentication. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'refresh_token': self._VALID_REFRESH_TOKEN
         })
@@ -340,7 +341,7 @@ class TestTokenResource(AbstractTokenResourceTest):
 
     def testAuthorizationClientAuthInHeader(self):
         """ Test that a request with valid client authentication in the header is accepted. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'refresh_token': self._VALID_REFRESH_TOKEN
         })
@@ -356,7 +357,7 @@ class TestTokenResource(AbstractTokenResourceTest):
 
     def testAuthorizationClientAuthInParams(self):
         """ Test that a request with valid client authentication in the parameters is accepted. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'refresh_token': self._VALID_REFRESH_TOKEN,
             'client_id': self._VALID_CLIENT.id,
@@ -373,7 +374,7 @@ class TestTokenResource(AbstractTokenResourceTest):
 
     def testAuthorizationMultipleClientId(self):
         """ Test the rejection of a request with multiple client ids. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'client_id': [self._VALID_CLIENT.id] * 2,
             'client_secret': self._VALID_CLIENT.secret,
@@ -386,7 +387,7 @@ class TestTokenResource(AbstractTokenResourceTest):
 
     def testAuthorizationMultipleClientSecret(self):
         """ Test the rejection of a request with multiple client secrets. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'client_id': self._VALID_CLIENT.id,
             'client_secret': [self._VALID_CLIENT.secret] * 2,
@@ -401,7 +402,7 @@ class TestTokenResource(AbstractTokenResourceTest):
         """
         Test the rejection of a request with client authorization in the header and the parameters.
         """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'refresh_token': self._VALID_REFRESH_TOKEN,
             'client_id': self._VALID_CLIENT.id,
@@ -419,7 +420,7 @@ class TestTokenResource(AbstractTokenResourceTest):
         Test the rejection of a request with different
         client authorization in the header and the parameters.
         """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'refresh_token': self._VALID_REFRESH_TOKEN,
             'client_id': self._VALID_CLIENT.id,
@@ -435,7 +436,7 @@ class TestTokenResource(AbstractTokenResourceTest):
         """
         Test the rejection of a request with different client ids in the header and the parameters.
         """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'client_id': self._VALID_CLIENT.id,
             'refresh_token': self._VALID_REFRESH_TOKEN
@@ -448,7 +449,7 @@ class TestTokenResource(AbstractTokenResourceTest):
 
     def testAuthorizationMalformedClientIdInHeader(self):
         """ Test the rejection of a request with a malformed client id in the header. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'refresh_token': self._VALID_REFRESH_TOKEN
         })
@@ -463,7 +464,7 @@ class TestTokenResource(AbstractTokenResourceTest):
         """ Test the rejection of a request with a malformed client secret in the header. """
         client = getTestPasswordClient('malformedSecret')
         client.secret = b'malformedSecret\xFF\xFF'
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'refresh_token': self._VALID_REFRESH_TOKEN
         })
@@ -476,7 +477,7 @@ class TestTokenResource(AbstractTokenResourceTest):
 
     def testAuthorizationInvalidClientId(self):
         """ Test the rejection of a request with an invalid client in the parameters. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'client_id': 'invalidClientId',
             'client_secret': self._VALID_CLIENT.secret,
@@ -491,7 +492,7 @@ class TestTokenResource(AbstractTokenResourceTest):
         """ Test the rejection of a request with an invalid client in the headers. """
         client = getTestPasswordClient('invalidClientId')
         client.secret = self._VALID_CLIENT.secret
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'refresh_token': self._VALID_REFRESH_TOKEN
         })
@@ -503,7 +504,7 @@ class TestTokenResource(AbstractTokenResourceTest):
 
     def testAuthorizationMalformedClientId(self):
         """ Test the rejection of a request with a malformed client in the parameters. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'client_id': b'malformedClientId\xFF\xFF',
             'client_secret': self._VALID_CLIENT.secret,
@@ -516,7 +517,7 @@ class TestTokenResource(AbstractTokenResourceTest):
 
     def testAuthorizationWrongClientSecret(self):
         """ Test the rejection of a request with an invalid client secret in the parameters. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'client_id': self._VALID_CLIENT.id,
             'client_secret': 'invalidSecret',
@@ -531,7 +532,7 @@ class TestTokenResource(AbstractTokenResourceTest):
         """ Test the rejection of a request with an invalid client secret in the header. """
         client = getTestPasswordClient(self._VALID_CLIENT.id)
         client.secret = 'invalidSecret'
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'refresh_token': self._VALID_REFRESH_TOKEN
         })
@@ -543,7 +544,7 @@ class TestTokenResource(AbstractTokenResourceTest):
 
     def testAuthorizationMalformedClientSecret(self):
         """ Test the rejection of a request with an malformed client secret in the parameters. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'client_id': self._VALID_CLIENT.id,
             'client_secret': b'malformedSecret\xFF\xFF',
@@ -557,7 +558,7 @@ class TestTokenResource(AbstractTokenResourceTest):
     def testAuthorizationForPublicClient(self):
         """ Test that a request for a public client gets accepted without authentication. """
         client = PublicClient('publicClient', ['https://return.nonexistent'], ['refresh_token'])
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'client_id': client.id,
             'refresh_token': self._VALID_REFRESH_TOKEN

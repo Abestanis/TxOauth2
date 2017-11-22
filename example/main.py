@@ -81,8 +81,7 @@ class OAuth2Endpoint(OAuth2):
         for scopeItem in scope:
             if scopeItem not in self._VALID_SCOPES:
                 return InvalidScopeError(scope, state)
-        return """
-<!DOCTYPE html>
+        return """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -96,7 +95,7 @@ class OAuth2Endpoint(OAuth2):
 <input type="submit" name="confirm" value="no">
 </form>
 </body>
-</html>""".format(client=client.id, scope=', '.join(scope), dataKey=dataKey)
+</html>""".format(client=client.id, scope=', '.join(scope), dataKey=dataKey).encode('utf-8')
 
     def render_POST(self, request):
         """
@@ -110,6 +109,15 @@ class OAuth2Endpoint(OAuth2):
             return self.denyAccess(request, dataKey)
 
 
+def getTestClient():
+    """
+    :return: A client to use for this example.
+    """
+    return PasswordClient(
+        clientId='test', redirectUris=['https://clientServer.com/return'], secret='test_secret',
+        authorizedGrantTypes=[GrantTypes.RefreshToken, GrantTypes.AuthorizationCode])
+
+
 def setupOAuth2Clients():
     """
     Setup a client storage with a test client.
@@ -117,10 +125,7 @@ def setupOAuth2Clients():
     """
     clientStoragePath = os.path.join(os.path.dirname(__file__), 'clientStorage')
     clientStorage = ConfigParserClientStorage(clientStoragePath)
-    testClient = PasswordClient(
-        clientId='test', redirectUris=['https://clientServer.com/return'], secret='test_secret',
-        authorizedGrantTypes=[GrantTypes.RefreshToken, GrantTypes.AuthorizationCode])
-    clientStorage.addClient(testClient)
+    clientStorage.addClient(getTestClient())
     return clientStorage
 
 

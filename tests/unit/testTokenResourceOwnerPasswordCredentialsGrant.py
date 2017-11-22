@@ -19,7 +19,7 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
         """
         client = getTestPasswordClient('unauthorizedResourceOwnerPasswordCredentialsGrantClient',
                                        authorizedGrantTypes=[])
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'scope': ' '.join(self._VALID_SCOPE),
             'username': 'someUser',
@@ -34,7 +34,7 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
 
     def testMissingUserName(self):
         """ Test the rejection of a request that is missing the user name. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'scope': ' '.join(self._VALID_SCOPE),
             'password': 'somePassword'
@@ -46,7 +46,7 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
 
     def testMultipleUserNames(self):
         """ Test the rejection of a request that has multiple user names. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'scope': ' '.join(self._VALID_SCOPE),
             'username': ['userName1', 'userName2'],
@@ -60,7 +60,7 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
     def testInvalidUserName(self):
         """ Test the rejection of a request with an invalid user name. """
         userName = 'invalidUser'
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'scope': ' '.join(self._VALID_SCOPE),
             'username': userName,
@@ -79,7 +79,7 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
     def testMalformedUserName(self):
         """ Test the rejection of a request with a malformed user name. """
         userName = b'malformedUser\xFF\xFF'
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'scope': ' '.join(self._VALID_SCOPE),
             'username': userName,
@@ -92,7 +92,7 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
 
     def testMissingPassword(self):
         """ Test the rejection of a request without a password. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'scope': ' '.join(self._VALID_SCOPE),
             'username': 'someUserName',
@@ -104,7 +104,7 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
 
     def testMultiplePasswords(self):
         """ Test the rejection of a request with multiple passwords. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'scope': ' '.join(self._VALID_SCOPE),
             'username': 'someUserName',
@@ -118,7 +118,7 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
     def testInvalidPassword(self):
         """ Test the rejection of a request with an invalid password. """
         userName = 'validUserWithInvalidPassword'
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'scope': ' '.join(self._VALID_SCOPE),
             'username': userName,
@@ -136,7 +136,7 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
 
     def testMalformedPassword(self):
         """ Test the rejection of a request with a malformed password. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'scope': ' '.join(self._VALID_SCOPE),
             'username': 'someUser',
@@ -159,7 +159,7 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
         tokenResource = TokenResource(
             self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._REFRESH_TOKEN_STORAGE,
             self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE, defaultScope=defaultScope)
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'username': userName,
             'password': password,
@@ -180,7 +180,7 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
         Test the rejection of a request without a scope,
         if the token resource does not have a default scope.
         """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'username': 'someUser',
             'password': 'somePassword',
@@ -196,7 +196,7 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
         userName = 'validUser'
         password = 'validPassword'
         authToken = 'resourceOwnerPasswordCredentialsToken'
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'scope': ' '.join(self._VALID_SCOPE),
             'username': userName,
@@ -217,7 +217,7 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
     def testMalformedScope(self):
         """ Test the rejection of a request with a malformed scope. """
         malformedScope = b'malformedScope\xFF\xFF'
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'scope': malformedScope,
             'username': 'someUser',
@@ -230,7 +230,7 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
 
     def testMultipleScopes(self):
         """ Test the rejection of a request with multiple scope parameters. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'scope': self._VALID_SCOPE,
             'username': 'someUser',
@@ -247,7 +247,7 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
         tokenResource = TokenResource(
             self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._REFRESH_TOKEN_STORAGE,
             self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE)
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'username': 'someUserName',
             'password': 'somePassword',

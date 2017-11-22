@@ -35,7 +35,7 @@ class TestImplicitCodeGrant(AbstractSharedGrantTest):
         self.assertTrue(request.finished,
                         msg=msg + ': Expected the authorization resource to close the request.')
         redirectUrl = self.assertRedirectsTo(request, data['redirect_uri'], msg)
-        redirectParameter = self._getParameterFromRedirectUrl(redirectUrl, parameterInFragment)
+        redirectParameter = self.getParameterFromRedirectUrl(redirectUrl, parameterInFragment)
         if data['state'] is None:
             self.assertNotIn(
                 'state', redirectParameter,

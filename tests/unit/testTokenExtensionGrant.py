@@ -17,7 +17,7 @@ class TestExtensionGrant(AbstractTokenResourceTest):
     def testCustomGrantType(self):
         """ Test that a request with a custom grant type is accepted. """
         grantType = 'myCustomGrantType'
-        request = self._generateValidTokenRequest(arguments={'grant_type': grantType})
+        request = self.generateValidTokenRequest(arguments={'grant_type': grantType})
         tokenResource = self.TestTokenResource(
             self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._REFRESH_TOKEN_STORAGE,
             self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE, grantTypes=[grantType])
@@ -35,7 +35,7 @@ class TestExtensionGrant(AbstractTokenResourceTest):
     def testCustomGrantTypeNotAllowed(self):
         """ Test that a request with a custom grant type is rejected if it is not enabled. """
         grantType = 'myCustomGrantType'
-        request = self._generateValidTokenRequest(arguments={'grant_type': grantType})
+        request = self.generateValidTokenRequest(arguments={'grant_type': grantType})
         result = self._TOKEN_RESOURCE.render_POST(request)
         self.assertFailedTokenRequest(
             request, result, UnsupportedGrantTypeError(grantType),

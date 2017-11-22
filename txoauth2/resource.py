@@ -111,6 +111,10 @@ class OAuth2(Resource, object):
             raise ValueError('Authentication tokens generated with the '
                              'implicit grant flow need a limited lifetime.')
         if grantTypes is not None:
+            for grantType in [GrantTypes.RefreshToken, GrantTypes.Password,
+                              GrantTypes.ClientCredentials]:
+                if grantType in grantTypes:
+                    grantTypes.remove(grantType)
             grantTypes = [grantType.value if isinstance(grantType, GrantTypes) else grantType
                           for grantType in grantTypes]
             self.acceptedGrantTypes = grantTypes

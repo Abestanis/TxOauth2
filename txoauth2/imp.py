@@ -44,6 +44,8 @@ class ConfigParserClientStorage(ClientStorage):
         self._configParser = RawConfigParser()
         self.path = path
         self._configParser.read(path)
+        self._clientClasses = [cls[1] for cls in inspect.getmembers(clients)
+                               if inspect.isclass(cls[1]) and issubclass(cls[1], Client)]
 
     def getClient(self, clientId):
         """
@@ -54,12 +56,13 @@ class ConfigParserClientStorage(ClientStorage):
         :return: A client object.
         """
         sectionName = 'client_' + clientId
+        if not isinstance(sectionName, str):  # clientId is unicode
+            sectionName = sectionName.encode('utf-8')
+            clientId = clientId.encode('utf-8')
         if not self._configParser.has_section(sectionName):
             raise KeyError('No client with id "{id}" exists'.format(id=clientId))
-        clientClasses = [cls[1] for cls in inspect.getmembers(clients)
-                         if inspect.isclass(cls[1]) and issubclass(cls[1], Client)]
         clientType = self._configParser.get(sectionName, 'type')
-        for cls in clientClasses:
+        for cls in self._clientClasses:
             if cls.__name__ == clientType:
                 clientClass = cls
                 break

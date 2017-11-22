@@ -37,7 +37,7 @@ class TestAuthorizationCodeGrant(AbstractTokenResourceTest):
         client = getTestPasswordClient('unauthorizedCodeGrantClient', authorizedGrantTypes=[])
         code = 'unauthorizedClientCode'
         self._addAuthorizationToStorage(code, client, ['scope'], client.redirectUris[0])
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'authorization_code',
             'code': code,
             'redirect_uri': client.redirectUris[0],
@@ -57,7 +57,7 @@ class TestAuthorizationCodeGrant(AbstractTokenResourceTest):
         code = 'invalidRedirectUriCode'
         self._addAuthorizationToStorage(code, self._VALID_CLIENT, ['scope'],
                                         self._VALID_CLIENT.redirectUris[0])
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'authorization_code',
             'code': code,
             'redirect_uri': 'https://invalidRedirect.url',
@@ -73,7 +73,7 @@ class TestAuthorizationCodeGrant(AbstractTokenResourceTest):
         code = 'malformedRedirectUriCode'
         self._addAuthorizationToStorage(code, self._VALID_CLIENT, ['scope'],
                                         self._VALID_CLIENT.redirectUris[0])
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'authorization_code',
             'code': code,
             'redirect_uri': self._VALID_CLIENT.redirectUris[0].encode('utf-8') + b'\xFF\xFF',
@@ -86,7 +86,7 @@ class TestAuthorizationCodeGrant(AbstractTokenResourceTest):
 
     def testMultipleRedirectUris(self):
         """ Test the rejection of a request with multiple redirect uris. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'authorization_code',
             'code': 'someCode',
             'redirect_uri': self._VALID_CLIENT.redirectUris + ['https://another.redirection.url'],
@@ -102,7 +102,7 @@ class TestAuthorizationCodeGrant(AbstractTokenResourceTest):
         code = 'missingRedirectUriCode'
         self._addAuthorizationToStorage(code, self._VALID_CLIENT, ['scope'],
                                         self._VALID_CLIENT.redirectUris[0])
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'authorization_code',
             'code': code,
         }, authentication=self._VALID_CLIENT)
@@ -121,7 +121,7 @@ class TestAuthorizationCodeGrant(AbstractTokenResourceTest):
         accessToken = 'codeGrantAccessTokenWithoutRedirectUri'
         refreshToken = 'codeGrantRefreshTokenWithoutRedirectUri'
         self._addAuthorizationToStorage(code, self._VALID_CLIENT, self._VALID_SCOPE)
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'authorization_code',
             'code': code,
         }, authentication=self._VALID_CLIENT)
@@ -144,7 +144,7 @@ class TestAuthorizationCodeGrant(AbstractTokenResourceTest):
         accessToken = 'codeGrantAccessTokenWithoutRedirectUriButInParameter'
         refreshToken = 'codeGrantRefreshTokenWithoutRedirectUriButInParameter'
         self._addAuthorizationToStorage(code, self._VALID_CLIENT, self._VALID_SCOPE)
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'authorization_code',
             'code': code,
             'redirect_uri': self._VALID_CLIENT.redirectUris[0],
@@ -161,7 +161,7 @@ class TestAuthorizationCodeGrant(AbstractTokenResourceTest):
 
     def testInvalidCode(self):
         """ Test the rejection of a request with an invalid authorization code. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'authorization_code',
             'code': 'invalidCode',
             'redirect_uri': self._VALID_CLIENT.redirectUris[0],
@@ -174,7 +174,7 @@ class TestAuthorizationCodeGrant(AbstractTokenResourceTest):
 
     def testMalformedCode(self):
         """ Test the rejection of a request with a malformed authorization code. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'authorization_code',
             'code': b'malformedCode\xFF\xFF',
             'redirect_uri': self._VALID_CLIENT.redirectUris[0],
@@ -187,7 +187,7 @@ class TestAuthorizationCodeGrant(AbstractTokenResourceTest):
 
     def testMultipleCodes(self):
         """ Test the rejection of a request with multiple authorization codes. """
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'authorization_code',
             'code': ['code1', 'code2'],
             'redirect_uri': self._VALID_CLIENT.redirectUris[0],
@@ -207,7 +207,7 @@ class TestAuthorizationCodeGrant(AbstractTokenResourceTest):
             'unauthorizedCodeGrantClient', authorizedGrantTypes=[GrantTypes.AuthorizationCode])
         code = 'differentClientCode'
         self._addAuthorizationToStorage(code, client, ['scope'], client.redirectUris[0])
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'authorization_code',
             'code': code,
             'redirect_uri': client.redirectUris[0],
@@ -225,7 +225,7 @@ class TestAuthorizationCodeGrant(AbstractTokenResourceTest):
         refreshToken = 'codeGrantRefreshToken'
         self._addAuthorizationToStorage(code, self._VALID_CLIENT, self._VALID_SCOPE,
                                         self._VALID_CLIENT.redirectUris[0])
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'authorization_code',
             'code': code,
             'redirect_uri': self._VALID_CLIENT.redirectUris[0],
@@ -251,7 +251,7 @@ class TestAuthorizationCodeGrant(AbstractTokenResourceTest):
         additionalData = 'SomeData'
         self._addAuthorizationToStorage(code, self._VALID_CLIENT, self._VALID_SCOPE,
                                         self._VALID_CLIENT.redirectUris[0], additionalData)
-        request = self._generateValidTokenRequest(arguments={
+        request = self.generateValidTokenRequest(arguments={
             'grant_type': 'authorization_code',
             'code': code,
             'redirect_uri': self._VALID_CLIENT.redirectUris[0],
