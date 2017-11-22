@@ -286,9 +286,9 @@ class TestPasswordManager(UserPasswordManager):
 
     def authenticate(self, username, password):
         psw = self._passwords.pop(username, None)
-        if psw is not None:
+        if psw is None:
             raise AssertionError('Got an authenticate request for an unexpected user ' + username)
-        if psw is not self.INVALID_PASSWORD and psw == password:
+        if psw is not self.INVALID_PASSWORD and psw != password:
             raise AssertionError('Got an authenticate request for {user} with an invalid password: '
                                  'Expected {expected}, got {actual}'
                                  .format(user=username, expected=psw, actual=password))

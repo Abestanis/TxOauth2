@@ -179,8 +179,8 @@ class UserPasswordManager(object):
     def authenticate(self, username, password):
         """
         Authenticate a resource owner.
-        :param username: The username of the resource owner.
-        :param password: The plaintext password of the resource owner.
+        :param username: The username of the resource owner as a byte string.
+        :param password: The plaintext password of the resource owner as a byte string.
         :return: True, if the resource owner could be authenticated, False otherwise.
         """
         raise NotImplementedError()
@@ -394,6 +394,36 @@ class TokenResource(Resource, object):
                         return InvalidScopeError(scope).generate(request)
             accessToken = self._storeNewAccessToken(client, scope, None)
             return self._buildResponse(request, accessToken, scope)
+        elif grantType == GrantTypes.Password.value:
+            for name in [b'username', b'password']:
+                if name not in request.args:
+                    return MissingParameterError(name).generate(request)
+                if len(request.args[name]) != 1:
+                    return MultipleParameterError(name).generate(request)
+            username = request.args[b'username'][0]
+            password = request.args[b'password'][0]
+            if b'scope' in request.args:
+                if len(request.args[b'scope']) != 1:
+                    return MultipleParameterError('scope').generate(request)
+                try:
+                    scope = request.args[b'scope'][0].decode('utf-8').split()
+                except UnicodeDecodeError:
+                    return InvalidScopeError(request.args[b'scope'][0]).generate(request)
+            else:
+                if self.defaultScope is None:
+                    return MissingParameterError('scope').generate(request)
+                scope = self.defaultScope
+            if self.validScopeItems is not None:
+                for scopeItem in scope:
+                    if scopeItem not in self.validScopeItems:
+                        return InvalidScopeError(scope).generate(request)
+            if not self.passwordManager.authenticate(username, password):
+                return InvalidTokenError('username or password').generate(request)
+            accessToken = self._storeNewAccessToken(client, scope, None)
+            refreshToken = None
+            if self.authTokenLifeTime is not None:
+                refreshToken = self._storeNewRefreshToken(client, scope, None)
+            return self._buildResponse(request, accessToken, scope, refreshToken)
         else:
             return UnsupportedGrantTypeError(grantType).generate(request)
 

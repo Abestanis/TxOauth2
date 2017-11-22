@@ -135,4 +135,4 @@ class TestClientCredentialsGrant(AbstractTokenResourceTest):
         self.assertFailedTokenRequest(
             request, result, InvalidScopeError(self._VALID_SCOPE),
             msg='Expected the resource token to reject a '
-                'client_credentials request with multiple scope parameters.')
+                'client_credentials request with invalid scope parameters.')
