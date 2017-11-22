@@ -60,23 +60,43 @@ class AbstractTokenStorageTest(TwistedTestCase):
         self.assertRaises(KeyError, self._TOKEN_STORAGE.hasAccess,
                           'invalidToken', self._VALID_SCOPE)
 
-    def testGetTokenData(self):
-        """
-        Test that the token storage returns exactly the scope and additional data
-        of a token that it was given when the token was stored.
-        """
-        self.assertEqual((self._VALID_SCOPE, self._VALID_ADDITIONAL_DATA),
-                         self._TOKEN_STORAGE.getTokenData(self._VALID_TOKEN),
-                         msg='Expected getTokenData to return the correct '
-                             'scope and additional data for the token')
+    def testTokenClient(self):
+        """ Test that the token storage returns the correct client id for a token. """
+        self.assertEquals(
+            self._DUMMY_CLIENT.id, self._TOKEN_STORAGE.getTokenClient(self._VALID_TOKEN),
+            msg='Expected getTokenClient to return the correct client id for the token.')
+        token = 'otherValidToken'
+        client = getTestPasswordClient('otherClientId')
+        self._TOKEN_STORAGE.store(token, client, self._VALID_SCOPE)
+        self.assertEquals(client.id, self._TOKEN_STORAGE.getTokenClient(token),
+                          msg='Expected getTokenClient to return the client id given to store.')
+        self.assertRaises(KeyError, self._TOKEN_STORAGE.getTokenClient, 'invalidToken')
+
+    def testTokenScope(self):
+        """ Test that the token storage returns the correct scope for a token. """
+        self.assertListEqual(
+            self._VALID_SCOPE, self._TOKEN_STORAGE.getTokenScope(self._VALID_TOKEN),
+            msg='Expected getTokenScope to return the correct scope for the token.')
         token = 'otherValidToken'
         self._TOKEN_STORAGE.store(token, self._DUMMY_CLIENT, self._VALID_SCOPE[0:1])
-        scope, data = self._TOKEN_STORAGE.getTokenData(token)
-        self.assertEquals(self._VALID_SCOPE[0:1], scope,
-                          msg='Expected getTokenData to return the scope given to store.')
-        self.assertIsNone(data, msg='Expected getTokenData to return None if a valid token '
-                                    'has not stored any additional data')
-        self.assertRaises(KeyError, self._TOKEN_STORAGE.getTokenData, 'invalidToken')
+        self.assertListEqual(self._VALID_SCOPE[0:1], self._TOKEN_STORAGE.getTokenScope(token),
+                             msg='Expected getTokenScope to return the scope given to store.')
+        self.assertRaises(KeyError, self._TOKEN_STORAGE.getTokenScope, 'invalidToken')
+
+    def testAdditionalData(self):
+        """ Test if the token storage can correctly store additional data for a token. """
+        self.assertEquals(self._VALID_ADDITIONAL_DATA,
+                          self._TOKEN_STORAGE.getTokenAdditionalData(self._VALID_TOKEN),
+                          msg='Expected getTokenAdditionalData to return '
+                              'the correct additional data for the token.')
+        token = 'dataTestToken'
+        tokenData = 'Some arbitrary data'
+        self._TOKEN_STORAGE.store(token, self._DUMMY_CLIENT, self._VALID_SCOPE,
+                                  additionalData=tokenData)
+        self.assertEquals(tokenData, self._TOKEN_STORAGE.getTokenAdditionalData(token),
+                          msg='Expected the token storage return the additional data '
+                              'that was stored with the token.')
+        self.assertRaises(KeyError, self._TOKEN_STORAGE.getTokenAdditionalData, 'invalidToken')
 
     def testGetTokenLifetime(self):
         """ Test that the token storage correctly reports the lifetime of a token """
@@ -101,7 +121,10 @@ class AbstractTokenStorageTest(TwistedTestCase):
                         msg='Expected the token storage to contain the token after it was stored.')
         self.assertTrue(self._TOKEN_STORAGE.hasAccess(token, self._VALID_SCOPE),
                         msg='Expected the token storage to contain the token after it was stored.')
-        self.assertEquals((self._VALID_SCOPE, None), self._TOKEN_STORAGE.getTokenData(token),
+        self.assertListEqual(
+            self._VALID_SCOPE, self._TOKEN_STORAGE.getTokenScope(token),
+            msg='Expected the token storage return the same scope that was supplied to store.')
+        self.assertIsNone(self._TOKEN_STORAGE.getTokenAdditionalData(token),
                           msg='Expected the token storage return None as the additional data '
                               'for a token if none was supplied to store.')
         self.assertRaises(ValueError, self._TOKEN_STORAGE.store,
@@ -129,29 +152,38 @@ class AbstractTokenStorageTest(TwistedTestCase):
         token = 'overwriteTestToken'
         tokenData = 'token data'
         self._TOKEN_STORAGE.store(token, self._DUMMY_CLIENT, self._VALID_SCOPE)
-        self.assertEquals((self._VALID_SCOPE, None), self._TOKEN_STORAGE.getTokenData(token),
-                          msg='Expected getTokenData to return the scope '
-                              'and the additional data stored with the token.')
+        self.assertListEqual(
+            self._VALID_SCOPE, self._TOKEN_STORAGE.getTokenScope(token),
+            msg='Expected getTokenScope to return the scope that was stored with the token.')
+        self.assertIsNone(self._TOKEN_STORAGE.getTokenAdditionalData(token),
+                          msg='Expected getTokenScope to return the additional '
+                              'data that was stored with the token.')
+        self.assertEquals(
+            self._DUMMY_CLIENT.id, self._TOKEN_STORAGE.getTokenClient(token),
+            msg='Expected getTokenScope to return the client id that was stored with the token.')
         self._TOKEN_STORAGE.store(token, self._DUMMY_CLIENT, self._VALID_SCOPE[0:1],
                                   additionalData=tokenData)
+        self.assertListEqual(
+            self._VALID_SCOPE[0:1], self._TOKEN_STORAGE.getTokenScope(token),
+            msg='Expected getTokenScope to return the new scope that was stored with the token.')
+        self.assertEquals(tokenData, self._TOKEN_STORAGE.getTokenAdditionalData(token),
+                          msg='Expected getTokenScope to return the new additional '
+                              'data that was stored with the token.')
         self.assertEquals(
-            (self._VALID_SCOPE[0:1], tokenData), self._TOKEN_STORAGE.getTokenData(token),
-            msg='Expected getTokenData to return the new scope '
-                'and new the additional data stored with the token.')
+            self._DUMMY_CLIENT.id, self._TOKEN_STORAGE.getTokenClient(token),
+            msg='Expected getTokenScope to return the new client id that was stored with the token.'
+        )
         self._TOKEN_STORAGE.store(token, self._DUMMY_CLIENT, self._VALID_SCOPE[1:2])
-        self.assertEquals((self._VALID_SCOPE[1:2], None), self._TOKEN_STORAGE.getTokenData(token),
-                          msg='Expected getTokenData to return the new scope and no additional '
-                              'data, because there was no additional data specified.')
-
-    def testAdditionalData(self):
-        """ Test if the token storage can correctly store additional data for a token. """
-        token = 'dataTestToken'
-        tokenData = 'Some arbitrary data'
-        self._TOKEN_STORAGE.store(token, self._DUMMY_CLIENT, self._VALID_SCOPE,
-                                  additionalData=tokenData)
-        self.assertEquals(tokenData, self._TOKEN_STORAGE.getTokenData(token)[1],
-                          msg='Expected the token storage return the additional data '
-                              'that was stored with the token.')
+        self.assertListEqual(
+            self._VALID_SCOPE[1:2], self._TOKEN_STORAGE.getTokenScope(token),
+            msg='Expected getTokenScope to return the new scope that was stored with the token.')
+        self.assertIsNone(self._TOKEN_STORAGE.getTokenAdditionalData(token),
+                          msg='Expected getTokenScope to return the new additional '
+                              'data that was stored with the token.')
+        self.assertEquals(
+            self._DUMMY_CLIENT.id, self._TOKEN_STORAGE.getTokenClient(token),
+            msg='Expected getTokenScope to return the new client id that was stored with the token.'
+        )
 
     def testExpireTime(self):
         """ Test that the token storage correctly expires the tokens. """
@@ -184,7 +216,10 @@ class AbstractTokenStorageTest(TwistedTestCase):
                          msg='Expected the token storage to not contain an expired token.')
         self.assertRaises(KeyError, self._TOKEN_STORAGE.hasAccess,
                           expireTokens[1], self._VALID_SCOPE)
-        self.assertRaises(KeyError, self._TOKEN_STORAGE.getTokenData, expireTokens[2])
+        self.assertRaises(KeyError, self._TOKEN_STORAGE.getTokenAdditionalData, expireTokens[2])
+        self.assertRaises(KeyError, self._TOKEN_STORAGE.getTokenClient, expireTokens[2])
+        self.assertRaises(KeyError, self._TOKEN_STORAGE.getTokenScope, expireTokens[2])
+        self.assertRaises(KeyError, self._TOKEN_STORAGE.getTokenLifetime, expireTokens[2])
         self.assertTrue(
             self._TOKEN_STORAGE.contains(noExpireToken),
             msg='Expected the token storage to contain the token that will never expire.')

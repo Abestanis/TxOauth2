@@ -86,7 +86,7 @@ class TestImplicitCodeGrant(AbstractSharedGrantTest):
                         msg=msg + ': Expected the authorization resource to give the '
                                   'auth token access to the expected scope.')
         self.assertEquals(
-            expectedAdditionalData, self._TOKEN_STORAGE.getTokenData(accessToken)[1],
+            expectedAdditionalData, self._TOKEN_STORAGE.getTokenAdditionalData(accessToken),
             msg=msg + ': Expected the authorization resource to store '
                       'the expected additional data with the token.')
         expectedToken = self._TOKEN_FACTORY.expectedTokenRequest(

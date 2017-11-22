@@ -117,11 +117,20 @@ class DictTokenStorage(TokenStorage):
                 return False
         return True
 
-    def getTokenData(self, token):
+    def getTokenAdditionalData(self, token):
         self._checkExpire(token)
-        return self._tokens[token]['scope'], self._tokens[token]['data']
+        return self._tokens[token]['data']
+
+    def getTokenScope(self, token):
+        self._checkExpire(token)
+        return self._tokens[token]['scope']
+
+    def getTokenClient(self, token):
+        self._checkExpire(token)
+        return self._tokens[token]['client']
 
     def getTokenLifetime(self, token):
+        self._checkExpire(token)
         return int(time.time()) - self._tokens[token]['birthTime']
 
     def store(self, token, client, scope, additionalData=None, expireTime=None):
@@ -135,7 +144,8 @@ class DictTokenStorage(TokenStorage):
             'data': additionalData,
             'birthTime': int(time.time()),
             'expireTime': expireTime,
-            'scope': scope
+            'scope': scope,
+            'client': client.id
         }
 
     def remove(self, token):

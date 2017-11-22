@@ -140,9 +140,9 @@ class AbstractTokenResourceTest(TwistedTestCase):
                         msg='Expected the token storage to contain the new access token.')
         self.assertTrue(self._AUTH_TOKEN_STORAGE.hasAccess(expectedAccessToken, expectedScope),
                         msg='Expected the new access token to have access to the expected scope.')
-        self.assertEquals(
-            expectedAdditionalData, self._AUTH_TOKEN_STORAGE.getTokenData(expectedAccessToken)[1],
-            msg='Expected the new access token to have the expected additional data.')
+        self.assertEquals(expectedAdditionalData,
+                          self._AUTH_TOKEN_STORAGE.getTokenAdditionalData(expectedAccessToken),
+                          msg='Expected the new access token to have the expected additional data.')
         if expectedRefreshToken is not None:
             self.assertTrue(self._REFRESH_TOKEN_STORAGE.contains(expectedRefreshToken),
                             msg='Expected the token storage to contain the refresh token.')
@@ -151,7 +151,7 @@ class AbstractTokenResourceTest(TwistedTestCase):
                 msg='Expected the refresh token to have access to the expected scope.')
             self.assertEquals(
                 expectedAdditionalData,
-                self._REFRESH_TOKEN_STORAGE.getTokenData(expectedAccessToken)[1],
+                self._REFRESH_TOKEN_STORAGE.getTokenAdditionalData(expectedAccessToken),
                 msg='Expected the new refresh token to have the expected additional data.')
 
     def assertFailedTokenRequest(self, request, result, expectedError, msg):
@@ -558,11 +558,13 @@ class TestTokenResource(AbstractTokenResourceTest):
     def testAuthorizationForPublicClient(self):
         """ Test that a request for a public client gets accepted without authentication. """
         client = PublicClient('publicClient', ['https://return.nonexistent'], ['refresh_token'])
+        refreshToken = 'publicClientRefreshToken'
         request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'client_id': client.id,
-            'refresh_token': self._VALID_REFRESH_TOKEN
+            'refresh_token': refreshToken
         })
+        self._REFRESH_TOKEN_STORAGE.store(refreshToken, client, self._VALID_SCOPE)
         newAuthToken = 'tokenForPublicClient'
         self._CLIENT_STORAGE.addClient(client)
         self._TOKEN_FACTORY.expectTokenRequest(newAuthToken, self._TOKEN_RESOURCE.authTokenLifeTime,

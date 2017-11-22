@@ -62,14 +62,35 @@ class TokenStorage(object):
         raise NotImplementedError()
 
     @abstractmethod
-    def getTokenData(self, token):
+    def getTokenAdditionalData(self, token):
         """
-        Get the scope and additional data that was passed to
-        store together with the given token.
+        Get the additional data that was passed to store together with the given token.
 
         :raises KeyError: If the token was not found in the token storage
         :param token: A token.
-        :return: A tuple of the scope and the additional data that was stored alongside the token.
+        :return: The additional data that was stored alongside the token.
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
+    def getTokenScope(self, token):
+        """
+        Get the scope that was passed to store together with the given token.
+
+        :raises KeyError: If the token was not found in the token storage
+        :param token: A token.
+        :return: The scope as a list of strings that was stored alongside the token.
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
+    def getTokenClient(self, token):
+        """
+        Get the client id of the client that was passed to store together with the given token.
+
+        :raises KeyError: If the token was not found in the token storage
+        :param token: A token.
+        :return: The id of the client that was stored alongside the token.
         """
         raise NotImplementedError()
 
@@ -294,8 +315,12 @@ class TokenResource(Resource, object):
                 return MultipleParameterError('refresh_token').generate(request)
             try:
                 refreshToken = request.args[b'refresh_token'][0].decode('utf-8')
-                tokenScope, additionalData = self.refreshTokenStorage.getTokenData(refreshToken)
+                tokenScope = self.refreshTokenStorage.getTokenScope(refreshToken)
+                additionalData = self.refreshTokenStorage.getTokenAdditionalData(refreshToken)
+                clientId = self.refreshTokenStorage.getTokenClient(refreshToken)
             except (KeyError, UnicodeDecodeError):
+                return InvalidTokenError('refresh token').generate(request)
+            if clientId != client.id:
                 return InvalidTokenError('refresh token').generate(request)
             if b'scope' in request.args:
                 if len(request.args[b'scope']) != 1:

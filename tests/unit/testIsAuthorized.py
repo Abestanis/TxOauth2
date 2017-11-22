@@ -4,7 +4,7 @@ from txoauth2.token import TokenResource
 from txoauth2.errors import MissingTokenError, InvalidTokenRequestError, \
     InsufficientScopeRequestError, MultipleTokensError
 
-from tests import MockRequest, TwistedTestCase
+from tests import MockRequest, TwistedTestCase, getTestPasswordClient
 
 
 class TestIsAuthorized(TwistedTestCase):
@@ -15,7 +15,7 @@ class TestIsAuthorized(TwistedTestCase):
     def setUpClass(cls):
         tokenStorage = DictTokenStorage()
         setattr(TokenResource, '_OAuthTokenStorage', tokenStorage)
-        tokenStorage.store(cls.VALID_TOKEN, None, cls.VALID_TOKEN_SCOPE)
+        tokenStorage.store(cls.VALID_TOKEN, getTestPasswordClient(), cls.VALID_TOKEN_SCOPE)
 
     @classmethod
     def tearDownClass(cls):
