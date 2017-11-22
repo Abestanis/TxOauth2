@@ -187,13 +187,16 @@ class TestTokenFactory(TokenFactory):
             token = str(uuid4())
             self._requestedTokens.append((token, lifetime, client, scope, additionalData))
         else:
-            token, expectedLifetime, expectedClient, expectedScope, expectedAdditionalData\
-                = self._tokens.pop(0)
+            token, expectedLifetime, expectedClient, expectedScope, expectedAdditionalData,\
+                validScope = self._tokens.pop(0)
             self._validateParameter(token, lifetime, expectedLifetime, client, expectedClient,
                                     scope, expectedScope, additionalData, expectedAdditionalData)
+            if not validScope:
+                raise ValueError('scope')
         return token
 
-    def expectTokenRequest(self, token, lifetime, client, scope, additionalData=None):
+    def expectTokenRequest(self, token, lifetime, client, scope,
+                           additionalData=None, validScope=True):
         """
         Enqueue a token and its expected parameters.
         The token is returned by the generateToken method after it has checked
@@ -205,8 +208,9 @@ class TestTokenFactory(TokenFactory):
         :param scope: The scope that should get passed to the generateToken function.
         :param additionalData: The additional data that should get
                                passed to the generateToken function.
+        :param validScope: If the scope should be considered invalid
         """
-        self._tokens.append((token, lifetime, client, scope, additionalData))
+        self._tokens.append((token, lifetime, client, scope, additionalData, validScope))
 
     def expectedTokenRequest(self, lifetime, client, scope, additionalData=None):
         """

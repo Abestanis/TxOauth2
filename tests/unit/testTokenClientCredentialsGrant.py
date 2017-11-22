@@ -126,12 +126,11 @@ class TestClientCredentialsGrant(AbstractTokenResourceTest):
             'grant_type': 'client_credentials',
             'scope': ' '.join(self._VALID_SCOPE),
         }, authentication=self._VALID_CLIENT)
-        tokenResource = TokenResource(
-            self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._REFRESH_TOKEN_STORAGE,
-            self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE,
-            passwordManager=self._PASSWORD_MANAGER)
-        tokenResource.validScopeItems = []
-        result = tokenResource.render_POST(request)
+        self._TOKEN_FACTORY.expectTokenRequest(
+            'token', self._TOKEN_RESOURCE.authTokenLifeTime, self._VALID_CLIENT,
+            self._VALID_SCOPE, validScope=False)
+        result = self._TOKEN_RESOURCE.render_POST(request)
+        self._TOKEN_FACTORY.assertAllTokensRequested()
         self.assertFailedTokenRequest(
             request, result, InvalidScopeError(self._VALID_SCOPE),
             msg='Expected the resource token to reject a '

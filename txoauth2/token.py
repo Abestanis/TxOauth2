@@ -26,6 +26,7 @@ class TokenFactory(object):
         Generate a new token. The generated token must comply to the specification
         (see https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/#token).
         See TokenResource::VALID_TOKEN_CHARS for a list of allowed characters in the token.
+        :raises ValueError: If the scope is not valid.
         :param lifetime: The lifetime of the new token in seconds or None for infinite lifetime.
         :param client: The client that gets the new token.
         :param scope: A list of scopes that the new token will grant access to.
@@ -222,7 +223,6 @@ class TokenResource(Resource, object):
     authTokenLifeTime = 3600
     minRefreshTokenLifeTime = 1209600  # = 14 days
     defaultScope = None
-    validScopeItems = None
     acceptedGrantTypes = [GrantTypes.RefreshToken.value, GrantTypes.AuthorizationCode.value,
                           GrantTypes.ClientCredentials.value, GrantTypes.Password.value]
 
@@ -337,7 +337,10 @@ class TokenResource(Resource, object):
                 scope = tokenScope
             if not self.refreshTokenStorage.contains(refreshToken):
                 return InvalidTokenError('refresh token').generate(request)
-            accessToken = self._storeNewAccessToken(client, scope, additionalData)
+            try:
+                accessToken = self._storeNewAccessToken(client, scope, additionalData)
+            except ValueError:
+                return InvalidScopeError(scope).generate(request)
             newRefreshToken = None
             if self._shouldExpireRefreshToken(refreshToken):
                 self.refreshTokenStorage.remove(refreshToken)
@@ -388,11 +391,10 @@ class TokenResource(Resource, object):
                 if self.defaultScope is None:
                     return MissingParameterError('scope').generate(request)
                 scope = self.defaultScope
-            if self.validScopeItems is not None:
-                for scopeItem in scope:
-                    if scopeItem not in self.validScopeItems:
-                        return InvalidScopeError(scope).generate(request)
-            accessToken = self._storeNewAccessToken(client, scope, None)
+            try:
+                accessToken = self._storeNewAccessToken(client, scope, None)
+            except ValueError:
+                return InvalidScopeError(scope).generate(request)
             return self._buildResponse(request, accessToken, scope)
         elif grantType == GrantTypes.Password.value:
             for name in [b'username', b'password']:
@@ -413,13 +415,12 @@ class TokenResource(Resource, object):
                 if self.defaultScope is None:
                     return MissingParameterError('scope').generate(request)
                 scope = self.defaultScope
-            if self.validScopeItems is not None:
-                for scopeItem in scope:
-                    if scopeItem not in self.validScopeItems:
-                        return InvalidScopeError(scope).generate(request)
             if not self.passwordManager.authenticate(username, password):
                 return InvalidTokenError('username or password').generate(request)
-            accessToken = self._storeNewAccessToken(client, scope, None)
+            try:
+                accessToken = self._storeNewAccessToken(client, scope, None)
+            except ValueError:
+                return InvalidScopeError(scope).generate(request)
             refreshToken = None
             if self.authTokenLifeTime is not None:
                 refreshToken = self._storeNewRefreshToken(client, scope, None)
@@ -450,6 +451,7 @@ class TokenResource(Resource, object):
     def _storeNewRefreshToken(self, client, scope, additionalData):
         """
         Create and store a new refresh token.
+        :raises ValueError: If the scope is invalid.
         :param client: The client the refresh token belongs to.
         :param scope: The scope of the refresh token.
         :param additionalData: Additional data of the refresh token.
@@ -467,6 +469,7 @@ class TokenResource(Resource, object):
     def _storeNewAccessToken(self, client, scope, additionalData):
         """
         Create and store a new access token.
+        :raises ValueError: If the scope is invalid.
         :param client: The client the access token belongs to.
         :param scope: The scope of the access token.
         :param additionalData: Additional data of the access token.

@@ -22,8 +22,8 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
         request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'scope': ' '.join(self._VALID_SCOPE),
-            'username': 'someUser',
-            'password': 'somePassword',
+            'username': b'someUser',
+            'password': b'somePassword',
         }, authentication=client)
         self._CLIENT_STORAGE.addClient(client)
         result = self._TOKEN_RESOURCE.render_POST(request)
@@ -196,8 +196,8 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
         """
         request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
-            'username': 'someUser',
-            'password': 'somePassword',
+            'username': b'someUser',
+            'password': b'somePassword',
         }, authentication=self._VALID_CLIENT)
         result = self._TOKEN_RESOURCE.render_POST(request)
         self.assertFailedTokenRequest(
@@ -237,8 +237,8 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
         request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'scope': malformedScope,
-            'username': 'someUser',
-            'password': 'somePassword',
+            'username': b'someUser',
+            'password': b'somePassword',
         }, authentication=self._VALID_CLIENT)
         result = self._TOKEN_RESOURCE.render_POST(request)
         self.assertFailedTokenRequest(
@@ -250,8 +250,8 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
         request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'scope': self._VALID_SCOPE,
-            'username': 'someUser',
-            'password': 'somePassword',
+            'username': b'someUser',
+            'password': b'somePassword',
         }, authentication=self._VALID_CLIENT)
         result = self._TOKEN_RESOURCE.render_POST(request)
         self.assertFailedTokenRequest(
@@ -266,8 +266,8 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
             self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE, grantTypes=[])
         request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
-            'username': 'someUserName',
-            'password': 'somePassword',
+            'username': b'someUserName',
+            'password': b'somePassword',
         }, authentication=self._VALID_CLIENT)
         result = tokenResource.render_POST(request)
         self.assertFailedTokenRequest(request, result, UnsupportedGrantTypeError('password'),
@@ -276,18 +276,23 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
 
     def testInvalidScope(self):
         """ Test the rejection of a request with an invalid scope parameters. """
+        username = b'someUserName'
+        password = b'somePassword'
         request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
-            'username': 'someUserName',
-            'password': 'somePassword',
+            'username': username,
+            'password': password,
             'scope': ' '.join(self._VALID_SCOPE),
         }, authentication=self._VALID_CLIENT)
-        tokenResource = TokenResource(
-            self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._REFRESH_TOKEN_STORAGE,
-            self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE,
-            passwordManager=self._PASSWORD_MANAGER)
-        tokenResource.validScopeItems = []
-        result = tokenResource.render_POST(request)
+        self._TOKEN_FACTORY.expectTokenRequest(
+            'token', self._TOKEN_RESOURCE.authTokenLifeTime, self._VALID_CLIENT,
+            self._VALID_SCOPE, validScope=False)
+        self._PASSWORD_MANAGER.expectAuthenticateRequest(username, password)
+        result = self._TOKEN_RESOURCE.render_POST(request)
+        self.assertTrue(self._PASSWORD_MANAGER.allPasswordsChecked(),
+                        msg='Expected the token resource to check if the given user name and '
+                            'password combination is valid before creating an auth token.')
+        self._TOKEN_FACTORY.assertAllTokensRequested()
         self.assertFailedTokenRequest(
             request, result, InvalidScopeError(self._VALID_SCOPE),
             msg='Expected the resource token to reject a '
