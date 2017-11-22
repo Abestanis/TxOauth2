@@ -121,6 +121,9 @@ class DictTokenStorage(TokenStorage):
         self._checkExpire(token)
         return self._tokens[token]['scope'], self._tokens[token]['data']
 
+    def getTokenLifetime(self, token):
+        return int(time.time()) - self._tokens[token]['birthTime']
+
     def store(self, token, client, scope, additionalData=None, expireTime=None):
         if not isinstance(token, str):
             raise ValueError('Token parameter is not a string')
@@ -130,9 +133,13 @@ class DictTokenStorage(TokenStorage):
             return
         self._tokens[token] = {
             'data': additionalData,
+            'birthTime': int(time.time()),
             'expireTime': expireTime,
             'scope': scope
         }
+
+    def remove(self, token):
+        del self._tokens[token]
 
     def _checkExpire(self, token):
         """

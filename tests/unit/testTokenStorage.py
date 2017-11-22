@@ -78,6 +78,15 @@ class AbstractTokenStorageTest(TwistedTestCase):
                                     'has not stored any additional data')
         self.assertRaises(KeyError, self._TOKEN_STORAGE.getTokenData, 'invalidToken')
 
+    def testGetTokenLifetime(self):
+        """ Test that the token storage correctly reports the lifetime of a token """
+        token = 'lifetimeToken'
+        self._TOKEN_STORAGE.store(token, self._DUMMY_CLIENT, self._VALID_SCOPE[0:1])
+        self.assertEquals(
+            0, self._TOKEN_STORAGE.getTokenLifetime(token),
+            msg='Expected the token resource to return the correct lifetime of the token.')
+        self.assertRaises(KeyError, self._TOKEN_STORAGE.getTokenLifetime, 'nonExistentToken')
+
     def testStore(self):
         """
         Test that the token storage can correctly store
@@ -99,6 +108,18 @@ class AbstractTokenStorageTest(TwistedTestCase):
                           None, self._DUMMY_CLIENT, self._VALID_SCOPE)
         self.assertRaises(ValueError, self._TOKEN_STORAGE.store,
                           42, self._DUMMY_CLIENT, self._VALID_SCOPE)
+
+    def testRemove(self):
+        """ Test that the token storage correctly removes tokens. """
+        token = 'removeToken'
+        self._TOKEN_STORAGE.store(token, self._DUMMY_CLIENT, self._VALID_SCOPE)
+        self.assertTrue(self._TOKEN_STORAGE.contains(token),
+                        msg='Expected the token storage to contain the token after it was stored.')
+        self._TOKEN_STORAGE.remove(token)
+        self.assertFalse(
+            self._TOKEN_STORAGE.contains(token),
+            msg='Expected the token storage to not contain the token after it has been removed.')
+        self.assertRaises(KeyError, self._TOKEN_STORAGE.remove, 'nonExistentToken')
 
     def testTokenOverwrite(self):
         """
@@ -169,6 +190,9 @@ class AbstractTokenStorageTest(TwistedTestCase):
             msg='Expected the token storage to contain the token that will never expire.')
         self.assertTrue(self._TOKEN_STORAGE.contains(futureExpireToken),
                         msg='Expected the token storage to contain the token has not expired.')
+        self.assertGreaterEqual(
+            self._TOKEN_STORAGE.getTokenLifetime(noExpireToken), 1,
+            msg='Expected the token storage to correctly report the lifetime of the token.')
 
 
 class DictTokenStorageTest(AbstractTokenStorageTest):

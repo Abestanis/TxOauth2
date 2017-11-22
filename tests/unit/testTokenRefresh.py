@@ -205,4 +205,32 @@ class TestTokenRefresh(AbstractTokenResourceTest):
 
     def testRefreshTokenRenewal(self):
         """ Test that the refresh token is refreshed when expected. """
-        self.fail('Implement')
+        oldRefreshToken = 'oldRefreshToken'
+        additionalData = 'someAdditionalData'
+        newAuthToken = 'newAuthToken'
+        newRefreshToken = 'newRefreshToken'
+        self._REFRESH_TOKEN_STORAGE.store(
+            oldRefreshToken, self._VALID_CLIENT, self._VALID_SCOPE, additionalData)
+        tokenResource = TokenResource(
+            self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._REFRESH_TOKEN_STORAGE,
+            self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE, minRefreshTokenLifeTime=0,
+            passwordManager=self._PASSWORD_MANAGER)
+        request = self.generateValidTokenRequest(arguments={
+            'grant_type': 'refresh_token',
+            'refresh_token': oldRefreshToken
+        }, authentication=self._VALID_CLIENT)
+        self._TOKEN_FACTORY.expectTokenRequest(
+            newAuthToken, tokenResource.authTokenLifeTime,
+            self._VALID_CLIENT, self._VALID_SCOPE, additionalData)
+        self._TOKEN_FACTORY.expectTokenRequest(
+            newRefreshToken, None, self._VALID_CLIENT, self._VALID_SCOPE, additionalData)
+        result = tokenResource.render_POST(request)
+        self._TOKEN_FACTORY.assertAllTokensRequested()
+        self.assertFalse(
+            self._REFRESH_TOKEN_STORAGE.contains(oldRefreshToken),
+            msg='Expected the token resource to remove an old refresh token from the token storage.'
+        )
+        self.assertValidTokenResponse(
+            request, result, newAuthToken, tokenResource.authTokenLifeTime,
+            expectedRefreshToken=newRefreshToken, expectedScope=self._VALID_SCOPE,
+            expectedAdditionalData=additionalData)

@@ -74,6 +74,15 @@ class TokenStorage(object):
         raise NotImplementedError()
 
     @abstractmethod
+    def getTokenLifetime(self, token):
+        """
+        :raises KeyError: If the token was not found in the token storage
+        :param token: A token.
+        :return: The current lifetime of the given token in seconds.
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
     def store(self, token, client, scope, additionalData=None, expireTime=None):
         """
         Store the given token in the token storage alongside
@@ -90,6 +99,16 @@ class TokenStorage(object):
                                was passed to OAuth2.grantAccess.
         :param expireTime: Optionally the seconds since the epoch,
                            when the token should expire.
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
+    def remove(self, token):
+        """
+        Remove the toke from the token storage.
+
+        :raises KeyError: If the token was not found in the token storage
+        :param token: The token to remove.
         """
         raise NotImplementedError()
 
@@ -180,13 +199,15 @@ class TokenResource(Resource, object):
     _OAuthTokenStorage = None
     clientStorage = None
     authTokenLifeTime = 3600
+    minRefreshTokenLifeTime = 1209600  # = 14 days
     defaultScope = None
     acceptedGrantTypes = [GrantTypes.RefreshToken.value, GrantTypes.AuthorizationCode.value,
                           GrantTypes.ClientCredentials.value, GrantTypes.Password.value]
 
     def __init__(self, tokenFactory, persistentStorage, refreshTokenStorage, authTokenStorage,
-                 clientStorage, authTokenLifeTime=3600, passwordManager=None,
-                 allowInsecureRequestDebug=False, grantTypes=None, defaultScope=None):
+                 clientStorage, authTokenLifeTime=3600, minRefreshTokenLifeTime=1209600,
+                 passwordManager=None, allowInsecureRequestDebug=False, grantTypes=None,
+                 defaultScope=None):
         """
         Create a new TokenResource.
         The given authTokenStorage will be used to check tokens when
@@ -202,6 +223,8 @@ class TokenResource(Resource, object):
         :param authTokenStorage: A token storage for access tokens. Will be used as a singleton.
         :param clientStorage: A handle to the storage of known clients.
         :param authTokenLifeTime: Either lifetime in seconds or None for an unlimited lifetime.
+        :param minRefreshTokenLifeTime: Either the minimum lifetime of a refresh token in seconds
+                                        or None for an unlimited lifetime.
         :param passwordManager: The password manager to use for the password grant flow.
         :param allowInsecureRequestDebug: If True, allow requests over insecure connections.
                                           Do NOT use in production!
@@ -217,6 +240,7 @@ class TokenResource(Resource, object):
         self.clientStorage = clientStorage
         self.passwordManager = passwordManager
         self.authTokenLifeTime = authTokenLifeTime
+        self.minRefreshTokenLifeTime = minRefreshTokenLifeTime
         self.defaultScope = defaultScope
         TokenResource._OAuthTokenStorage = authTokenStorage
         if grantTypes is not None:
@@ -287,17 +311,12 @@ class TokenResource(Resource, object):
                 scope = tokenScope
             if not self.refreshTokenStorage.contains(refreshToken):
                 return InvalidTokenError('refresh token').generate(request)
-            accessToken = self.tokenFactory.generateToken(
-                self.authTokenLifeTime, client, scope=scope, additionalData=additionalData)
-            if not self.isValidToken(accessToken):
-                raise ValueError('Generated token is invalid: {token}'.format(token=accessToken))
-            expireTime = None
-            if self.authTokenLifeTime is not None:
-                expireTime = time.time() + self.authTokenLifeTime
-            self.getTokenStorageSingleton().store(
-                accessToken, client, scope=scope,
-                additionalData=additionalData, expireTime=expireTime)
-            return self.buildResponse(request, accessToken, scope)
+            accessToken = self._storeNewAccessToken(client, scope, additionalData)
+            newRefreshToken = None
+            if self._shouldExpireRefreshToken(refreshToken):
+                self.refreshTokenStorage.remove(refreshToken)
+                newRefreshToken = self._storeNewRefreshToken(client, scope, additionalData)
+            return self._buildResponse(request, accessToken, scope, newRefreshToken)
         elif grantType == GrantTypes.AuthorizationCode.value:
             redirectUri = None
             if b'code' not in request.args:
@@ -324,26 +343,11 @@ class TokenResource(Resource, object):
                     return DifferentRedirectUriError().generate(request)
             additionalData = data['additional_data']
             scope = data['scope']
-            accessToken = self.tokenFactory.generateToken(
-                self.authTokenLifeTime, client, scope=scope, additionalData=additionalData)
-            if not self.isValidToken(accessToken):
-                raise ValueError('Generated token is invalid: {token}'.format(token=accessToken))
-            expireTime = None
-            if self.authTokenLifeTime is not None:
-                expireTime = time.time() + self.authTokenLifeTime
-            self.getTokenStorageSingleton().store(
-                accessToken, client, scope=scope,
-                additionalData=additionalData, expireTime=expireTime)
+            accessToken = self._storeNewAccessToken(client, scope, additionalData)
             refreshToken = None
             if self.authTokenLifeTime is not None:
-                refreshToken = self.tokenFactory.generateToken(None, client, scope=scope,
-                                                               additionalData=additionalData)
-                if not self.isValidToken(refreshToken):
-                    raise ValueError('Generated token is invalid: {token}'
-                                     .format(token=refreshToken))
-                self.refreshTokenStorage.store(refreshToken, client, scope=scope,
-                                               additionalData=additionalData)
-            return self.buildResponse(request, accessToken, scope, refreshToken)
+                refreshToken = self._storeNewRefreshToken(client, scope, additionalData)
+            return self._buildResponse(request, accessToken, scope, refreshToken)
         else:
             return UnsupportedGrantTypeError(grantType).generate(request)
 
@@ -359,21 +363,52 @@ class TokenResource(Resource, object):
         """
         return UnsupportedGrantTypeError(grantType).generate(request)
 
-    @classmethod
-    def isValidToken(cls, token):
+    def _shouldExpireRefreshToken(self, refreshToken):
         """
-        Check if a token conforms tho the OAuth2 specification.
-        See https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/#token
-
-        :param token: The token to check.
-        :return: True, if the token conforms to the specification, False otherwise
+        :param refreshToken: A valid refresh token.
+        :return: Whether or not to expire the refresh token.
         """
-        for char in token:
-            if char not in cls.VALID_TOKEN_CHARS:
-                return False
-        return True
+        tokenLifetime = self.refreshTokenStorage.getTokenLifetime(refreshToken)
+        return tokenLifetime >= self.minRefreshTokenLifeTime
 
-    def buildResponse(self, request, accessToken, scope, refreshToken=None):
+    def _storeNewRefreshToken(self, client, scope, additionalData):
+        """
+        Create and store a new refresh token.
+        :param client: The client the refresh token belongs to.
+        :param scope: The scope of the refresh token.
+        :param additionalData: Additional data of the refresh token.
+        :return: The new refresh token.
+        """
+        refreshToken = self.tokenFactory.generateToken(
+            None, client, scope=scope, additionalData=additionalData)
+        if not self.isValidToken(refreshToken):
+            raise ValueError('Generated token is invalid: {token}'
+                             .format(token=refreshToken))
+        self.refreshTokenStorage.store(refreshToken, client, scope=scope,
+                                       additionalData=additionalData)
+        return refreshToken
+
+    def _storeNewAccessToken(self, client, scope, additionalData):
+        """
+        Create and store a new access token.
+        :param client: The client the access token belongs to.
+        :param scope: The scope of the access token.
+        :param additionalData: Additional data of the access token.
+        :return: The new access token.
+        """
+        accessToken = self.tokenFactory.generateToken(
+            self.authTokenLifeTime, client, scope=scope, additionalData=additionalData)
+        if not self.isValidToken(accessToken):
+            raise ValueError('Generated token is invalid: {token}'.format(token=accessToken))
+        expireTime = None
+        if self.authTokenLifeTime is not None:
+            expireTime = time.time() + self.authTokenLifeTime
+        self.getTokenStorageSingleton().store(
+            accessToken, client, scope=scope,
+            additionalData=additionalData, expireTime=expireTime)
+        return accessToken
+
+    def _buildResponse(self, request, accessToken, scope, refreshToken=None):
         """
         Helper method for render_POST to generate a response
         with an access token and an optional refresh token.
@@ -458,6 +493,17 @@ class TokenResource(Resource, object):
                 return MultipleParameterError('client_secret')
             secret = request.args[b'client_secret'][0]
         return clientId, secret
+
+    @classmethod
+    def isValidToken(cls, token):
+        """
+        Check if a token conforms tho the OAuth2 specification.
+        See https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/#token
+
+        :param token: The token to check.
+        :return: True, if the token conforms to the specification, False otherwise
+        """
+        return all(char in cls.VALID_TOKEN_CHARS for char in token)
 
     @staticmethod
     def getTokenStorageSingleton():
