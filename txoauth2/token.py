@@ -222,6 +222,7 @@ class TokenResource(Resource, object):
     authTokenLifeTime = 3600
     minRefreshTokenLifeTime = 1209600  # = 14 days
     defaultScope = None
+    validScopeItems = None
     acceptedGrantTypes = [GrantTypes.RefreshToken.value, GrantTypes.AuthorizationCode.value,
                           GrantTypes.ClientCredentials.value, GrantTypes.Password.value]
 
@@ -373,6 +374,26 @@ class TokenResource(Resource, object):
             if self.authTokenLifeTime is not None:
                 refreshToken = self._storeNewRefreshToken(client, scope, additionalData)
             return self._buildResponse(request, accessToken, scope, refreshToken)
+        elif grantType == GrantTypes.ClientCredentials.value:
+            if isinstance(client, PublicClient):
+                return UnauthorizedClientError(grantType).generate(request)
+            if b'scope' in request.args:
+                if len(request.args[b'scope']) != 1:
+                    return MultipleParameterError('scope').generate(request)
+                try:
+                    scope = request.args[b'scope'][0].decode('utf-8').split()
+                except UnicodeDecodeError:
+                    return InvalidScopeError(request.args[b'scope'][0]).generate(request)
+            else:
+                if self.defaultScope is None:
+                    return MissingParameterError('scope').generate(request)
+                scope = self.defaultScope
+            if self.validScopeItems is not None:
+                for scopeItem in scope:
+                    if scopeItem not in self.validScopeItems:
+                        return InvalidScopeError(scope).generate(request)
+            accessToken = self._storeNewAccessToken(client, scope, None)
+            return self._buildResponse(request, accessToken, scope)
         else:
             return UnsupportedGrantTypeError(grantType).generate(request)
 

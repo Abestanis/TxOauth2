@@ -39,6 +39,7 @@ class TestClientCredentialsGrant(AbstractTokenResourceTest):
             'scope': ' '.join(self._VALID_SCOPE),
             'client_id': client.id
         })
+        self._CLIENT_STORAGE.addClient(client)
         result = self._TOKEN_RESOURCE.render_POST(request)
         self.assertFailedTokenRequest(
             request, result, UnauthorizedClientError('client_credentials'),
@@ -54,7 +55,8 @@ class TestClientCredentialsGrant(AbstractTokenResourceTest):
         accessToken = 'clientCredentialsAccessTokenWithoutScope'
         tokenResource = TokenResource(
             self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._REFRESH_TOKEN_STORAGE,
-            self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE, defaultScope=defaultScope)
+            self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE, defaultScope=defaultScope,
+            passwordManager=self._PASSWORD_MANAGER)
         request = self.generateValidTokenRequest(arguments={
             'grant_type': 'client_credentials',
         }, authentication=self._VALID_CLIENT)
@@ -115,5 +117,22 @@ class TestClientCredentialsGrant(AbstractTokenResourceTest):
         result = self._TOKEN_RESOURCE.render_POST(request)
         self.assertFailedTokenRequest(
             request, result, MultipleParameterError('scope'),
+            msg='Expected the resource token to reject a '
+                'client_credentials request with multiple scope parameters.')
+
+    def testAuthorizedClientInvalidScope(self):
+        """ Test the rejection of a request with an invalid scope parameters. """
+        request = self.generateValidTokenRequest(arguments={
+            'grant_type': 'client_credentials',
+            'scope': ' '.join(self._VALID_SCOPE),
+        }, authentication=self._VALID_CLIENT)
+        tokenResource = TokenResource(
+            self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._REFRESH_TOKEN_STORAGE,
+            self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE,
+            passwordManager=self._PASSWORD_MANAGER)
+        tokenResource.validScopeItems = []
+        result = tokenResource.render_POST(request)
+        self.assertFailedTokenRequest(
+            request, result, InvalidScopeError(self._VALID_SCOPE),
             msg='Expected the resource token to reject a '
                 'client_credentials request with multiple scope parameters.')
