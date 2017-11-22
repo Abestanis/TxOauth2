@@ -397,9 +397,9 @@ class TokenResource(Resource, object):
         elif grantType == GrantTypes.Password.value:
             for name in [b'username', b'password']:
                 if name not in request.args:
-                    return MissingParameterError(name).generate(request)
+                    return MissingParameterError(name.decode('utf-8')).generate(request)
                 if len(request.args[name]) != 1:
-                    return MultipleParameterError(name).generate(request)
+                    return MultipleParameterError(name.decode('utf-8')).generate(request)
             username = request.args[b'username'][0]
             password = request.args[b'password'][0]
             if b'scope' in request.args:

@@ -37,7 +37,7 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
         request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'scope': ' '.join(self._VALID_SCOPE),
-            'password': 'somePassword'
+            'password': b'somePassword'
         }, authentication=self._VALID_CLIENT)
         result = self._TOKEN_RESOURCE.render_POST(request)
         self.assertFailedTokenRequest(
@@ -49,8 +49,8 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
         request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'scope': ' '.join(self._VALID_SCOPE),
-            'username': ['userName1', 'userName2'],
-            'password': 'somePassword',
+            'username': [b'userName1', b'userName2'],
+            'password': b'somePassword',
         }, authentication=self._VALID_CLIENT)
         result = self._TOKEN_RESOURCE.render_POST(request)
         self.assertFailedTokenRequest(request, result, MultipleParameterError('username'),
@@ -59,12 +59,12 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
 
     def testInvalidUserName(self):
         """ Test the rejection of a request with an invalid user name. """
-        userName = 'invalidUser'
+        userName = b'invalidUser'
         request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'scope': ' '.join(self._VALID_SCOPE),
             'username': userName,
-            'password': 'somePassword',
+            'password': b'somePassword',
         }, authentication=self._VALID_CLIENT)
         self._PASSWORD_MANAGER.expectAuthenticateRequest(
             userName, self._PASSWORD_MANAGER.INVALID_PASSWORD)
@@ -83,7 +83,7 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
             'grant_type': 'password',
             'scope': ' '.join(self._VALID_SCOPE),
             'username': userName,
-            'password': 'somePassword',
+            'password': b'somePassword',
         }, authentication=self._VALID_CLIENT)
         self._PASSWORD_MANAGER.expectAuthenticateRequest(
             userName, self._PASSWORD_MANAGER.INVALID_PASSWORD)
@@ -100,7 +100,7 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
         request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'scope': ' '.join(self._VALID_SCOPE),
-            'username': 'someUserName',
+            'username': b'someUserName',
         }, authentication=self._VALID_CLIENT)
         result = self._TOKEN_RESOURCE.render_POST(request)
         self.assertFailedTokenRequest(
@@ -112,8 +112,8 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
         request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'scope': ' '.join(self._VALID_SCOPE),
-            'username': 'someUserName',
-            'password': ['password1', 'password2'],
+            'username': b'someUserName',
+            'password': [b'password1', b'password2'],
         }, authentication=self._VALID_CLIENT)
         result = self._TOKEN_RESOURCE.render_POST(request)
         self.assertFailedTokenRequest(
@@ -122,12 +122,12 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
 
     def testInvalidPassword(self):
         """ Test the rejection of a request with an invalid password. """
-        userName = 'validUserWithInvalidPassword'
+        userName = b'validUserWithInvalidPassword'
         request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'scope': ' '.join(self._VALID_SCOPE),
             'username': userName,
-            'password': 'invalidPassword',
+            'password': b'invalidPassword',
         }, authentication=self._VALID_CLIENT)
         self._PASSWORD_MANAGER.expectAuthenticateRequest(
             userName, self._PASSWORD_MANAGER.INVALID_PASSWORD)
@@ -141,7 +141,7 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
 
     def testMalformedPassword(self):
         """ Test the rejection of a request with a malformed password. """
-        userName = 'someUser'
+        userName = b'someUser'
         request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'scope': ' '.join(self._VALID_SCOPE),
@@ -163,8 +163,8 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
         Test that a request without a scope is accepted,
         if the token resource has a default scope.
         """
-        userName = 'validUserWithoutScope'
-        password = 'validPasswordWithoutScope'
+        userName = b'validUserWithoutScope'
+        password = b'validPasswordWithoutScope'
         defaultScope = ['default', 'scope']
         authToken = 'resourceOwnerPasswordCredentialsTokenWithoutScope'
         refreshToken = 'resourceOwnerPasswordCredentialsRefreshTokenWithoutScope'
@@ -207,8 +207,8 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
 
     def testAuthorizedWithScope(self):
         """ Test that a valid request with a scope is accepted. """
-        userName = 'validUser'
-        password = 'validPassword'
+        userName = b'validUser'
+        password = b'validPassword'
         authToken = 'resourceOwnerPasswordCredentialsToken'
         refreshToken = 'resourceOwnerPasswordCredentialsRefreshToken'
         request = self.generateValidTokenRequest(arguments={
