@@ -3,6 +3,7 @@ import json
 try:
     from urlparse import urlparse, parse_qs
 except ImportError:
+    # noinspection PyUnresolvedReferences
     from urllib.parse import urlparse, parse_qs
 
 from twisted.web.server import NOT_DONE_YET

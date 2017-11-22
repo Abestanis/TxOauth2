@@ -4,7 +4,7 @@ from twisted.web.error import UnsupportedMethod
 from twisted.web.server import NOT_DONE_YET
 
 from txoauth2.clients import PublicClient
-from txoauth2.errors import InsecureConnectionError, UnsupportedGrantType, MultipleParameterError, \
+from txoauth2.errors import InsecureConnectionError, UnsupportedGrantTypeError, MultipleParameterError, \
     MalformedRequestError, NoClientAuthenticationError, MultipleClientAuthenticationError, \
     MultipleClientCredentialsError, InvalidClientIdError, InvalidClientAuthenticationError, \
     MalformedParameterError
@@ -324,7 +324,7 @@ class TestTokenResource(AbstractTokenResourceTest):
                                                   authentication=self._VALID_CLIENT)
         result = self._TOKEN_RESOURCE.render_POST(request)
         self.assertFailedTokenRequest(
-            request, result, UnsupportedGrantType(grantType),
+            request, result, UnsupportedGrantTypeError(grantType),
             msg='Expected the token resource to reject a request with an unknown grant type.')
 
     def testAuthorizationWithoutClientAuth(self):

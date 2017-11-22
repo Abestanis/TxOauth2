@@ -1,6 +1,6 @@
 from txoauth2.token import TokenResource
 from txoauth2.errors import UnauthorizedClientError, MissingParameterError, InvalidTokenError, \
-    MultipleParameterError, InvalidScopeError, UnsupportedGrantType
+    MultipleParameterError, InvalidScopeError, UnsupportedGrantTypeError
 
 from tests import getTestPasswordClient
 from tests.unit.testTokenResource import AbstractTokenResourceTest
@@ -253,6 +253,6 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
             'password': 'somePassword',
         }, authentication=self._VALID_CLIENT)
         result = tokenResource.render_POST(request)
-        self.assertFailedTokenRequest(request, result, UnsupportedGrantType('password'),
+        self.assertFailedTokenRequest(request, result, UnsupportedGrantTypeError('password'),
                                       msg='Expected the token resource to reject a password '
                                           'request, if the grant type is disabled')

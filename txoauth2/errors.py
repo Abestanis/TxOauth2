@@ -268,12 +268,13 @@ class InvalidScopeError(AuthorizationError):
         super(InvalidScopeError, self).__init__(BAD_REQUEST, 'invalid_scope', message, state=state)
 
 
-class UnsupportedGrantType(OAuth2Error):
+class UnsupportedGrantTypeError(OAuth2Error):
     def __init__(self, grantType=None):
         message = 'The authorization grant type is not supported'
         if grantType is not None:
             message += ': ' + grantType
-        super(UnsupportedGrantType, self).__init__(BAD_REQUEST, 'unsupported_grant_type', message)
+        super(UnsupportedGrantTypeError, self).__init__(
+            BAD_REQUEST, 'unsupported_grant_type', message)
 
 
 class MultipleClientCredentialsError(OAuth2Error):

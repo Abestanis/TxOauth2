@@ -10,7 +10,7 @@ from twisted.web.resource import Resource
 from txoauth2 import GrantTypes
 from txoauth2.clients import PublicClient
 from .errors import InsecureConnectionError, MissingParameterError, InvalidParameterError, \
-    InvalidTokenError, InvalidScopeError, UnsupportedGrantType, OK, MultipleParameterError, \
+    InvalidTokenError, InvalidScopeError, UnsupportedGrantTypeError, OK, MultipleParameterError, \
     MultipleClientCredentialsError, OAuth2Error, InvalidClientIdError, DifferentRedirectUriError, \
     UnauthorizedClientError, MalformedParameterError, MultipleClientAuthenticationError, \
     NoClientAuthenticationError, MalformedRequestError
@@ -252,13 +252,16 @@ class TokenResource(Resource, object):
         except UnicodeDecodeError:
             return InvalidParameterError('grant_type').generate(request)
         if grantType not in self.acceptedGrantTypes:
-            return UnsupportedGrantType(grantType).generate(request)
+            return UnsupportedGrantTypeError(grantType).generate(request)
+        # noinspection PyTypeChecker
+        if grantType not in [stdGrantType.value for stdGrantType in GrantTypes]:
+            return self.onCustomGrantTypeRequest(request, grantType)
         client = self._authenticateClient(request)
         if isinstance(client, OAuth2Error):
             return client.generate(request)
         if grantType not in client.authorizedGrantTypes:
             return UnauthorizedClientError(grantType).generate(request)
-        if grantType == 'refresh_token':
+        if grantType == GrantTypes.RefreshToken.value:
             if b'refresh_token' not in request.args:
                 return MissingParameterError('refresh_token').generate(request)
             if len(request.args[b'refresh_token']) != 1:
@@ -293,7 +296,7 @@ class TokenResource(Resource, object):
                 accessToken, client, scope=scope,
                 additionalData=additionalData, expireTime=expireTime)
             return self.buildResponse(request, accessToken, scope)
-        elif grantType == 'authorization_code':
+        elif grantType == GrantTypes.AuthorizationCode.value:
             redirectUri = None
             if b'code' not in request.args:
                 return MissingParameterError('code').generate(request)
@@ -340,7 +343,19 @@ class TokenResource(Resource, object):
                                                additionalData=additionalData)
             return self.buildResponse(request, accessToken, scope, refreshToken)
         else:
-            return UnsupportedGrantType(grantType).generate(request)
+            return UnsupportedGrantTypeError(grantType).generate(request)
+
+    # noinspection PyMethodMayBeStatic
+    def onCustomGrantTypeRequest(self, request, grantType):
+        """
+        Gets called when a request with a custom grant type is encountered.
+        It is up to this method to extract the client from the request and authenticate him.
+        This method should get overwritten to handle the request.
+        :param request: The request.
+        :param grantType: The custom grant type.
+        :return: The result of the POST request.
+        """
+        return UnsupportedGrantTypeError(grantType).generate(request)
 
     @classmethod
     def isValidToken(cls, token):
