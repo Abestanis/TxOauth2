@@ -1,4 +1,4 @@
-from txoauth2 import isAuthorized
+from txoauth2 import isAuthorized, oauth2
 from txoauth2.imp import DictTokenStorage
 from txoauth2.token import TokenResource
 from txoauth2.errors import MissingTokenError, InvalidTokenRequestError, \
@@ -198,3 +198,29 @@ class TestIsAuthorized(TwistedTestCase):
             400, request.responseCode,
             msg='The HTTP response code should be {code}, if a protected resource receives a '
                 'request over an insecure channel.'.format(code=400))
+
+    def testDecorator(self):
+        """ Test that the oauth2 functions as expected. """
+        protectedContent = b'protectedContent'
+
+        @oauth2(self.VALID_TOKEN_SCOPE)
+        def render(selfArg, requestArg):
+            del selfArg, requestArg  # Unused
+            return protectedContent
+        request = MockRequest('GET', 'protectedResource')
+        request.setRequestHeader(b'Authorization', 'Bearer ' + self.VALID_TOKEN)
+        self.assertEquals(protectedContent, render(self, request),
+                          msg='Expected oauth2 to accept a valid request.')
+        request = MockRequest('GET', 'protectedResource')
+        request.setRequestHeader(b'Authorization', 'Bearer invalidToken')
+        self.assertNotEqual(protectedContent, render(self, request),
+                            msg='Expected oauth2 to reject a request with an invalid token.')
+        request = MockRequest('GET', 'protectedResource')
+        request.setRequestHeader(b'Authorization', 'Bearer ' + self.VALID_TOKEN)
+
+        @oauth2(['Other'])
+        def render2(selfArg, requestArg):
+            del selfArg, requestArg  # Unused
+            return protectedContent
+        self.assertNotEqual(protectedContent, render2(self, request),
+                            msg='Expected oauth2 to reject a request with an invalid scope.')
