@@ -31,7 +31,7 @@ class OAuth2Error(object):
     detail = None
     errorUri = None
     code = BAD_REQUEST
-    logger = logging.getLogger('txOauth2')
+    _logger = logging.getLogger('txOauth2')
 
     def __init__(self, code, message, detail, errorUri=None):
         self.code = code
@@ -59,7 +59,7 @@ class OAuth2Error(object):
         request.setHeader('Cache-Control', 'no-store')
         request.setHeader('Pragma', 'no-cache')
         result = json.dumps(self._generateErrorBody()).encode('utf-8')
-        self.logger.debug('OAuth2 error: {msg}'.format(msg=result))
+        self._logger.debug('OAuth2 error: {msg}'.format(msg=result))
         return result
 
 
@@ -95,7 +95,7 @@ class AuthorizationError(OAuth2Error):
         else:
             request.setResponseCode(self.code)
             errorParameter = self._generateErrorBody()
-            self.logger.debug('OAuth2 error: {msg}'.format(msg=errorParameter))
+            self._logger.debug('OAuth2 error: {msg}'.format(msg=errorParameter))
             for key, value in errorParameter.items():
                 if not (isinstance(value, str) or isinstance(value, bytes)):
                     errorParameter[key] = value.encode('utf-8')  # For Python 2 unicode strings
@@ -162,7 +162,7 @@ class InvalidParameterError(AuthorizationError):
         if name is None:
             message = 'A required parameter was invalid'
         else:
-            message = 'The parameter "{name}" is invalid'.format(name=name)
+            message = 'The parameter \'{name}\' is invalid'.format(name=name)
         super(InvalidParameterError, self).__init__(BAD_REQUEST, 'invalid_request',
                                                     message, state=state)
 
@@ -207,7 +207,7 @@ class MultipleParameterError(AuthorizationError):
 
 class MalformedParameterError(AuthorizationError):
     def __init__(self, name, state=None):
-        message = 'The parameter "{name}" was malformed'.format(name=name)
+        message = 'The parameter \'{name}\' was malformed'.format(name=name)
         super(MalformedParameterError, self).__init__(
             BAD_REQUEST, 'invalid_request', message, state=state)
 

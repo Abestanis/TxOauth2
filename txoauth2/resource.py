@@ -4,6 +4,7 @@ import logging
 import time
 
 from uuid import uuid4
+from abc import ABCMeta, abstractmethod
 try:
     from urllib import urlencode
     from urlparse import urlparse
@@ -66,7 +67,7 @@ class OAuth2(Resource, object):
         the resources indicated by the scope.
 
     """
-
+    __metaclass__ = ABCMeta
     acceptedGrantTypes = [GrantTypes.AuthorizationCode.value, GrantTypes.Implicit.value]
     requestDataLifetime = 3600
     authTokenLifeTime = 3600
@@ -256,6 +257,7 @@ class OAuth2(Resource, object):
             return result.generate(request, redirectUri, errorInFragment)
         return result
 
+    @abstractmethod
     def onAuthenticate(self, request, client, responseType, scope, redirectUri, state, dataKey):
         """
         Called when a valid GET request is made to this OAuth2 resource.
