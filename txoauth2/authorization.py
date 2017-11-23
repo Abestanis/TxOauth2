@@ -99,9 +99,10 @@ def oauth2(scope, allowInsecureRequestDebug=False):
     :return: The wrapped function.
     """
     def decorator(func):
+        @wraps(func)
         def wrapper(self, request, *args, **kwargs):
             if not isAuthorized(request, scope, allowInsecureRequestDebug):
                 return NOT_DONE_YET
             return func(self, request, *args, **kwargs)
-        return wraps(func)(wrapper)
+        return wrapper
     return decorator

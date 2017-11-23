@@ -18,8 +18,8 @@ class ClientStorage(object):
     """
     __metaclass__ = ABCMeta
 
-    @staticmethod
-    def authenticateClient(client, request, secret=None):
+    # noinspection PyMethodMayBeStatic
+    def authenticateClient(self, client, request, secret=None):
         """
         Authenticate a given client.
         :param client: The client that should get authenticated.
