@@ -5,30 +5,47 @@ This Python module helps to implement an OAuth2 Endpoint in Twisted and provides
 
 A sample usage can be found in the [example folder](https://github.com/Abestanis/TxOauth2/blob/master/example/main.py).
 
-You will need to create a [TokenResource](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/token.py#L112) and an OAuth2 endpoint by subclassing the [OAuth2 class](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/resource.py#L18)
-and insert it somewhere into your server hierarchy (e.g. add both at the same place by using
+
+You will need to create a [TokenResource](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/token.py#L190) 
+and an OAuth2 endpoint by subclassing the [OAuth2 class](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/resource.py#L39)
+and insert them somewhere into your server hierarchy (e.g. add both at the same place by using
 ```python
 root.putChild(b"oauth2", OAuth2Subclass.initFromTokenResource(tokenResource, subPath=b"token"))
 ```
-see [the example](https://github.com/Abestanis/TxOauth2/blob/master/example/main.py#L143)).
+see [the example](https://github.com/Abestanis/TxOauth2/blob/master/example/main.py#L144)).
 
-The OAuth2 subclass will need to overwrite the [onAuthenticate](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/resource.py#L118) method.
+Depending on which OAuth2 grant flows you want to support, you may not need both resources.
+The [Implicit Grant](https://tools.ietf.org/html/rfc6749#section-1.3.2) only needs the OAuth2 endpoint, 
+the [Authorization Code Grant](https://tools.ietf.org/html/rfc6749#section-1.3.1) needs both and the others only need the TokenResource.
+See the [specification](https://tools.ietf.org/html/rfc6749#section-1.3) for an indepth explanation of the grant flows.
+You can enable the flows by adding the [GrantType](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/__init__.py#L8) 
+to the list passed as the ```grantType``` Parameter to the OAuth2 and TokenResource endpoints.
+It is best to only enable as few grant types as possible.
+
+The [Authorization Code Grant](https://tools.ietf.org/html/rfc6749#section-1.3.1) flow is the most commonly used, but it is also the most complicated to implement:
+The OAuth2 subclass will need to overwrite the [onAuthenticate](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/resource.py#L258) method.
 This method will be called, when a [User](#terminology) is redirected to your server by a [Client](#terminology) to authorize access to some scope by the client.
 Within the method, you should serve or redirect to a page that allows the user to authorize the client.
 See [here](https://www.oauth.com/oauth2-servers/scope/user-interface/) to get an idea of how such a page could look like.
-If the user approves the authorization, you need to call [grantAccess](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/resource.py#L171)
-or [denyAccess](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/resource.py#L154) if the user denies.
+If the user approves the authorization, you need to call [grantAccess](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/resource.py#L316)
+or [denyAccess](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/resource.py#L293) if the user denies.
 
-Finally, you need to protect your resources either with the [oauth](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/authorization.py#L90)
-decorator or by checking the result of [isAuthorized](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/authorization.py#L44)
+To protect your resources you need to either use the [oauth](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/authorization.py#L90)
+decorator on the ```render_*``` methods of your resources or check the result of [isAuthorized](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/authorization.py#L44)
 as demonstrated [here](https://github.com/Abestanis/TxOauth2/blob/master/example/main.py#L36).
 
-This module does not deal with token storage, creation and validation, client storage or persistent storage.
-You will need to implement a [TokenFactory](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/token.py#L12),
-[TokenStorage](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/token.py#L30),
-[PersistentStorage](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/token.py#L83) and
-[ClientStorage](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/clients.py#L5).
+Finally you need to register the [Clients](#terminology) by storing them in your implementation of 
+the [ClientStorage](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/clients.py#L15).
+
+This module does not deal with token storage, creation and validation, client storage, persistent storage or user password management.
+Depending on the enabled grant types you will need to implement a 
+[TokenFactory](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/token.py#L19),
+[TokenStorage](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/token.py#L39),
+[PersistentStorage](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/token.py#L138),
+[ClientStorage](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/clients.py#L15) and 
+[UserPasswordManager](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/token.py#L171).
 A few implementations of these interfaces can be found in the [imp package](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/imp.py).
+You may also use the tests in the ````tests```` directory to verify the expected behaviour of your implementation.
 
 ## Installation
 
@@ -37,7 +54,7 @@ Run ```pip install txoauth2``` or download the wheel from [PyPI](https://pypi.py
 ## Terminology
 
 * __User__: A user, also called the resource owner, is the actual owner of a resource and he can grant access to the resource to a client. It is up to you to identify and authenticate a user. You can pass additionalData to ```grantAccess``` that identifies an user. This additional data will be passed to the token generator and storage, which allows for the user information to be encoded into the token.
-* __Client__: A client is an other application that wants to access a protected resource that is owned by the user. The client has no rights if they have not been explicitly granted by the user. Clients are represented by [Client objects](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/clients.py#L21).
+* __Client__: A client is an other application that wants to access a protected resource that is owned by the user. The client has no rights if they have not been explicitly granted by the user. Clients are represented by subclasses of the [Client class](https://github.com/Abestanis/TxOauth2/blob/master/txoauth2/clients.py#L50).
 * __Token__: There are two types of tokens: Access Tokens and Refresh Tokens. Access Tokens allow access to a protected resource. If they expire, the client can use the Refresh Token to generate a new Access Token. [A token can only contain alphanumeric and the following characters](https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/#token): ```-._~+/```
 
 ## Security
