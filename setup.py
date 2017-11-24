@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='txoauth2',
-    version='0.6',
+    version='1.0',
     author='Sebastian Scholz',
     author_email='abestanis.gc@gmail.com',
     description='A module that allows implementing OAuth2 with twisted',
@@ -14,7 +14,7 @@ setup(
     packages=['txoauth2'],
     install_requires=['twisted'],
     classifiers=[
-        'Development Status :: 4 - Beta',  # 5 - Production/Stable
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'Topic :: Security',
         'License :: OSI Approved :: MIT License',
