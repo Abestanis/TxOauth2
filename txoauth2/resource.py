@@ -20,7 +20,7 @@ from txoauth2.util import addToUrl
 from .errors import MissingParameterError, InsecureConnectionError, InvalidRedirectUriError, \
     UserDeniesAuthorization, UnsupportedResponseTypeError, \
     UnauthorizedClientError, ServerError, AuthorizationError, MalformedParameterError, \
-    MultipleParameterError, InvalidScopeError, MalformedRequestError, InvalidParameterError
+    MultipleParameterError, InvalidScopeError, InvalidParameterError
 
 
 class InvalidDataKeyError(KeyError):

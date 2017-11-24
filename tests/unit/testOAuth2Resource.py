@@ -9,10 +9,10 @@ except ImportError:
 from twisted.web.server import NOT_DONE_YET
 from txoauth2 import GrantTypes
 from txoauth2.clients import PublicClient, PasswordClient
-from txoauth2.errors import MalformedRequestError, MissingParameterError, \
+from txoauth2.errors import MissingParameterError, InvalidRedirectUriError, \
     UnsupportedResponseTypeError, MalformedParameterError, MultipleParameterError, \
     InsecureConnectionError, ServerError, InvalidScopeError, InvalidParameterError, \
-    UnauthorizedClientError, UserDeniesAuthorization, InvalidRedirectUriError
+    UnauthorizedClientError, UserDeniesAuthorization
 from txoauth2.imp import DictTokenStorage
 from txoauth2.resource import OAuth2, InvalidDataKeyError, InsecureRedirectUriError
 
@@ -753,7 +753,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
 
 
 class AuthResourceTest(AbstractAuthResourceTest):
-    """ Tests aspects of the OAuth2 resource that do not depend on the response type. """#
+    """ Tests aspects of the OAuth2 resource that do not depend on the response type. """
     def testWithoutResponseType(self):
         """ Test the rejection of a request without a response type. """
         state = b'state\xFF\xFF'
