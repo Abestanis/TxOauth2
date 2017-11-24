@@ -1,6 +1,7 @@
 from txoauth2.clients import Client, PasswordClient
 
 from tests import TwistedTestCase
+from txoauth2.util import isAnyStr
 
 
 class ClientTest(TwistedTestCase):
@@ -8,8 +9,8 @@ class ClientTest(TwistedTestCase):
 
     def testClientAttributeTypes(self):
         """ Ensure that all attributes of the client are of the expected type. """
-        client = PasswordClient('clintId', ['https://valid.nonexistent'], ['password'], 'secret')
-        self.assertIsInstance(client.id, str, message='The client id must be a string.')
+        client = PasswordClient('clientId', ['https://valid.nonexistent'], ['password'], 'secret')
+        self.assertTrue(isAnyStr(client.id), msg='The client id must be a string.')
         self.assertIsInstance(client.secret, str, message='The client secret must be a string.')
         self.assertIsInstance(client.redirectUris, list,
                               message='The redirect uris must be a list.')
@@ -19,6 +20,8 @@ class ClientTest(TwistedTestCase):
                               message='The authorized grant types must be a list.')
         for grantType in client.authorizedGrantTypes:
             self.assertIsInstance(grantType, str, message='All grant types must be strings.')
+        client = PasswordClient(u'clientId', ['https://valid.nonexistent'], ['password'], 'secret')
+        self.assertTrue(isAnyStr(client.id), msg='The client id must be a string.')
 
     def testAcceptsValidUri(self):
         """ Check that the client does not reject valid redirect uris. """

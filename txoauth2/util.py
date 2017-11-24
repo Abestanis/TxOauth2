@@ -1,11 +1,24 @@
 # Copyright (c) Sebastian Scholz
 # See LICENSE for details.
+import sys
+
 try:
     from urllib import urlencode
     from urlparse import urlparse, parse_qsl, urlunparse
 except ImportError:
     # noinspection PyUnresolvedReferences
     from urllib.parse import urlparse, urlencode, parse_qsl, urlunparse
+
+
+def isAnyStr(val):
+    """
+    :param val: The value to check
+    :return: If it is a string value (includes unicode).
+    """
+    if sys.version_info.major <= 2:
+        # noinspection PyUnresolvedReferences
+        return isinstance(val, basestring)
+    return isinstance(val, str)
 
 
 def addToUrl(url, query=None, fragment=None):

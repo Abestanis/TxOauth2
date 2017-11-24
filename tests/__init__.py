@@ -208,7 +208,7 @@ class TestTokenFactory(TokenFactory):
         :param scope: The scope that should get passed to the generateToken function.
         :param additionalData: The additional data that should get
                                passed to the generateToken function.
-        :param validScope: If the scope should be considered invalid
+        :param validScope: If the scope should be treated as invalid.
         """
         self._tokens.append((token, lifetime, client, scope, additionalData, validScope))
 

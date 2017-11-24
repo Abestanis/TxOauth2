@@ -8,6 +8,7 @@ except ImportError:
     from urllib.parse import urlparse
 
 from txoauth2 import GrantTypes
+from txoauth2.util import isAnyStr
 from txoauth2.errors import InvalidClientAuthenticationError, NoClientAuthenticationError
 
 
@@ -65,8 +66,8 @@ class Client(object):
                                      to use to get an access token.
         """
         super(Client, self).__init__()
-        if not isinstance(clientId, str):
-            raise ValueError('Expected clientId to be of type str, got ' + str(type(clientId)))
+        if not isAnyStr(clientId):
+            raise ValueError('Expected clientId must be a string, got ' + str(type(clientId)))
         if not isinstance(redirectUris, list):
             raise ValueError('Expected redirectUris to be of type list, got '
                              + str(type(redirectUris)))
