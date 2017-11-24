@@ -67,9 +67,7 @@ class AbstractAuthResourceTest(TwistedTestCase):
         :param kwargs: Arguments to the request.
         :return: A GET request to the OAuth2 resource with the given arguments.
         """
-        request = MockRequest('GET', 'oauth2', **kwargs)
-        request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded')
-        return request
+        return MockRequest('GET', 'oauth2', **kwargs)
 
     @staticmethod
     def getParameterFromRedirectUrl(url, parameterInFragment):
@@ -755,22 +753,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
 
 
 class AuthResourceTest(AbstractAuthResourceTest):
-    """ Tests aspects of the OAuth2 resource that do not depend on the response type. """
-    def testContentType(self):
-        """ Test the rejection of a request with an invalid content type. """
-        request = MockRequest('GET', 'oauth2', arguments={
-            'response_type': 'code',
-            'client_id': self._VALID_CLIENT.id,
-            'redirect_uri': self._VALID_CLIENT.redirectUris[0],
-            'scope': 'All',
-            'state': b'state\xFF\xFF'
-        })
-        result = self._AUTH_RESOURCE.render_GET(request)
-        self.assertFailedRequest(
-            request, result,
-            MalformedRequestError('The Content-Type must be "application/x-www-form-urlencoded"'),
-            msg='Expected the auth resource to reject a request with an invalid content type.')
-
+    """ Tests aspects of the OAuth2 resource that do not depend on the response type. """#
     def testWithoutResponseType(self):
         """ Test the rejection of a request without a response type. """
         state = b'state\xFF\xFF'

@@ -164,9 +164,6 @@ class OAuth2(Resource, object):
         :param request: The GET request.
         :return: A response or NOT_DONE_YET
         """
-        if request.getHeader(b'Content-Type') != b'application/x-www-form-urlencoded':
-            return MalformedRequestError(
-                'The Content-Type must be "application/x-www-form-urlencoded"').generate(request)
         if b'client_id' not in request.args:
             return MissingParameterError('client_id').generate(request)
         if len(request.args[b'client_id']) != 1:
