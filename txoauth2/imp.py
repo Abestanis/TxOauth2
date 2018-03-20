@@ -42,8 +42,8 @@ class ConfigParserClientStorage(ClientStorage):
         """
         super(ConfigParserClientStorage, self).__init__()
         self._configParser = RawConfigParser()
-        self.path = path
-        self._configParser.read(path)
+        self.path = os.path.abspath(path)
+        self._configParser.read(self.path)
         self._clientClasses = [cls[1] for cls in inspect.getmembers(clients)
                                if inspect.isclass(cls[1]) and issubclass(cls[1], Client)]
 

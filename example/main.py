@@ -3,7 +3,7 @@
 #
 # This is an example of how to implement oauth2 with this library and twisted.
 # It should not be used as is in a real server and is meant as a starting point
-# to build your own implementation
+# to build your own implementation.
 import os
 import time
 
@@ -25,7 +25,7 @@ class ClockPage(Resource):
 
     There are two ways to protect a resource with oauth2:
     1: Use the isAuthorized function and return NOT_DONE_YET if it returns False
-    2: use the oauth2 descriptor on one of the render_* functions (or any function, that accepts
+    2: Use the oauth2 descriptor on one of the render_* functions (or any function, that accepts
        the request as the second argument) and it will call isAuthorized for you.
 
     Note that we allow requests send over http (allowInsecureRequestDebug=True). This is done
