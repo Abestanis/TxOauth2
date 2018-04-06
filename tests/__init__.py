@@ -9,6 +9,7 @@ except ImportError:
 try:
     from base64 import encodebytes as encodeBase64
 except ImportError:
+    # noinspection PyProtectedMember
     from base64 import encodestring as encodeBase64
 
 from twisted.trial.unittest import TestCase
@@ -27,7 +28,7 @@ class classProperty(object):
         self.func = classmethod(func)
 
     def __get__(self, *args):
-        # noinspection PyCallingNonCallable
+        # noinspection PyUnresolvedReferences
         return self.func.__get__(*args)()
 
 

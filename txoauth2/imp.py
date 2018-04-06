@@ -2,7 +2,6 @@
 # See LICENSE for details.
 import os
 import time
-import inspect
 
 from uuid import uuid4
 try:
@@ -10,7 +9,6 @@ try:
 except ImportError:
     from configparser import RawConfigParser
 
-from txoauth2 import clients
 from txoauth2.clients import ClientStorage, Client
 from txoauth2.token import TokenFactory, TokenStorage
 
@@ -44,8 +42,7 @@ class ConfigParserClientStorage(ClientStorage):
         self._configParser = RawConfigParser()
         self.path = os.path.abspath(path)
         self._configParser.read(self.path)
-        self._clientClasses = [cls[1] for cls in inspect.getmembers(clients)
-                               if inspect.isclass(cls[1]) and issubclass(cls[1], Client)]
+        self._clientClasses = self._findClientClasses()
 
     def getClient(self, clientId):
         """
@@ -95,6 +92,15 @@ class ConfigParserClientStorage(ClientStorage):
             os.makedirs(os.path.dirname(self.path))
         with open(self.path, 'w') as configFile:
             self._configParser.write(configFile)
+
+    # noinspection PyMethodMayBeStatic
+    def _findClientClasses(self):
+        classes = set()
+        newClasses = {Client}
+        while len(newClasses) != 0:
+            newClasses = {subclass for cls in newClasses for subclass in cls.__subclasses__()}
+            classes |= newClasses
+        return classes
 
 
 class DictTokenStorage(TokenStorage):
