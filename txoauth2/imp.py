@@ -10,7 +10,7 @@ except ImportError:
     from configparser import RawConfigParser
 
 from txoauth2.clients import ClientStorage, Client
-from txoauth2.token import TokenFactory, TokenStorage
+from txoauth2.token import TokenFactory, TokenStorage, PersistentStorage
 
 
 class UUIDTokenFactory(TokenFactory):
@@ -170,3 +170,26 @@ class DictTokenStorage(TokenStorage):
             del self._tokens[token]
             return True
         return False
+
+
+class DictNonPersistentStorage(PersistentStorage):
+    """
+    This storage implementation does not implement any type of persistence.
+    It is intended to be used when persistence is not really important.
+    If you can live with the fact that the user might have to authorize a client again
+    if the server restarted at an unlucky time, than you can use this
+    as a pseudo persistence storage.
+    """
+    storage = {}
+
+    def put(self, key, data, expireTime=None):
+        self.storage[key] = {
+            'data': data,
+            'expires': expireTime
+        }
+
+    def pop(self, key):
+        entry = self.storage.pop(key)
+        if entry['expires'] is not None and time.time() > entry['expires']:
+            raise KeyError(key)
+        return entry['data']

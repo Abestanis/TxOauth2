@@ -15,8 +15,9 @@ from txoauth2 import oauth2, isAuthorized, GrantTypes
 from txoauth2.errors import InvalidScopeError
 from txoauth2.clients import PasswordClient
 from txoauth2.resource import OAuth2
-from txoauth2.token import PersistentStorage, TokenResource
-from txoauth2.imp import UUIDTokenFactory, ConfigParserClientStorage, DictTokenStorage
+from txoauth2.token import TokenResource
+from txoauth2.imp import UUIDTokenFactory, ConfigParserClientStorage, DictTokenStorage, \
+    DictNonPersistentStorage
 
 
 class ClockPage(Resource):
@@ -40,29 +41,6 @@ class ClockPage(Resource):
         if not isAuthorized(request, 'VIEW_CLOCK', allowInsecureRequestDebug=True):
             return NOT_DONE_YET
         return '<html><body>{time}</body></html>'.format(time=time.ctime()).encode('utf-8')
-
-
-class PersistentStorageImp(PersistentStorage):
-    """
-    This implements the PersistentStorage interface. Check out the base class for more detail.
-
-    As with the TokenStorageImp, this implementation does not implement any type of persistence.
-    Often persistence is probably not needed here, because the lifetime of the objects stored here
-    is commonly very short.
-    """
-    storage = {}
-
-    def put(self, key, data, expireTime=None):
-        self.storage[key] = {
-            'data': data,
-            'expires': expireTime
-        }
-
-    def pop(self, key):
-        entry = self.storage.pop(key)
-        if entry['expires'] is not None and time.time() > entry['expires']:
-            raise KeyError(key)
-        return entry['data']
 
 
 class OAuth2Endpoint(OAuth2):
@@ -137,7 +115,7 @@ def setupTestServerResource():
     clientStorage = setupOAuth2Clients()
     enabledGrantTypes = [GrantTypes.AuthorizationCode, GrantTypes.RefreshToken]
     tokenResource = TokenResource(
-        UUIDTokenFactory(), PersistentStorageImp(), DictTokenStorage(), DictTokenStorage(),
+        UUIDTokenFactory(), DictNonPersistentStorage(), DictTokenStorage(), DictTokenStorage(),
         clientStorage, allowInsecureRequestDebug=True, grantTypes=enabledGrantTypes)
     root = Resource()
     root.putChild(b'clock', ClockPage())
