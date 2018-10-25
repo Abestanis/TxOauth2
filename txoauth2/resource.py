@@ -310,8 +310,16 @@ class OAuth2(Resource, object):
         except KeyError:
             raise InvalidDataKeyError(dataKey)
         errorInFragment = data['response_type'] == GrantTypes.Implicit.value
+        redirectUri = data['redirect_uri']
+        if redirectUri is None:
+            try:
+                client = self._clientStorage.getClient(data['client_id'])
+            except KeyError:
+                return InvalidParameterError('client_id') \
+                    .generate(request, redirectUri, errorInFragment)
+            redirectUri = client.redirectUris[0]
         return UserDeniesAuthorization(data['state'])\
-            .generate(request, data['redirect_uri'], errorInFragment)
+            .generate(request, redirectUri, errorInFragment)
 
     def grantAccess(self, request, dataKey, scope=None, codeLifeTime=120, additionalData=None,
                     allowInsecureRedirectUri=False):
