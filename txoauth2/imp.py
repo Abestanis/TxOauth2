@@ -93,12 +93,13 @@ class ConfigParserClientStorage(ClientStorage):
         with open(self.path, 'w') as configFile:
             self._configParser.write(configFile)
 
-    # noinspection PyMethodMayBeStatic
-    def _findClientClasses(self):
+    @staticmethod
+    def _findClientClasses():
         classes = set()
         newClasses = {Client}
         while len(newClasses) != 0:
             newClasses = {subclass for cls in newClasses for subclass in cls.__subclasses__()}
+            newClasses -= classes
             classes |= newClasses
         return classes
 
