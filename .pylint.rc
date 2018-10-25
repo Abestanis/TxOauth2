@@ -1,0 +1,40 @@
+[MASTER]
+jobs=0
+suggestion-mode=yes
+persistent=no
+
+[MESSAGES CONTROL]
+disable=useless-object-inheritance,
+        useless-super-delegation,
+        too-few-public-methods,
+        len-as-condition,
+        too-many-return-statements,
+        too-many-arguments,
+        too-many-instance-attributes,
+        too-many-branches,
+        no-else-return
+
+[REPORTS]
+output-format=colorized
+
+[BASIC]
+argument-naming-style=camelCase
+attr-naming-style=camelCase
+class-attribute-naming-style=any
+class-naming-style=PascalCase
+const-naming-style=UPPER_CASE
+function-naming-style=camelCase
+inlinevar-naming-style=camelCase
+method-naming-style=camelCase
+module-naming-style=camelCase
+variable-naming-style=camelCase
+
+[TYPECHECK]
+ignored-classes=twisted.internet.reactor
+
+[DESIGN]
+# Maximum number of locals for function / method body.
+max-locals=20
+
+# Maximum number of parents for a class (see R0901).
+max-parents=8

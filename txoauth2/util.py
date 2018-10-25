@@ -1,10 +1,14 @@
 # Copyright (c) Sebastian Scholz
 # See LICENSE for details.
-import sys
+""" Utility methods. """
 
 try:
-    from urllib import urlencode
+    from __builtin__ import basestring as StringType
+except ImportError:
+    StringType = str
+try:
     from urlparse import urlparse, parse_qsl, urlunparse
+    from urllib import urlencode
 except ImportError:
     # noinspection PyUnresolvedReferences
     from urllib.parse import urlparse, urlencode, parse_qsl, urlunparse
@@ -15,10 +19,7 @@ def isAnyStr(val):
     :param val: The value to check
     :return: If it is a string value (includes unicode).
     """
-    if sys.version_info.major <= 2:
-        # noinspection PyUnresolvedReferences
-        return isinstance(val, basestring)
-    return isinstance(val, str)
+    return isinstance(val, StringType)
 
 
 def addToUrl(url, query=None, fragment=None):

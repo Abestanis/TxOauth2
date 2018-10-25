@@ -1,9 +1,11 @@
 # Copyright (c) Sebastian Scholz
 # See LICENSE for details.
-#
-# This is an example of how to implement oauth2 with this library and twisted.
-# It should not be used as is in a real server and is meant as a starting point
-# to build your own implementation.
+"""
+This is an example of how to implement oauth2 with this library and twisted.
+It should not be used as is in a real server and is meant as a starting point
+to build your own implementation.
+"""
+
 import os
 import time
 
@@ -35,7 +37,12 @@ class ClockPage(Resource):
     isLeaf = True
 
     @oauth2('VIEW_CLOCK', allowInsecureRequestDebug=True)
-    def render_GET(self, request):
+    def render_GET(self, request):  # pylint: disable=invalid-name,no-self-use
+        """
+        Serve a clock page. This resource is protected.
+        :param request: The request.
+        :return: The result of the request.
+        """
         # This check is not necessary, because this method is already protected by the @oauth
         # decorator. It is included here to show of the two ways of protecting a resource.
         if not isAuthorized(request, 'VIEW_CLOCK', allowInsecureRequestDebug=True):
@@ -53,7 +60,7 @@ class OAuth2Endpoint(OAuth2):
     You are not limited to display a simple web page in onAuthenticate. It is totally valid
     to redirect to a different resource and call grantAccess from there.
     """
-    _VALID_SCOPES = ['All', 'VIEW_CLOCK']
+    _VALID_SCOPES = ['VIEW_CLOCK']
 
     def onAuthenticate(self, request, client, responseType, scope, redirectUri, state, dataKey):
         for scopeItem in scope:
@@ -75,7 +82,7 @@ class OAuth2Endpoint(OAuth2):
 </body>
 </html>""".format(client=client.id, scope=', '.join(scope), dataKey=dataKey).encode('utf-8')
 
-    def render_POST(self, request):
+    def render_POST(self, request):  # pylint: disable=invalid-name
         """
         This will be called when the user clicks on the "yes" or "no" button in the page
         returned by onAuthenticate.
@@ -83,8 +90,7 @@ class OAuth2Endpoint(OAuth2):
         dataKey = request.args[b'data_key'][0].decode('utf-8')
         if len(request.args.get(b'confirm', [])) > 0 and request.args[b'confirm'][0] == b'yes':
             return self.grantAccess(request, dataKey)
-        else:
-            return self.denyAccess(request, dataKey)
+        return self.denyAccess(request, dataKey)
 
 
 def getTestClient():

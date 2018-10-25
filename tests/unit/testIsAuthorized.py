@@ -1,3 +1,5 @@
+""" Tests for the request authorization. """
+
 from txoauth2 import isAuthorized, oauth2
 from txoauth2.imp import DictTokenStorage
 from txoauth2.token import TokenResource
@@ -8,6 +10,7 @@ from tests import MockRequest, TwistedTestCase, getTestPasswordClient
 
 
 class TestIsAuthorized(TwistedTestCase):
+    """ Test the authorization for protected resources. """
     VALID_TOKEN = 'valid_token'
     VALID_TOKEN_SCOPE = ['All', 'scope1']
 

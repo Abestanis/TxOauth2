@@ -1,3 +1,5 @@
+""" Test a token factory. """
+
 from txoauth2.token import TokenResource
 from txoauth2.imp import UUIDTokenFactory
 

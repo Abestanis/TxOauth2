@@ -1,5 +1,7 @@
 # Copyright (c) Sebastian Scholz
 # See LICENSE for details.
+""" Classes for representing and dealing with oauth2 clients """
+
 from abc import abstractmethod, ABCMeta
 try:
     from urlparse import urlparse
@@ -20,6 +22,7 @@ class ClientStorage(object):
     __metaclass__ = ABCMeta
 
     # noinspection PyMethodMayBeStatic
+    # pylint: disable=no-self-use
     def authenticateClient(self, client, request, secret=None):
         """
         Authenticate a given client.
@@ -89,7 +92,7 @@ class Client(object):
             if not isinstance(grantType, str):
                 raise ValueError('Expected the grant types to be of type str, got '
                                  + str(type(grantType)))
-        self.id = clientId
+        self.id = clientId  # pylint: disable=invalid-name
         self.redirectUris = redirectUris
         self.authorizedGrantTypes = authorizedGrantTypes
 

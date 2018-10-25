@@ -1,3 +1,5 @@
+""" Tests for the authorization resource. """
+
 import json
 
 try:
@@ -104,9 +106,9 @@ class AbstractAuthResourceTest(TwistedTestCase):
         self.assertTrue(
             parsedUrl.scheme == parsedUri.scheme and parsedUrl.netloc == parsedUri.netloc and
             parsedUrl.path == parsedUri.path and parsedUrl.params == parsedUri.params,
-            msg=msg + ': The auth token endpoint did not redirect the resource owner to the '
-                      'expected url: {expected} <> {actual}'
-            .format(expected=redirectUri, actual=redirectUrl))
+            msg='{msg}: The auth token endpoint did not redirect '
+                'the resource owner to the expected url: '
+                '{expected} <> {actual}'.format(msg=msg, expected=redirectUri, actual=redirectUrl))
         self.assertIn(parsedUri.query, parsedUrl.query,
                       msg=msg + ': Expected the redirect uri to contain the query parameters '
                                 'of the original redirect uri of the client.')
@@ -150,7 +152,7 @@ class AbstractAuthResourceTest(TwistedTestCase):
                           msg=msg + ': Result contained a different error than expected.')
         self.assertIn('error_description', errorResult,
                       msg=msg + ': Missing error_description parameter in response.')
-        if not (isinstance(expectedError.detail, str) or isinstance(expectedError.detail, bytes)):
+        if not isinstance(expectedError.detail, (bytes, str)):
             self.assertEquals(
                 errorResult['error_description'], expectedError.detail.encode('utf-8'),
                 msg=msg + ': Result contained a different error description than expected.')
@@ -172,8 +174,7 @@ class AbstractAuthResourceTest(TwistedTestCase):
 
     def assertValidAuthRequest(self, request, result, parameters, msg, expectedDataLifetime=None):
         """
-        Assert that a GET request has been processed correctly
-        and the expected data has been stored.
+        Assert that a GET request is processed correctly and the expected data has been stored.
 
         :param request: The GET request.
         :param result: The result of render_GET and onAuthenticate.
@@ -203,11 +204,15 @@ class AbstractAuthResourceTest(TwistedTestCase):
         self.assertListEqual(scope, parameters['scope'],
                              msg=msg + ': Expected the auth resource to pass the scope '
                                        'to onAuthenticate as the fourth parameter.')
-        expectedRedirectUri = parameters['redirect_uri'] if parameters['redirect_uri'] is not None\
+        expectedRedirectUri = parameters['redirect_uri'] if parameters['redirect_uri'] is not None \
             else self._VALID_CLIENT.redirectUris[0]
         self.assertEquals(redirectUri, expectedRedirectUri,
                           msg=msg + ': Expected the auth resource to pass the redirect '
                                     'uri to onAuthenticate as the fifth parameter.')
+        expectedState = parameters.get('state', None)
+        self.assertEquals(state, expectedState,
+                          msg=msg + ': Expected the auth resource to pass the state '
+                                    'to onAuthenticate as the sixth parameter.')
         if expectedDataLifetime is None:
             expectedDataLifetime = self._AUTH_RESOURCE.requestDataLifetime
         try:
@@ -226,7 +231,7 @@ class AbstractAuthResourceTest(TwistedTestCase):
                                         'of the {name} parameter.'.format(name=key))
 
 
-class AbstractSharedGrantTest(AbstractAuthResourceTest):
+class AbstractSharedGrantTest(AbstractAuthResourceTest):  # pylint: disable=too-many-public-methods
     """
     This test contains test for shared functionality for
     the grant types that use the authentication resource.
@@ -234,7 +239,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
     _RESPONSE_TYPE = None
 
     def assertValidCodeResponse(self, request, result, data, msg,
-                                expectedAdditionalData=None, expectedScope=None):
+                                expectedAdditionalData=None, expectedScope=None, **kwargs):
         """
         Validate the parameters of the uri that the authorization endpoint redirected to.
 
@@ -244,6 +249,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
         :param msg: The assertion message.
         :param expectedAdditionalData: Expected additional data stored alongside the code.
         :param expectedScope: The expected scope of the code.
+        :param kwargs: Additional keyword arguments.
         """
         raise NotImplementedError()
 
@@ -285,8 +291,8 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
         self.assertFailedRequest(
             request, result, UnauthorizedClientError(self._RESPONSE_TYPE, state=state),
             msg='Expected the auth resource to reject a request for a client that is not '
-                'authorized to request an authorization using the {type} method.'
-                .format(type=self._RESPONSE_TYPE), redirectUri=redirectUri)
+                'authorized to request an authorization using the '
+                '{type} method.'.format(type=self._RESPONSE_TYPE), redirectUri=redirectUri)
 
     def testWithoutClientId(self):
         """ Test the rejection of a request without a client id. """
@@ -679,8 +685,8 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
         result = self._AUTH_RESOURCE.grantAccess(request, dataKey)
         self.assertValidCodeResponse(
             request, result, data,
-            msg='Expected the auth resource to correctly handle a valid accepted {type} grant.'
-                .format(type=self._RESPONSE_TYPE))
+            msg='Expected the auth resource to correctly handle a valid '
+                'accepted {type} grant.'.format(type=self._RESPONSE_TYPE))
 
     def testGrantAccessInsecureRedirectUriAllowed(self):
         """
@@ -727,9 +733,9 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
         result = authResource.grantAccess(request, dataKey)
         self.assertValidCodeResponse(
             request, result, data,
-            msg='Expected the auth resource to correctly handle a valid accepted {type} grant '
-                'request over an insecure transport, if it is allowed.'
-                .format(type=self._RESPONSE_TYPE))
+            msg='Expected the auth resource to correctly handle a valid '
+                'accepted {type} grant request over an insecure transport, '
+                'if it is allowed.'.format(type=self._RESPONSE_TYPE))
 
     def testGrantAccessSubsetScope(self):
         """ Test that grandAccess accepts a call with a subset of the original scope. """
@@ -754,6 +760,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):
 
 class AuthResourceTest(AbstractAuthResourceTest):
     """ Tests aspects of the OAuth2 resource that do not depend on the response type. """
+
     def testWithoutResponseType(self):
         """ Test the rejection of a request without a response type. """
         state = b'state\xFF\xFF'

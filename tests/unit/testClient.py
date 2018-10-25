@@ -1,7 +1,8 @@
-from txoauth2.clients import Client, PasswordClient
+""" Test for the Client class. """
 
 from tests import TwistedTestCase
 from txoauth2.util import isAnyStr
+from txoauth2.clients import Client, PasswordClient
 
 
 class ClientTest(TwistedTestCase):

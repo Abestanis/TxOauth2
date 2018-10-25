@@ -1,3 +1,5 @@
+""" Tests for the example. """
+
 import os
 import sys
 import re
@@ -87,7 +89,7 @@ class FullExampleTestCase(TwistedTestCase):
                           msg='Result contained a different error than expected.')
         self.assertIn('error_description', parameter,
                       msg='Missing error_description parameter in response.')
-        if not (isinstance(expectedError.detail, str) or isinstance(expectedError.detail, bytes)):
+        if not isinstance(expectedError.detail, (bytes, str)):
             self.assertEquals(
                 parameter['error_description'], expectedError.detail.encode('utf-8'),
                 msg='Result contained a different error description than expected.')

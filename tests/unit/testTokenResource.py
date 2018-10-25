@@ -1,3 +1,5 @@
+""" Tests for the token resource. """
+
 import json
 
 # noinspection PyProtectedMember
@@ -204,26 +206,28 @@ class AbstractTokenResourceTest(TwistedTestCase):
                     msg='If the request has authentication via the "Authorization" header field, '
                         'the result must include the "WWW-Authenticate" response header field.')
                 authenticateResponse = authenticateResponse.encode('utf-8')
-                authType, realm = authenticateResponse.split()
+                authType, _ = authenticateResponse.split()
                 self.assertTrue(authorizationHeader.startswith(authType),
                                 msg='Expected an WWW-Authenticate response matching the request.')
                 expectedHeaderValue = b'realm="' + request.prePathURL() + b'"'
                 self.assertIn(expectedHeaderValue, authenticateResponse,
-                              msg='The "realm" auth-parameter does not contain the expected value: '
-                                  + expectedHeaderValue.decode('utf-8'))
+                              msg='The "realm" auth-parameter does not contain the '
+                                  'expected value: ' + expectedHeaderValue.decode('utf-8'))
 
 
+# pylint: disable=too-many-public-methods
 class TestTokenResource(AbstractTokenResourceTest):
     """ Test the functionality of the token resource that is shared among the grant types. """
+
     def testInsecureConnection(self):
         """
         Test the rejection of a request via an insecure transport,
         except if allowInsecureRequestDebug is set to true.
         """
         request = self.generateValidTokenRequest(arguments={
-                'grant_type': 'refresh_token',
-                'refresh_token': self._VALID_REFRESH_TOKEN
-            }, authentication=self._VALID_CLIENT, isSecure=False)
+            'grant_type': 'refresh_token',
+            'refresh_token': self._VALID_REFRESH_TOKEN
+        }, authentication=self._VALID_CLIENT, isSecure=False)
         result = self._TOKEN_RESOURCE.render_POST(request)
         self.assertFailedTokenRequest(
             request, result, InsecureConnectionError(),
@@ -233,9 +237,9 @@ class TestTokenResource(AbstractTokenResourceTest):
             self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE, allowInsecureRequestDebug=True,
             passwordManager=self._PASSWORD_MANAGER)
         request = self.generateValidTokenRequest(arguments={
-                'grant_type': 'refresh_token',
-                'refresh_token': self._VALID_REFRESH_TOKEN
-            }, authentication=self._VALID_CLIENT, isSecure=False)
+            'grant_type': 'refresh_token',
+            'refresh_token': self._VALID_REFRESH_TOKEN
+        }, authentication=self._VALID_CLIENT, isSecure=False)
         newAuthToken = 'tokenViaInsecureConnection'
         self._TOKEN_FACTORY.expectTokenRequest(
             newAuthToken, debugTokenResource.authTokenLifeTime,
@@ -278,9 +282,9 @@ class TestTokenResource(AbstractTokenResourceTest):
     def testIgnoresUnrecognizedArgs(self):
         """ Test that unrecognized parameter are ignored. """
         request = self.generateValidTokenRequest(arguments={
-                'grant_type': 'refresh_token',
-                'refresh_token': self._VALID_REFRESH_TOKEN
-            }, urlQuery='unrecognized=1', authentication=self._VALID_CLIENT)
+            'grant_type': 'refresh_token',
+            'refresh_token': self._VALID_REFRESH_TOKEN
+        }, urlQuery='unrecognized=1', authentication=self._VALID_CLIENT)
         newAuthToken = 'tokenWithUnrecognizedArgs'
         self._TOKEN_FACTORY.expectTokenRequest(newAuthToken, self._TOKEN_RESOURCE.authTokenLifeTime,
                                                self._VALID_CLIENT, self._VALID_SCOPE)

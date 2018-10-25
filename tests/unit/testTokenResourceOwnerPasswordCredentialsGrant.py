@@ -1,3 +1,5 @@
+""" Test the password grant flow. """
+
 from txoauth2.token import TokenResource
 from txoauth2.errors import UnauthorizedClientError, MissingParameterError, InvalidTokenError, \
     MultipleParameterError, InvalidScopeError, UnsupportedGrantTypeError

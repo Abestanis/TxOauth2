@@ -1,3 +1,5 @@
+""" Unit tests for the txOauth2 module. """
+
 import time
 
 from uuid import uuid4
@@ -7,10 +9,11 @@ except ImportError:
     # noinspection PyUnresolvedReferences
     from urllib.parse import urlparse, parse_qs
 try:
-    from base64 import encodebytes as encodeBase64
+    # noinspection PyProtectedMember
+    from base64 import encodebytes as _encodeBase64
 except ImportError:
     # noinspection PyProtectedMember
-    from base64 import encodestring as encodeBase64
+    from base64 import encodestring as _encodeBase64
 
 from twisted.trial.unittest import TestCase
 from twisted.internet.defer import succeed, inlineCallbacks, returnValue
@@ -22,7 +25,7 @@ from txoauth2.token import TokenFactory, UserPasswordManager, PersistentStorage
 from txoauth2.clients import ClientStorage, PasswordClient
 
 
-class classProperty(object):
+class classProperty(object):  # pylint: disable=invalid-name
     """ @property for class variables. """
     def __init__(self, func):
         self.func = classmethod(func)
@@ -38,6 +41,7 @@ class TwistedTestCase(TestCase):
 
     @classProperty
     def __test__(self):
+        # pylint: disable=no-member
         return not (self.__name__.startswith('Abstract') or self.__name__ == 'TwistedTestCase')
 
 
@@ -88,8 +92,9 @@ class MockRequest(DummyRequest):
         """
         self.user = ensureByteString(username)
         self.password = ensureByteString(password)
+        # pylint: disable=deprecated-method
         self.setRequestHeader(b'Authorization', authType.encode('utf-8') + b' ' +
-                              encodeBase64(self.user + b':' + self.password))
+                              _encodeBase64(self.user + b':' + self.password))
 
     def getUser(self):
         """
@@ -140,6 +145,11 @@ class MockRequest(DummyRequest):
 class MockSite(server.Site):
     """ A site that can be used for testing. """
     def makeRequest(self, request):
+        """
+        Execute a request for this site.
+        :param request: The request to execute.
+        :return: The result of the request.
+        """
         resource = self.getResourceFor(request)
         return self._render(resource, request)
 
@@ -171,10 +181,8 @@ class MockSite(server.Site):
         elif result is server.NOT_DONE_YET:
             if request.finished:
                 return succeed(result)
-            else:
-                return request.notifyFinish()
-        else:
-            raise ValueError("Unexpected return value: {result!r}".format(result=result))
+            return request.notifyFinish()
+        raise ValueError("Unexpected return value: {result!r}".format(result=result))
 
 
 class TestTokenFactory(TokenFactory):
@@ -233,12 +241,12 @@ class TestTokenFactory(TokenFactory):
         """ Assert that all expected tokens have been requested from the token factory. """
         self._testCase.assertTrue(
             len(self._tokens) == 0,
-            msg='Not all expected tokens have been requested from the token factory: {tokens}'
-                .format(tokens=', '.join(data[0] for data in self._tokens)))
+            msg='Not all expected tokens have been requested from the token factory: '
+                '{tokens}'.format(tokens=', '.join(data[0] for data in self._tokens)))
         self._testCase.assertTrue(
             len(self._requestedTokens) == 0,
-            msg='More tokens have been requested from the token factory than expected: {tokens}'
-                .format(tokens=', '.join(data[0] for data in self._tokens)))
+            msg='More tokens have been requested from the token factory than expected: '
+                '{tokens}'.format(tokens=', '.join(data[0] for data in self._tokens)))
 
     def reset(self, testCase):
         """

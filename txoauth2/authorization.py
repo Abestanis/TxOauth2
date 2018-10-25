@@ -1,5 +1,7 @@
 # Copyright (c) Sebastian Scholz
 # See LICENSE for details.
+""" Provides methods to authorize requests. """
+
 from functools import wraps
 try:
     from urlparse import urlparse, parse_qs
@@ -26,7 +28,7 @@ def _getToken(request):
     if authHeader is not None and authHeader.startswith(b'Bearer '):
         token = authHeader[7:]
     if b'access_token' in request.args:
-        if b'POST' == request.method and\
+        if request.method == b'POST' and\
                 request.getHeader(b'Content-Type') == b'application/x-www-form-urlencoded':
             accessTokenArg = request.args[b'access_token']
         else:
@@ -41,6 +43,7 @@ def _getToken(request):
     return token
 
 
+# pylint: disable=too-many-nested-blocks
 def isAuthorized(request, scope, allowInsecureRequestDebug=False):
     """
     Returns True if the token in the request grants access to the given
@@ -57,7 +60,7 @@ def isAuthorized(request, scope, allowInsecureRequestDebug=False):
     :return: True, if the request is authorized, False otherwise.
     """
     error = None
-    scope = scope if type(scope) == list else [scope]
+    scope = scope if isinstance(scope, list) else [scope]
     if not (allowInsecureRequestDebug or request.isSecure()):
         error = InsecureConnectionError()
     else:
@@ -78,8 +81,7 @@ def isAuthorized(request, scope, allowInsecureRequestDebug=False):
                     if tokenStorage.contains(requestToken):
                         if tokenStorage.hasAccess(requestToken, scope):
                             return True
-                        else:
-                            error = InsufficientScopeRequestError(scope)
+                        error = InsufficientScopeRequestError(scope)
             if error is None:
                 error = InvalidTokenRequestError(scope)
     request.write(error.generate(request))

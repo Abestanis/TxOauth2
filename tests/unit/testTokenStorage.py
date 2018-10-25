@@ -1,3 +1,5 @@
+""" Tests for a token storage. """
+
 import time
 
 from txoauth2.imp import DictTokenStorage
@@ -207,7 +209,7 @@ class AbstractTokenStorageTest(TwistedTestCase):
             self._TOKEN_STORAGE.contains(noExpireToken),
             msg='Expected the token storage to contain the token that will never expire.')
         self.assertTrue(self._TOKEN_STORAGE.contains(futureExpireToken),
-                        msg='Expected the token storage to contain the token has not expired.')
+                        msg='Expected the token storage to contain the token that has not expired.')
         self.assertFalse(
             self._TOKEN_STORAGE.contains(hasExpiredToken),
             msg='Expected the token storage to not contain the token that has expired.')

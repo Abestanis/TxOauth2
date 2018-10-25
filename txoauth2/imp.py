@@ -1,5 +1,7 @@
 # Copyright (c) Sebastian Scholz
 # See LICENSE for details.
+""" Implementations to some of the abstract classes used by this module. """
+
 import os
 import time
 
@@ -7,6 +9,7 @@ from uuid import uuid4
 try:
     from ConfigParser import RawConfigParser
 except ImportError:
+    # noinspection PyUnresolvedReferences
     from configparser import RawConfigParser
 
 from txoauth2.clients import ClientStorage, Client

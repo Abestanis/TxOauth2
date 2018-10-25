@@ -1,3 +1,5 @@
+""" Tests for the authorization resource side of the authorization code grant flow. """
+
 from twisted.web.server import NOT_DONE_YET
 from txoauth2 import GrantTypes
 
@@ -12,6 +14,7 @@ class TestAuthorizationCodeGrant(AbstractSharedGrantTest):
     """
     _RESPONSE_TYPE = 'code'
 
+    # pylint: disable=arguments-differ
     def assertValidCodeResponse(self, request, result, data, msg, expectedCodeDataLifetime=120,
                                 expectedAdditionalData=None, expectedScope=None):
         """

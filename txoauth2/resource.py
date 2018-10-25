@@ -1,16 +1,16 @@
 # Copyright (c) Sebastian Scholz
 # See LICENSE for details.
+""" The authorization endpoint. """
 import logging
 import time
 
 from uuid import uuid4
 from abc import ABCMeta, abstractmethod
 try:
-    from urllib import urlencode
     from urlparse import urlparse
 except ImportError:
     # noinspection PyUnresolvedReferences
-    from urllib.parse import urlparse, urlencode
+    from urllib.parse import urlparse
 
 from twisted.web.resource import Resource
 from twisted.web.server import NOT_DONE_YET
@@ -126,16 +126,15 @@ class OAuth2(Resource, object):
                              'when the implicit authorization flow is enabled')
 
     @classmethod
-    def initFromTokenResource(cls, tokenResource, subPath=None, *args, **kwargs):
+    def initFromTokenResource(cls, tokenResource, *args, **kwargs):
         """
         Create an OAuth2 Resource with the tokenFactory, the persistentStorage
         and the clientStorage of the tokenResource. The allowInsecureRequestDebug
         flag is also copied.
-        If a subPath is given, the tokenResource is added as a child to the new
+        If a subPath keyword argument is given, the tokenResource is added as a child to the new
         OAuth2 Resource at the subPath.
 
         :param tokenResource: The TokenResource to initialize the new OAuth2 Resource.
-        :param subPath: An optional path at which the tokenResource will be added.
         :param args: Arguments to the for the classes constructor.
         :param kwargs: Keyword arguments to the for the classes constructor.
         :return: A new initialized OAuth2 Resource.
@@ -147,13 +146,14 @@ class OAuth2(Resource, object):
             'defaultScope': tokenResource.defaultScope
         }
         keywordArgs.update(kwargs)
+        subPath = keywordArgs.pop('subPath', None)
         oAuth2Resource = cls(tokenResource.tokenFactory, tokenResource.persistentStorage,
                              tokenResource.clientStorage, *args, **keywordArgs)
         if subPath is not None:
             oAuth2Resource.putChild(subPath, tokenResource)
         return oAuth2Resource
 
-    def render_GET(self, request):
+    def render_GET(self, request):  # pylint: disable=invalid-name
         """
         Handle a GET request to this resource. This initializes
         the authorization process.
@@ -235,24 +235,8 @@ class OAuth2(Resource, object):
         if grantType not in client.authorizedGrantTypes:
             return UnauthorizedClientError(responseType, state)\
                 .generate(request, redirectUri, errorInFragment)
-        dataKey = 'request' + str(uuid4())
-        self._persistentStorage.put(dataKey, {
-            'response_type': grantType,
-            'redirect_uri':  None if b'redirect_uri' not in request.args else redirectUri,
-            'client_id': client.id,
-            'scope': scope,
-            'state': state
-        }, expireTime=int(time.time()) + self.requestDataLifetime)
-        try:
-            result = self.onAuthenticate(request, client, grantType, scope,
-                                         redirectUri, state, dataKey)
-        except Exception as error:
-            logging.getLogger('txOauth2').error('Caught exception in onAuthenticate: ' + str(error),
-                                                exc_info=1)
-            return ServerError(state).generate(request, redirectUri, errorInFragment)
-        if isinstance(result, AuthorizationError):
-            return result.generate(request, redirectUri, errorInFragment)
-        return result
+        return self._handleAuthenticationRequest(
+            request, client, grantType, redirectUri, scope, state, errorInFragment)
 
     @abstractmethod
     def onAuthenticate(self, request, client, responseType, scope, redirectUri, state, dataKey):
@@ -334,7 +318,8 @@ class OAuth2(Resource, object):
         to after this function returns.
 
         :raises InvalidDataKeyError: If the given data key is invalid or expired.
-        :raises InsecureRedirectUriError: If the given data key is invalid or expired.
+        :raises InsecureRedirectUriError: If the given redirect uri is not
+                using a secure scheme and insecure connections are not allowed.
         :raises ValueError: If the data key belongs to a request with a custom response type.
         :param request: The request made by the user.
         :param dataKey: The allowInsecureRedirectUri is false and the redirect uri is not secure.
@@ -402,3 +387,37 @@ class OAuth2(Resource, object):
         request.redirect(redirectUri)
         request.finish()
         return NOT_DONE_YET
+
+    def _handleAuthenticationRequest(
+            self, request, client, grantType, redirectUri, scope, state, errorInFragment):
+        """
+        handle an authentication request. The request has already been validated.
+
+        :param request: The request.
+        :param client: The client that initiated the request.
+        :param grantType: The grant type of the request.
+        :param redirectUri: The uri to redirect the user to
+                            after the request was accepted or denied.
+        :param scope: The scope that the request requests access to.
+        :param state: The state parameter of the request.
+        :param errorInFragment: Whether or not the error should be send in the query or fragment.
+        :return: The result of the request.
+        """
+        dataKey = 'request' + str(uuid4())
+        self._persistentStorage.put(dataKey, {
+            'response_type': grantType,
+            'redirect_uri': None if b'redirect_uri' not in request.args else redirectUri,
+            'client_id': client.id,
+            'scope': scope,
+            'state': state
+        }, expireTime=int(time.time()) + self.requestDataLifetime)
+        try:
+            result = self.onAuthenticate(request, client, grantType, scope,
+                                         redirectUri, state, dataKey)
+        except Exception as error:  # pylint: disable=broad-except
+            logging.getLogger('txOauth2').error(
+                'Caught exception in onAuthenticate: %s', str(error), exc_info=1)
+            return ServerError(state).generate(request, redirectUri, errorInFragment)
+        if isinstance(result, AuthorizationError):
+            return result.generate(request, redirectUri, errorInFragment)
+        return result

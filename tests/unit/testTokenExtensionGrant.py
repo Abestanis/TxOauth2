@@ -1,3 +1,5 @@
+""" Tests that addition of custom grant flows. """
+
 from txoauth2.errors import UnsupportedGrantTypeError
 from txoauth2.token import TokenResource
 

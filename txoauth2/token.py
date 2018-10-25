@@ -1,5 +1,7 @@
 # Copyright (c) Sebastian Scholz
 # See LICENSE for details.
+""" The token endpoint. """
+
 import string
 import time
 import json
@@ -274,9 +276,9 @@ class TokenResource(Resource, object):
         if GrantTypes.Password.value in self.acceptedGrantTypes and passwordManager is None:
             raise ValueError('The passwordManager must not be None '
                              'if the password grant flow is enabled')
-        self.render_HEAD = None  # Disable automatic HEAD handling.
+        self.render_HEAD = None  # Disable automatic HEAD handling. pylint: disable=invalid-name
 
-    def render_POST(self, request):
+    def render_POST(self, request):  # pylint: disable=invalid-name
         """
         Handle a POST request according to the OAuth2 specification.
         See the docstring of this class for more information.
@@ -310,125 +312,165 @@ class TokenResource(Resource, object):
         if grantType not in client.authorizedGrantTypes:
             return UnauthorizedClientError(grantType).generate(request)
         if grantType == GrantTypes.RefreshToken.value:
-            if b'refresh_token' not in request.args:
-                return MissingParameterError('refresh_token').generate(request)
-            if len(request.args[b'refresh_token']) != 1:
-                return MultipleParameterError('refresh_token').generate(request)
-            try:
-                refreshToken = request.args[b'refresh_token'][0].decode('utf-8')
-                tokenScope = self.refreshTokenStorage.getTokenScope(refreshToken)
-                additionalData = self.refreshTokenStorage.getTokenAdditionalData(refreshToken)
-                clientId = self.refreshTokenStorage.getTokenClient(refreshToken)
-            except (KeyError, UnicodeDecodeError):
-                return InvalidTokenError('refresh token').generate(request)
-            if clientId != client.id:
-                return InvalidTokenError('refresh token').generate(request)
-            if b'scope' in request.args:
-                if len(request.args[b'scope']) != 1:
-                    return MultipleParameterError('scope').generate(request)
-                try:
-                    scope = request.args[b'scope'][0].decode('utf-8').split()
-                except UnicodeDecodeError:
-                    return InvalidScopeError(request.args[b'scope'][0]).generate(request)
-                for requestedScope in scope:
-                    if requestedScope not in tokenScope:
-                        return InvalidScopeError(scope).generate(request)
-            else:
-                scope = tokenScope
-            if not self.refreshTokenStorage.contains(refreshToken):
-                return InvalidTokenError('refresh token').generate(request)
-            try:
-                accessToken = self._storeNewAccessToken(client, scope, additionalData)
-            except ValueError:
-                return InvalidScopeError(scope).generate(request)
-            newRefreshToken = None
-            if self._shouldExpireRefreshToken(refreshToken):
-                self.refreshTokenStorage.remove(refreshToken)
-                newRefreshToken = self._storeNewRefreshToken(client, scope, additionalData)
-            return self._buildResponse(request, accessToken, scope, newRefreshToken)
+            return self._handleRefreshRequest(request, client)
         elif grantType == GrantTypes.AuthorizationCode.value:
-            redirectUri = None
-            if b'code' not in request.args:
-                return MissingParameterError('code').generate(request)
-            if len(request.args[b'code']) != 1:
-                return MultipleParameterError('code').generate(request)
-            if b'redirect_uri' in request.args:
-                if len(request.args[b'redirect_uri']) != 1:
-                    return MultipleParameterError('redirect_uri').generate(request)
-                try:
-                    redirectUri = request.args[b'redirect_uri'][0].decode('utf-8')
-                except UnicodeDecodeError:
-                    return InvalidParameterError('redirect_uri').generate(request)
-            try:
-                data = self.persistentStorage.pop('code' + request.args[b'code'][0].decode('utf-8'))
-            except (KeyError, UnicodeDecodeError):
-                return InvalidTokenError('authorization code').generate(request)
-            if data['client_id'] != client.id:
-                return InvalidTokenError('authorization code').generate(request)
-            if data['redirect_uri'] is not None:
-                if redirectUri is None:
-                    return MissingParameterError('redirect_uri').generate(request)
-                if data['redirect_uri'] != redirectUri:
-                    return DifferentRedirectUriError().generate(request)
-            additionalData = data['additional_data']
-            scope = data['scope']
-            accessToken = self._storeNewAccessToken(client, scope, additionalData)
-            refreshToken = None
-            if self.authTokenLifeTime is not None:
-                refreshToken = self._storeNewRefreshToken(client, scope, additionalData)
-            return self._buildResponse(request, accessToken, scope, refreshToken)
+            return self._handleAuthorizationCodeRequest(request, client)
         elif grantType == GrantTypes.ClientCredentials.value:
-            if isinstance(client, PublicClient):
-                return UnauthorizedClientError(grantType).generate(request)
-            if b'scope' in request.args:
-                if len(request.args[b'scope']) != 1:
-                    return MultipleParameterError('scope').generate(request)
-                try:
-                    scope = request.args[b'scope'][0].decode('utf-8').split()
-                except UnicodeDecodeError:
-                    return InvalidScopeError(request.args[b'scope'][0]).generate(request)
-            else:
-                if self.defaultScope is None:
-                    return MissingParameterError('scope').generate(request)
-                scope = self.defaultScope
-            try:
-                accessToken = self._storeNewAccessToken(client, scope, None)
-            except ValueError:
-                return InvalidScopeError(scope).generate(request)
-            return self._buildResponse(request, accessToken, scope)
+            return self._handleClientCredentialsRequest(request, client)
         elif grantType == GrantTypes.Password.value:
-            for name in [b'username', b'password']:
-                if name not in request.args:
-                    return MissingParameterError(name.decode('utf-8')).generate(request)
-                if len(request.args[name]) != 1:
-                    return MultipleParameterError(name.decode('utf-8')).generate(request)
-            username = request.args[b'username'][0]
-            password = request.args[b'password'][0]
-            if b'scope' in request.args:
-                if len(request.args[b'scope']) != 1:
-                    return MultipleParameterError('scope').generate(request)
-                try:
-                    scope = request.args[b'scope'][0].decode('utf-8').split()
-                except UnicodeDecodeError:
-                    return InvalidScopeError(request.args[b'scope'][0]).generate(request)
-            else:
-                if self.defaultScope is None:
-                    return MissingParameterError('scope').generate(request)
-                scope = self.defaultScope
-            if not self.passwordManager.authenticate(username, password):
-                return InvalidTokenError('username or password').generate(request)
+            return self._handlePasswordRequest(request, client)
+        return UnsupportedGrantTypeError(grantType).generate(request)
+
+    def _handleRefreshRequest(self, request, client):
+        """
+        Handle a request for the refresh token flow.
+
+        :param request: The request.
+        :param client: The client that makes the request.
+        :return: The result of the request.
+        """
+        if b'refresh_token' not in request.args:
+            return MissingParameterError('refresh_token').generate(request)
+        if len(request.args[b'refresh_token']) != 1:
+            return MultipleParameterError('refresh_token').generate(request)
+        try:
+            refreshToken = request.args[b'refresh_token'][0].decode('utf-8')
+            tokenScope = self.refreshTokenStorage.getTokenScope(refreshToken)
+            additionalData = self.refreshTokenStorage.getTokenAdditionalData(refreshToken)
+            clientId = self.refreshTokenStorage.getTokenClient(refreshToken)
+        except (KeyError, UnicodeDecodeError):
+            return InvalidTokenError('refresh token').generate(request)
+        if clientId != client.id:
+            return InvalidTokenError('refresh token').generate(request)
+        if b'scope' in request.args:
+            if len(request.args[b'scope']) != 1:
+                return MultipleParameterError('scope').generate(request)
             try:
-                accessToken = self._storeNewAccessToken(client, scope, None)
-            except ValueError:
-                return InvalidScopeError(scope).generate(request)
-            refreshToken = None
-            if self.authTokenLifeTime is not None:
-                refreshToken = self._storeNewRefreshToken(client, scope, None)
-            return self._buildResponse(request, accessToken, scope, refreshToken)
+                scope = request.args[b'scope'][0].decode('utf-8').split()
+            except UnicodeDecodeError:
+                return InvalidScopeError(request.args[b'scope'][0]).generate(request)
+            for requestedScope in scope:
+                if requestedScope not in tokenScope:
+                    return InvalidScopeError(scope).generate(request)
         else:
-            return UnsupportedGrantTypeError(grantType).generate(request)
+            scope = tokenScope
+        if not self.refreshTokenStorage.contains(refreshToken):
+            return InvalidTokenError('refresh token').generate(request)
+        try:
+            accessToken = self._storeNewAccessToken(client, scope, additionalData)
+        except ValueError:
+            return InvalidScopeError(scope).generate(request)
+        newRefreshToken = None
+        if self._shouldExpireRefreshToken(refreshToken):
+            self.refreshTokenStorage.remove(refreshToken)
+            newRefreshToken = self._storeNewRefreshToken(client, scope, additionalData)
+        return self._buildResponse(request, accessToken, scope, newRefreshToken)
+
+    def _handleAuthorizationCodeRequest(self, request, client):
+        """
+        Handle a request for the authorization code flow.
+
+        :param request: The request.
+        :param client: The client that makes the request.
+        :return: The result of the request.
+        """
+        redirectUri = None
+        if b'code' not in request.args:
+            return MissingParameterError('code').generate(request)
+        if len(request.args[b'code']) != 1:
+            return MultipleParameterError('code').generate(request)
+        if b'redirect_uri' in request.args:
+            if len(request.args[b'redirect_uri']) != 1:
+                return MultipleParameterError('redirect_uri').generate(request)
+            try:
+                redirectUri = request.args[b'redirect_uri'][0].decode('utf-8')
+            except UnicodeDecodeError:
+                return InvalidParameterError('redirect_uri').generate(request)
+        try:
+            data = self.persistentStorage.pop('code' + request.args[b'code'][0].decode('utf-8'))
+        except (KeyError, UnicodeDecodeError):
+            return InvalidTokenError('authorization code').generate(request)
+        if data['client_id'] != client.id:
+            return InvalidTokenError('authorization code').generate(request)
+        if data['redirect_uri'] is not None:
+            if redirectUri is None:
+                return MissingParameterError('redirect_uri').generate(request)
+            if data['redirect_uri'] != redirectUri:
+                return DifferentRedirectUriError().generate(request)
+        additionalData = data['additional_data']
+        scope = data['scope']
+        accessToken = self._storeNewAccessToken(client, scope, additionalData)
+        refreshToken = None
+        if self.authTokenLifeTime is not None:
+            refreshToken = self._storeNewRefreshToken(client, scope, additionalData)
+        return self._buildResponse(request, accessToken, scope, refreshToken)
+
+    def _handleClientCredentialsRequest(self, request, client):
+        """
+        Handle a request for the client credentials flow.
+
+        :param request: The request.
+        :param client: The client that makes the request.
+        :return: The result of the request.
+        """
+        if isinstance(client, PublicClient):
+            return UnauthorizedClientError(GrantTypes.ClientCredentials.value).generate(request)
+        if b'scope' in request.args:
+            if len(request.args[b'scope']) != 1:
+                return MultipleParameterError('scope').generate(request)
+            try:
+                scope = request.args[b'scope'][0].decode('utf-8').split()
+            except UnicodeDecodeError:
+                return InvalidScopeError(request.args[b'scope'][0]).generate(request)
+        else:
+            if self.defaultScope is None:
+                return MissingParameterError('scope').generate(request)
+            scope = self.defaultScope
+        try:
+            accessToken = self._storeNewAccessToken(client, scope, None)
+        except ValueError:
+            return InvalidScopeError(scope).generate(request)
+        return self._buildResponse(request, accessToken, scope)
+
+    def _handlePasswordRequest(self, request, client):
+        """
+        Handle a request for the password flow.
+
+        :param request: The request.
+        :param client: The client that makes the request.
+        :return: The result of the request.
+        """
+        for name in [b'username', b'password']:
+            if name not in request.args:
+                return MissingParameterError(name.decode('utf-8')).generate(request)
+            if len(request.args[name]) != 1:
+                return MultipleParameterError(name.decode('utf-8')).generate(request)
+        username = request.args[b'username'][0]
+        password = request.args[b'password'][0]
+        if b'scope' in request.args:
+            if len(request.args[b'scope']) != 1:
+                return MultipleParameterError('scope').generate(request)
+            try:
+                scope = request.args[b'scope'][0].decode('utf-8').split()
+            except UnicodeDecodeError:
+                return InvalidScopeError(request.args[b'scope'][0]).generate(request)
+        else:
+            if self.defaultScope is None:
+                return MissingParameterError('scope').generate(request)
+            scope = self.defaultScope
+        if not self.passwordManager.authenticate(username, password):
+            return InvalidTokenError('username or password').generate(request)
+        try:
+            accessToken = self._storeNewAccessToken(client, scope, None)
+        except ValueError:
+            return InvalidScopeError(scope).generate(request)
+        refreshToken = None
+        if self.authTokenLifeTime is not None:
+            refreshToken = self._storeNewRefreshToken(client, scope, None)
+        return self._buildResponse(request, accessToken, scope, refreshToken)
 
     # noinspection PyMethodMayBeStatic
+    # pylint: disable=no-self-use
     def onCustomGrantTypeRequest(self, request, grantType):
         """
         Gets called when a request with a custom grant type is encountered.

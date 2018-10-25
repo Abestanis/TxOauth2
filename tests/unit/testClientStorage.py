@@ -1,3 +1,5 @@
+""" Client storage tests. """
+
 import os
 
 from tempfile import NamedTemporaryFile

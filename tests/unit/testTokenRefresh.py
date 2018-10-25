@@ -1,3 +1,5 @@
+""" Test the token refresh flow. """
+
 from itertools import combinations
 
 from txoauth2 import GrantTypes

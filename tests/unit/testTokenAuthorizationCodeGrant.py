@@ -1,3 +1,5 @@
+""" Tests for the token resource side of the authorization code grant flow. """
+
 from txoauth2 import GrantTypes
 from txoauth2.errors import UnauthorizedClientError, DifferentRedirectUriError, \
     MissingParameterError, InvalidTokenError, MultipleParameterError, InvalidParameterError
