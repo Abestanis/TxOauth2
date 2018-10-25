@@ -8,3 +8,21 @@ install:
 script:
 - nosetests
 - pylint txoauth2 tests example/main.py --rcfile=.pylint.rc
+deploy:
+- provider: pypi
+  user: "Abestanis"
+  password:
+    secure: $PYPI_TOKEN
+  distributions: "sdist bdist_wheel"
+  on:
+    tags: true
+    branch: master
+- provider: releases
+  api_key:
+    secure: $GITHUB_TOKEN
+  file_glob: true
+  file: "dist/txoauth2-*-py2.py3-none-any.whl"
+  skip_cleanup: true
+  on:
+    tags: true
+    branch: master
