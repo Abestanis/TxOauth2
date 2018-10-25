@@ -15,8 +15,8 @@ except ImportError:
 from twisted.web.resource import Resource
 from twisted.web.server import NOT_DONE_YET
 
-from txoauth2 import GrantTypes
 from txoauth2.util import addToUrl
+from txoauth2.granttypes import GrantTypes
 from .errors import MissingParameterError, InsecureConnectionError, InvalidRedirectUriError, \
     UserDeniesAuthorization, UnsupportedResponseTypeError, \
     UnauthorizedClientError, ServerError, AuthorizationError, MalformedParameterError, \

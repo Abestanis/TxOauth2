@@ -7,8 +7,8 @@ import json
 from abc import ABCMeta, abstractmethod
 from twisted.web.resource import Resource
 
-from txoauth2 import GrantTypes
 from txoauth2.clients import PublicClient
+from txoauth2.granttypes import GrantTypes
 from .errors import InsecureConnectionError, MissingParameterError, InvalidParameterError, \
     InvalidTokenError, InvalidScopeError, UnsupportedGrantTypeError, OK, MultipleParameterError, \
     MultipleClientCredentialsError, OAuth2Error, InvalidClientIdError, DifferentRedirectUriError, \

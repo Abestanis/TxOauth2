@@ -7,8 +7,8 @@ except ImportError:
     # noinspection PyUnresolvedReferences
     from urllib.parse import urlparse
 
-from txoauth2 import GrantTypes
 from txoauth2.util import isAnyStr
+from txoauth2.granttypes import GrantTypes
 from txoauth2.errors import InvalidClientAuthenticationError, NoClientAuthenticationError
 
 
