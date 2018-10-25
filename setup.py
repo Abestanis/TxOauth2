@@ -13,6 +13,11 @@ setup(
     url='https://github.com/Abestanis/TxOauth2',
     packages=['txoauth2'],
     install_requires=['twisted'],
+    extras_require={
+        ':python_version < "3.0"': [
+            'enum34',
+        ],
+    },
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
