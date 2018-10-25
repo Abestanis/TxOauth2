@@ -25,8 +25,8 @@ class-naming-style=PascalCase
 const-naming-style=UPPER_CASE
 function-naming-style=camelCase
 inlinevar-naming-style=camelCase
-method-naming-style=camelCase
-module-naming-style=camelCase
+method-naming-style=any
+module-naming-style=any
 variable-naming-style=camelCase
 
 [TYPECHECK]

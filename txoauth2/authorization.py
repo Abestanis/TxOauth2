@@ -100,9 +100,9 @@ def oauth2(scope, allowInsecureRequestDebug=False):
            insecure connections. Only use for local testing!
     :return: The wrapped function.
     """
-    def decorator(func):
+    def decorator(func):  # pylint: disable=missing-docstring
         @wraps(func)
-        def wrapper(self, request, *args, **kwargs):
+        def wrapper(self, request, *args, **kwargs):  # pylint: disable=missing-docstring
             if not isAuthorized(request, scope, allowInsecureRequestDebug):
                 return NOT_DONE_YET
             return func(self, request, *args, **kwargs)

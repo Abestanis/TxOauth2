@@ -7,4 +7,4 @@ install:
 - pip install pylint --upgrade
 script:
 - nosetests
-- pylint txoauth2 tests example --rcfile=.pylint.rc
+- pylint txoauth2 tests example/main.py --rcfile=.pylint.rc
