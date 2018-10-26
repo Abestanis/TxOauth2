@@ -49,7 +49,7 @@ You may also use the tests in the ````tests```` directory to verify the expected
 
 ## Installation
 
-Run ```pip install txoauth2``` or download the wheel from [PyPI](https://pypi.org/project/txoauth2/).
+Run ```pip install txoauth2``` or download the wheel from [PyPI](https://pypi.org/project/txoauth2/) or [Github](https://github.com/Abestanis/TxOauth2/releases).
 
 ## Terminology
 
