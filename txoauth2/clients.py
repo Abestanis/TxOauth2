@@ -55,14 +55,14 @@ class Client(object):
     This class represents a client.
 
     A client is an entity, which is given access to a scope by the user.
-    He can use a grant type he is authorized to use to request an access token
-    with which he can access resources on behalf of the user.
+    The client can use a grant type it is authorized to use to request an access token
+    with which it can access resources on behalf of the user.
     """
 
     def __init__(self, clientId, redirectUris, authorizedGrantTypes):
         """
         :raises ValueError: If one of the argument is not of the expected type
-                            or one of the redirect uris has a fragment.
+                            or one of the redirect uris has a fragment or is relative.
         :param clientId: The id of this client.
         :param redirectUris: A list of urls, which we can redirect to after authorization.
         :param authorizedGrantTypes: A list of grant types that this client is authorized

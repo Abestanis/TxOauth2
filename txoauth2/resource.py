@@ -90,7 +90,7 @@ class OAuth2(Resource, object):
         :param requestDataLifeTime: The lifetime of the data stored for an authorization request in
                                     seconds. Essentially the maximum amount of time that can pass
                                     between the call to onAuthenticate and deny-/grantAccess.
-        :param authTokenLifeTime: The lifetime of the tokens generated during .
+        :param authTokenLifeTime: The lifetime of the tokens generated from the implicit grant flow.
         :param allowInsecureRequestDebug: If True, allow requests over insecure connections.
                                           Do NOT use in production!
         :param grantTypes: The grant types that are enabled for this authorization endpoint.

@@ -2,8 +2,9 @@
 # See LICENSE for details.
 """
 This is an example of how to implement oauth2 with this library and twisted.
-It should not be used as is in a real server and is meant as a starting point
-to build your own implementation.
+It should not be used without modification in a real server and is meant as a starting point
+to integrate the resources into your own server.
+Remove the allowInsecureRequestDebug before taking this to production.
 """
 
 import os
