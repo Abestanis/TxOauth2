@@ -6,15 +6,9 @@ import json
 import logging
 
 from twisted.web.server import NOT_DONE_YET
+from twisted.web.http import OK, BAD_REQUEST, UNAUTHORIZED, FORBIDDEN, SERVICE_UNAVAILABLE
 
 from txoauth2.util import addToUrl
-
-OK = 200
-BAD_REQUEST = 400
-UNAUTHORIZED = 401
-FORBIDDEN = 403
-INTERNAL_SERVER_ERROR = 500
-SERVICE_UNAVAILABLE = 503
 
 
 class OAuth2Error(object):
