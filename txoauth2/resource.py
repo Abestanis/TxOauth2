@@ -28,12 +28,10 @@ class InvalidDataKeyError(KeyError):
     Exception that is raised when an invalid or expired
     data key is passed to denyAccess or grantAccess.
     """
-    pass
 
 
 class InsecureRedirectUriError(RuntimeError):
     """ Exception that is raised when an insecure redirect uri is used in grantAccess. """
-    pass
 
 
 class OAuth2(Resource, object):
