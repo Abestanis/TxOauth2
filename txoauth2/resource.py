@@ -188,8 +188,8 @@ class OAuth2(Resource, object):
         if redirectUri not in client.redirectUris:
             return InvalidRedirectUriError().generate(request)
         try:
-            errorInFragment = request.args[b'response_type'][0].decode('utf-8') == 'token'
-        except (UnicodeDecodeError, KeyError, IndexError):
+            errorInFragment = request.args[b'response_type'][0] == b'token'
+        except (KeyError, IndexError):
             errorInFragment = False
         if b'state' in request.args and len(request.args[b'state']) != 1:
             return MultipleParameterError('state').generate(request, redirectUri, errorInFragment)

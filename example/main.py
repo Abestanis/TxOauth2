@@ -28,12 +28,12 @@ class ClockPage(Resource):
     This represents a resource that should be protected via oauth2.
 
     There are two ways to protect a resource with oauth2:
-    1: Use the isAuthorized function and return NOT_DONE_YET if it returns False
+    1: Use the isAuthorized function and return NOT_DONE_YET if it returns False.
     2: Use the oauth2 descriptor on one of the render_* functions (or any function, that accepts
        the request as the second argument) and it will call isAuthorized for you.
 
-    Note that we allow requests send over http (allowInsecureRequestDebug=True). This is done
-    so one could test this server locally. Do not enable it when running a real server! Don't do it!
+    Note that we allow requests send over http (allowInsecureRequestDebug=True). This is done so
+    one could test this server locally. Do not enable it when running a real server! Don't do it!
     """
     isLeaf = True
 
