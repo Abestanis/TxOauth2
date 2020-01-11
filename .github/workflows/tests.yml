@@ -1,10 +1,10 @@
-name: Test
+name: Tests
 
 on: [push, pull_request]
 
 jobs:
   test:
-    name: Test
+    name: Tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -25,7 +25,7 @@ jobs:
         run: |
           pip install --upgrade pylint
           pylint txoauth2 tests example/main.py --rcfile=.pylint.rc
-      - name: Test with nosetests
+      - name: Run nose tests
         run: |
           pip install --upgrade nose
           nosetests
