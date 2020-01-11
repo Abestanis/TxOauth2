@@ -33,8 +33,8 @@ class ClientTest(TwistedTestCase):
             'https://valid.nonexistent/path/subpath?querry=1',
         ]
         for uri in validUris:
-            self.assertEquals(uri, Client('clientId', [uri], []).redirectUris[0],
-                              msg='Expected the client to accept the valid redirect uri ' + uri)
+            self.assertEqual(uri, Client('clientId', [uri], []).redirectUris[0],
+                             msg='Expected the client to accept the valid redirect uri ' + uri)
 
     def testRejectsRedirectUrisWithFragment(self):
         """ Test that the Client rejects redirect uris with fragments. """

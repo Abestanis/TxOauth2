@@ -33,8 +33,8 @@ class TestImplicitCodeGrant(AbstractSharedGrantTest):
         """
         if msg.endswith('.'):
             msg = msg[:-1]
-        self.assertEquals(result, NOT_DONE_YET, msg=msg + ': Expected the authorization resource '
-                                                          'to redirect the resource owner.')
+        self.assertEqual(result, NOT_DONE_YET, msg=msg + ': Expected the authorization resource '
+                                                         'to redirect the resource owner.')
         self.assertTrue(request.finished,
                         msg=msg + ': Expected the authorization resource to close the request.')
         redirectUrl = self.assertRedirectsTo(request, data['redirect_uri'], msg)
@@ -48,7 +48,7 @@ class TestImplicitCodeGrant(AbstractSharedGrantTest):
             self.assertIn('state', redirectParameter,
                           msg=msg + ': Expected the authorization resource to '
                                     'send a state to the redirect uri.')
-            self.assertEquals(
+            self.assertEqual(
                 redirectParameter['state'], data['state'] if isinstance(data['state'], str)
                 else data['state'].decode('utf-8', errors='replace'),
                 msg=msg + ': Expected the authorization resource to send '
@@ -58,9 +58,9 @@ class TestImplicitCodeGrant(AbstractSharedGrantTest):
         self.assertIn(
             'scope', redirectParameter, msg=msg + ': Expected the authorization resource send the '
                                                   'scope of the access token to the redirect uri.')
-        self.assertEquals(' '.join(expectedScope), redirectParameter['scope'],
-                          msg=msg + ': Expected the authorization resource to send '
-                                    'the expected scope to the redirect uri.')
+        self.assertEqual(' '.join(expectedScope), redirectParameter['scope'],
+                         msg=msg + ': Expected the authorization resource to send '
+                                   'the expected scope to the redirect uri.')
         self.assertNotIn(
             'refresh_token', redirectParameter,
             msg=msg + ': Expected the authorization resource to not send a refresh token.')
@@ -70,17 +70,17 @@ class TestImplicitCodeGrant(AbstractSharedGrantTest):
         self.assertIn('token_type', redirectParameter,
                       msg=msg + ': Expected the authorization resource to send '
                                 'the token type to the redirect uri.')
-        self.assertEquals('Bearer', redirectParameter['token_type'],
-                          msg=msg + ': Expected the authorization resource to send the '
-                                    'correct token type to the redirect uri.')
+        self.assertEqual('Bearer', redirectParameter['token_type'],
+                         msg=msg + ': Expected the authorization resource to send the '
+                                   'correct token type to the redirect uri.')
         self.assertIn('expires_in', redirectParameter,
                       msg=msg + ': Expected the authorization resource to send '
                                 'the token lifetime to the redirect uri.')
         if expectedAccessTokenLifetime is None:
             expectedAccessTokenLifetime = self._AUTH_RESOURCE.authTokenLifeTime
-        self.assertEquals(str(expectedAccessTokenLifetime), redirectParameter['expires_in'],
-                          msg=msg + ': Expected the authorization resource to send the '
-                                    'correct token lifetime to the redirect uri.')
+        self.assertEqual(str(expectedAccessTokenLifetime), redirectParameter['expires_in'],
+                         msg=msg + ': Expected the authorization resource to send the '
+                                   'correct token lifetime to the redirect uri.')
         accessToken = redirectParameter['access_token']
         self.assertTrue(self._TOKEN_STORAGE.contains(accessToken),
                         msg=msg + ': Expected the authorization resource to store the '
@@ -88,14 +88,14 @@ class TestImplicitCodeGrant(AbstractSharedGrantTest):
         self.assertTrue(self._TOKEN_STORAGE.hasAccess(accessToken, expectedScope),
                         msg=msg + ': Expected the authorization resource to give the '
                                   'auth token access to the expected scope.')
-        self.assertEquals(
+        self.assertEqual(
             expectedAdditionalData, self._TOKEN_STORAGE.getTokenAdditionalData(accessToken),
             msg=msg + ': Expected the authorization resource to store '
                       'the expected additional data with the token.')
         expectedToken = self._TOKEN_FACTORY.expectedTokenRequest(
             expectedAccessTokenLifetime, self._VALID_CLIENT, expectedScope, expectedAdditionalData)
         self._TOKEN_FACTORY.assertAllTokensRequested()
-        self.assertEquals(
+        self.assertEqual(
             expectedToken, accessToken, msg=msg + ': Expected the authorization resource to return '
                                                   'the expected token to the redirect uri.')
 

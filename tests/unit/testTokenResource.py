@@ -85,24 +85,24 @@ class AbstractTokenResourceTest(TwistedTestCase):
         :param expectedScope: The expected scope of all new created tokens.
         :param expectedAdditionalData: The optional additional data of the new tokens.
         """
-        self.assertEquals(
+        self.assertEqual(
             'application/json;charset=UTF-8', request.getResponseHeader('Content-Type'),
             msg='Expected the token resource to return the token in the json format.')
-        self.assertEquals('no-store', request.getResponseHeader('Cache-Control'),
-                          msg='Expected the token resource to set Cache-Control to "no-store".')
-        self.assertEquals('no-cache', request.getResponseHeader('Pragma'),
-                          msg='Expected the token resource to set Pragma to "no-cache".')
-        self.assertEquals(200, request.responseCode,
-                          msg='Expected the token resource to return '
-                              'a new token with the HTTP code 200 OK.')
+        self.assertEqual('no-store', request.getResponseHeader('Cache-Control'),
+                         msg='Expected the token resource to set Cache-Control to "no-store".')
+        self.assertEqual('no-cache', request.getResponseHeader('Pragma'),
+                         msg='Expected the token resource to set Pragma to "no-cache".')
+        self.assertEqual(200, request.responseCode,
+                         msg='Expected the token resource to return '
+                             'a new token with the HTTP code 200 OK.')
         jsonResult = json.loads(result.decode('utf-8'), encoding='utf-8')
         self.assertIn('access_token', jsonResult, msg='Expected the result from the token resource '
                                                       'to contain an access_token parameter.')
-        self.assertEquals(jsonResult['access_token'], expectedAccessToken,
-                          msg='The token resource returned a different access token than expected.')
+        self.assertEqual(jsonResult['access_token'], expectedAccessToken,
+                         msg='The token resource returned a different access token than expected.')
         self.assertIn('token_type', jsonResult, msg='Expected the result from the token resource '
                                                     'to contain a token_type parameter.')
-        self.assertEquals(
+        self.assertEqual(
             jsonResult['token_type'].lower(), expectedTokenType.lower(),
             msg='The token resource returned a different access token type than expected.')
         if expectedExpireTime is None:
@@ -113,9 +113,9 @@ class AbstractTokenResourceTest(TwistedTestCase):
             self.assertIn('expires_in', jsonResult,
                           msg='Expected the result from the token resource '
                               'to contain an expires_in parameter.')
-            self.assertEquals(jsonResult['expires_in'], expectedExpireTime,
-                              msg='The token resource returned a different '
-                                  'access token expire time than expected.')
+            self.assertEqual(jsonResult['expires_in'], expectedExpireTime,
+                             msg='The token resource returned a different '
+                                 'access token expire time than expected.')
         if expectedRefreshToken is None:
             self.assertNotIn('refresh_token', jsonResult,
                              msg='Expected the result from the token resource '
@@ -124,9 +124,9 @@ class AbstractTokenResourceTest(TwistedTestCase):
             self.assertIn('refresh_token', jsonResult,
                           msg='Expected the result from the token resource '
                               'to contain a refresh_token parameter.')
-            self.assertEquals(jsonResult['refresh_token'], expectedRefreshToken,
-                              msg='The token resource returned a different '
-                                  'refresh token than expected.')
+            self.assertEqual(jsonResult['refresh_token'], expectedRefreshToken,
+                             msg='The token resource returned a different '
+                                 'refresh token than expected.')
         if expectedScope is None:
             self.assertNotIn('scope', jsonResult,
                              msg='Expected the result from the token resource '
@@ -143,16 +143,16 @@ class AbstractTokenResourceTest(TwistedTestCase):
                         msg='Expected the token storage to contain the new access token.')
         self.assertTrue(self._AUTH_TOKEN_STORAGE.hasAccess(expectedAccessToken, expectedScope),
                         msg='Expected the new access token to have access to the expected scope.')
-        self.assertEquals(expectedAdditionalData,
-                          self._AUTH_TOKEN_STORAGE.getTokenAdditionalData(expectedAccessToken),
-                          msg='Expected the new access token to have the expected additional data.')
+        self.assertEqual(expectedAdditionalData,
+                         self._AUTH_TOKEN_STORAGE.getTokenAdditionalData(expectedAccessToken),
+                         msg='Expected the new access token to have the expected additional data.')
         if expectedRefreshToken is not None:
             self.assertTrue(self._REFRESH_TOKEN_STORAGE.contains(expectedRefreshToken),
                             msg='Expected the token storage to contain the refresh token.')
             self.assertTrue(
                 self._REFRESH_TOKEN_STORAGE.hasAccess(expectedRefreshToken, expectedScope),
                 msg='Expected the refresh token to have access to the expected scope.')
-            self.assertEquals(
+            self.assertEqual(
                 expectedAdditionalData,
                 self._REFRESH_TOKEN_STORAGE.getTokenAdditionalData(expectedAccessToken),
                 msg='Expected the new refresh token to have the expected additional data.')
@@ -170,32 +170,32 @@ class AbstractTokenResourceTest(TwistedTestCase):
             result = request.getResponse()
         if msg.endswith('.'):
             msg = msg[:-1]
-        self.assertEquals(
+        self.assertEqual(
             'application/json;charset=UTF-8', request.getResponseHeader('Content-Type'),
             msg='Expected the token resource to return an error in the json format.')
-        self.assertEquals('no-store', request.getResponseHeader('Cache-Control'),
-                          msg='Expected the token resource to set Cache-Control to "no-store".')
-        self.assertEquals('no-cache', request.getResponseHeader('Pragma'),
-                          msg='Expected the token resource to set Pragma to "no-cache".')
-        self.assertEquals(expectedError.code, request.responseCode,
-                          msg='Expected the token resource to return a response '
-                              'with the HTTP code {code}.'.format(code=expectedError.code))
+        self.assertEqual('no-store', request.getResponseHeader('Cache-Control'),
+                         msg='Expected the token resource to set Cache-Control to "no-store".')
+        self.assertEqual('no-cache', request.getResponseHeader('Pragma'),
+                         msg='Expected the token resource to set Pragma to "no-cache".')
+        self.assertEqual(expectedError.code, request.responseCode,
+                         msg='Expected the token resource to return a response '
+                             'with the HTTP code {code}.'.format(code=expectedError.code))
         errorResult = json.loads(result.decode('utf-8'), encoding='utf-8')
         self.assertIn('error', errorResult, msg=msg + ': Missing error parameter in response.')
-        self.assertEquals(errorResult['error'], expectedError.message,
-                          msg=msg + ': Result contained a different error than expected.')
+        self.assertEqual(errorResult['error'], expectedError.message,
+                         msg=msg + ': Result contained a different error than expected.')
         self.assertIn('error_description', errorResult,
                       msg=msg + ': Missing error_description parameter in response.')
-        self.assertEquals(
+        self.assertEqual(
             errorResult['error_description'], expectedError.detail,
             msg=msg + ': Result contained a different error description than expected.')
         if expectedError.errorUri is not None:
             self.assertIn('error_uri', errorResult,
                           msg=msg + ': Missing error_uri parameter in response.')
-            self.assertEquals(errorResult['error_uri'], expectedError.errorUri,
-                              msg=msg + ': Result contained an unexpected error_uri.')
+            self.assertEqual(errorResult['error_uri'], expectedError.errorUri,
+                             msg=msg + ': Result contained an unexpected error_uri.')
         if expectedError.message == 'invalid_client':
-            self.assertEquals(
+            self.assertEqual(
                 401, request.responseCode,
                 msg='Expected the token resource to return UNAUTHORIZED as the response code.')
             authorizationHeader = request.getHeader(b'Authorization')
@@ -252,8 +252,8 @@ class TestTokenResource(AbstractTokenResourceTest):
 
     def testRequiresPostMethod(self):
         """ Test the rejection of any request that is not a POST request. """
-        self.assertEquals([b'POST'], self._TOKEN_RESOURCE.allowedMethods,
-                          msg='Expected the token resource to only accept POST requests.')
+        self.assertEqual([b'POST'], self._TOKEN_RESOURCE.allowedMethods,
+                         msg='Expected the token resource to only accept POST requests.')
         methods = [name[7:] for name in dir(self._TOKEN_RESOURCE)
                    if name.startswith('render_') and callable(getattr(self._TOKEN_RESOURCE, name))]
         for method in methods:

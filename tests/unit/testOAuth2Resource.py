@@ -96,8 +96,8 @@ class AbstractAuthResourceTest(TwistedTestCase):
         :param msg: The assertion message.
         :return: The actual url the request is redirecting to.
         """
-        self.assertEquals(request.responseCode, 302,
-                          msg=msg + ': Expected the auth resource to redirect the resource owner.')
+        self.assertEqual(request.responseCode, 302,
+                         msg=msg + ': Expected the auth resource to redirect the resource owner.')
         redirectUrl = request.getResponseHeader(b'location')
         self.assertIsNotNone(
             redirectUrl, msg=msg + ': Expected the auth resource to redirect the resource owner.')
@@ -136,38 +136,38 @@ class AbstractAuthResourceTest(TwistedTestCase):
             redirectUrl = self.assertRedirectsTo(request, redirectUri, msg)
             errorResult = self.getParameterFromRedirectUrl(redirectUrl, parameterInFragment)
         else:
-            self.assertEquals(
+            self.assertEqual(
                 'application/json;charset=UTF-8', request.getResponseHeader('Content-Type'),
                 msg='Expected the auth resource to return an error in the json format.')
-            self.assertEquals('no-store', request.getResponseHeader('Cache-Control'),
-                              msg='Expected the auth resource to set Cache-Control to "no-store".')
-            self.assertEquals('no-cache', request.getResponseHeader('Pragma'),
-                              msg='Expected the auth resource to set Pragma to "no-cache".')
-            self.assertEquals(expectedError.code, request.responseCode,
-                              msg='Expected the auth resource to return a response '
-                                  'with the HTTP code {code}.'.format(code=expectedError.code))
+            self.assertEqual('no-store', request.getResponseHeader('Cache-Control'),
+                             msg='Expected the auth resource to set Cache-Control to "no-store".')
+            self.assertEqual('no-cache', request.getResponseHeader('Pragma'),
+                             msg='Expected the auth resource to set Pragma to "no-cache".')
+            self.assertEqual(expectedError.code, request.responseCode,
+                             msg='Expected the auth resource to return a response '
+                                 'with the HTTP code {code}.'.format(code=expectedError.code))
             errorResult = json.loads(result.decode('utf-8'), encoding='utf-8')
         self.assertIn('error', errorResult, msg=msg + ': Missing error parameter in response.')
-        self.assertEquals(errorResult['error'], expectedError.message,
-                          msg=msg + ': Result contained a different error than expected.')
+        self.assertEqual(errorResult['error'], expectedError.message,
+                         msg=msg + ': Result contained a different error than expected.')
         self.assertIn('error_description', errorResult,
                       msg=msg + ': Missing error_description parameter in response.')
         if not isinstance(expectedError.detail, (bytes, str)):
-            self.assertEquals(
+            self.assertEqual(
                 errorResult['error_description'], expectedError.detail.encode('utf-8'),
                 msg=msg + ': Result contained a different error description than expected.')
         else:
-            self.assertEquals(
+            self.assertEqual(
                 errorResult['error_description'], expectedError.detail,
                 msg=msg + ': Result contained a different error description than expected.')
         if expectedError.errorUri is not None:
             self.assertIn('error_uri', errorResult,
                           msg=msg + ': Missing error_uri parameter in response.')
-            self.assertEquals(errorResult['error_uri'], expectedError.errorUri,
-                              msg=msg + ': Result contained an unexpected error_uri.')
+            self.assertEqual(errorResult['error_uri'], expectedError.errorUri,
+                             msg=msg + ': Result contained an unexpected error_uri.')
         if hasattr(expectedError, 'state') and getattr(expectedError, 'state') is not None:
             self.assertIn('state', errorResult, msg=msg + ': Missing state parameter in response.')
-            self.assertEquals(
+            self.assertEqual(
                 errorResult['state'], expectedError.state if isinstance(expectedError.state, str)
                 else expectedError.state.decode('utf-8', errors='replace'),
                 msg=msg + ': Result contained an unexpected state.')
@@ -192,33 +192,33 @@ class AbstractAuthResourceTest(TwistedTestCase):
         self.assertIs(
             request, requestParam, msg=msg + ': Expected the auth resource to pass the request '
                                              'to onAuthenticate as the first parameter.')
-        self.assertEquals(client.id, parameters['client_id'],
-                          msg=msg + ': Expected the auth resource to pass the received '
-                                    'client to onAuthenticate as the second parameter.')
+        self.assertEqual(client.id, parameters['client_id'],
+                         msg=msg + ': Expected the auth resource to pass the received '
+                                   'client to onAuthenticate as the second parameter.')
         parameters['response_type'] = self._RESPONSE_GRANT_TYPE_MAPPING.get(
             parameters['response_type'], parameters['response_type'])
-        self.assertEquals(responseType, parameters['response_type'],
-                          msg=msg + ': Expected the auth resource to pass the response '
-                                    'type to onAuthenticate as the third parameter.')
+        self.assertEqual(responseType, parameters['response_type'],
+                         msg=msg + ': Expected the auth resource to pass the response '
+                                   'type to onAuthenticate as the third parameter.')
         parameters['scope'] = parameters['scope'].split(' ')
         self.assertListEqual(scope, parameters['scope'],
                              msg=msg + ': Expected the auth resource to pass the scope '
                                        'to onAuthenticate as the fourth parameter.')
         expectedRedirectUri = parameters['redirect_uri'] if parameters['redirect_uri'] is not None \
             else self._VALID_CLIENT.redirectUris[0]
-        self.assertEquals(redirectUri, expectedRedirectUri,
-                          msg=msg + ': Expected the auth resource to pass the redirect '
-                                    'uri to onAuthenticate as the fifth parameter.')
+        self.assertEqual(redirectUri, expectedRedirectUri,
+                         msg=msg + ': Expected the auth resource to pass the redirect '
+                                   'uri to onAuthenticate as the fifth parameter.')
         expectedState = parameters.get('state', None)
-        self.assertEquals(state, expectedState,
-                          msg=msg + ': Expected the auth resource to pass the state '
-                                    'to onAuthenticate as the sixth parameter.')
+        self.assertEqual(state, expectedState,
+                         msg=msg + ': Expected the auth resource to pass the state '
+                                   'to onAuthenticate as the sixth parameter.')
         if expectedDataLifetime is None:
             expectedDataLifetime = self._AUTH_RESOURCE.requestDataLifetime
         try:
-            self.assertEquals(expectedDataLifetime, self._PERSISTENT_STORAGE.getExpireTime(dataKey),
-                              msg=msg + ': Expected the auth resource to store '
-                                        'the request data with the given lifetime.')
+            self.assertEqual(expectedDataLifetime, self._PERSISTENT_STORAGE.getExpireTime(dataKey),
+                             msg=msg + ': Expected the auth resource to store '
+                                       'the request data with the given lifetime.')
             data = self._PERSISTENT_STORAGE.pop(dataKey)
         except KeyError:
             self.fail(msg=msg + ': Expected the auth resource to pass a valid '
@@ -226,9 +226,9 @@ class AbstractAuthResourceTest(TwistedTestCase):
         for key, value in parameters.items():
             self.assertIn(key, data, msg=msg + ': Expected the data stored by auth token resource '
                                                'to contain the {name} parameter.'.format(name=key))
-            self.assertEquals(value, data[key],
-                              msg=msg + ': Expected the auth token resource to store the value '
-                                        'of the {name} parameter.'.format(name=key))
+            self.assertEqual(value, data[key],
+                             msg=msg + ': Expected the auth token resource to store the value '
+                                       'of the {name} parameter.'.format(name=key))
 
 
 class AbstractSharedGrantTest(AbstractAuthResourceTest):  # pylint: disable=too-many-public-methods
@@ -621,9 +621,9 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):  # pylint: disable=too-
         self.assertRaises(InsecureRedirectUriError, self._AUTH_RESOURCE.grantAccess,
                           request, dataKey)
         try:
-            self.assertEquals(self._AUTH_RESOURCE.requestDataLifetime,
-                              self._PERSISTENT_STORAGE.getExpireTime(dataKey),
-                              msg='Expected the data to be stored with the expected lifetime.')
+            self.assertEqual(self._AUTH_RESOURCE.requestDataLifetime,
+                             self._PERSISTENT_STORAGE.getExpireTime(dataKey),
+                             msg='Expected the data to be stored with the expected lifetime.')
             self._PERSISTENT_STORAGE.pop(dataKey)
         except KeyError:
             self.fail('Expected the data to still be in the persistent storage.')
@@ -992,9 +992,9 @@ class AuthResourceTest(AbstractAuthResourceTest):
         self._CLIENT_STORAGE.addClient(client)
         self.assertRaises(ValueError, self._AUTH_RESOURCE.grantAccess, request, dataKey)
         try:
-            self.assertEquals(self._AUTH_RESOURCE.requestDataLifetime,
-                              self._PERSISTENT_STORAGE.getExpireTime(dataKey),
-                              msg='Expected the data to be stored with the expected lifetime.')
+            self.assertEqual(self._AUTH_RESOURCE.requestDataLifetime,
+                             self._PERSISTENT_STORAGE.getExpireTime(dataKey),
+                             msg='Expected the data to be stored with the expected lifetime.')
             self._PERSISTENT_STORAGE.pop(dataKey)
         except KeyError:
             self.fail('Expected the data to still be in the persistent storage.')

@@ -31,8 +31,8 @@ class TestAuthorizationCodeGrant(AbstractSharedGrantTest):
         """
         if msg.endswith('.'):
             msg = msg[:-1]
-        self.assertEquals(result, NOT_DONE_YET, msg=msg + ': Expected the authorization resource '
-                                                          'to redirect the resource owner.')
+        self.assertEqual(result, NOT_DONE_YET, msg=msg + ': Expected the authorization resource '
+                                                         'to redirect the resource owner.')
         self.assertTrue(request.finished,
                         msg=msg + ': Expected the authorization resource to close the request.')
         redirectUrl = self.assertRedirectsTo(request, data['redirect_uri'], msg)
@@ -49,7 +49,7 @@ class TestAuthorizationCodeGrant(AbstractSharedGrantTest):
             self.assertIn('state', redirectParameter,
                           msg=msg + ': Expected the authorization resource to '
                                     'send a state to the redirect uri.')
-            self.assertEquals(
+            self.assertEqual(
                 redirectParameter['state'], data['state'] if isinstance(data['state'], str)
                 else data['state'].decode('utf-8', errors='replace'),
                 msg=msg + ': Expected the authorization resource to send '
@@ -73,16 +73,16 @@ class TestAuthorizationCodeGrant(AbstractSharedGrantTest):
         self.assertIn('additional_data', codeData,
                       msg=msg + ': Expected the authorization resource to store the '
                                 'additional data in the code date.')
-        self.assertEquals(expectedAdditionalData, codeData['additional_data'],
-                          msg=msg + ': Expected the authorization resource to store the '
-                                    'expected additional data in the code date.')
+        self.assertEqual(expectedAdditionalData, codeData['additional_data'],
+                         msg=msg + ': Expected the authorization resource to store the '
+                                   'expected additional data in the code date.')
         for key in ['client_id', 'redirect_uri']:
             self.assertIn(
                 key, codeData, msg=msg + ': Expected the authorization resource to store the '
                                          '{name} in the code date.'.format(name=key))
-            self.assertEquals(data[key], codeData[key],
-                              msg=msg + ': Expected the authorization resource to store the '
-                                        'expected {name} in the code date.'.format(name=key))
+            self.assertEqual(data[key], codeData[key],
+                             msg=msg + ': Expected the authorization resource to store the '
+                                       'expected {name} in the code date.'.format(name=key))
 
     def testGrantAccessCodeLifetime(self):
         """ Ensure that the code lifetime is controlled by the codeDataLifetime parameter. """

@@ -95,6 +95,6 @@ class ConfigParserClientStorageTest(AbstractClientStorageTest):
             'newPasswordClientId', ['https://return.nonexistent', 'https://return2.nonexistent'],
             ['client_credentials'], 'newClientSecret')
         self._CLIENT_STORAGE.addClient(client)
-        self.assertEquals(
+        self.assertEqual(
             self._CLIENT_STORAGE.getClient(client.id).secret, client.secret,
             msg='Expected the client storage to contain a client after adding him.')

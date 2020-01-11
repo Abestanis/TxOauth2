@@ -210,10 +210,11 @@ class TestIsAuthorized(TwistedTestCase):
         def render(selfArg, requestArg):  # pylint: disable=missing-docstring
             del selfArg, requestArg  # Unused
             return protectedContent
+
         request = MockRequest('GET', 'protectedResource')
         request.setRequestHeader(b'Authorization', 'Bearer ' + self.VALID_TOKEN)
-        self.assertEquals(protectedContent, render(self, request),
-                          msg='Expected oauth2 to accept a valid request.')
+        self.assertEqual(protectedContent, render(self, request),
+                         msg='Expected oauth2 to accept a valid request.')
         request = MockRequest('GET', 'protectedResource')
         request.setRequestHeader(b'Authorization', 'Bearer invalidToken')
         self.assertNotEqual(protectedContent, render(self, request),
@@ -225,5 +226,6 @@ class TestIsAuthorized(TwistedTestCase):
         def render2(selfArg, requestArg):  # pylint: disable=missing-docstring
             del selfArg, requestArg  # Unused
             return protectedContent
+
         self.assertNotEqual(protectedContent, render2(self, request),
                             msg='Expected oauth2 to reject a request with an invalid scope.')

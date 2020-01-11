@@ -79,31 +79,31 @@ class FullExampleTestCase(TwistedTestCase):
         })
         self._SERVER.makeSynchronousRequest(request)
         expectedError = InvalidScopeError(scope, state)
-        self.assertEquals(request.responseCode, 302,
-                          msg='Expected the auth resource to redirect the request.')
+        self.assertEqual(request.responseCode, 302,
+                         msg='Expected the auth resource to redirect the request.')
         redirectUrl = request.getResponseHeader(b'location')
         self.assertIsNotNone(redirectUrl, msg='Expected the auth resource to redirect the request.')
         parameter = AbstractAuthResourceTest.getParameterFromRedirectUrl(redirectUrl, False)
         self.assertIn('error', parameter, msg='Missing error parameter in response.')
-        self.assertEquals(parameter['error'], expectedError.message,
-                          msg='Result contained a different error than expected.')
+        self.assertEqual(parameter['error'], expectedError.message,
+                         msg='Result contained a different error than expected.')
         self.assertIn('error_description', parameter,
                       msg='Missing error_description parameter in response.')
         if not isinstance(expectedError.detail, (bytes, str)):
-            self.assertEquals(
+            self.assertEqual(
                 parameter['error_description'], expectedError.detail.encode('utf-8'),
                 msg='Result contained a different error description than expected.')
         else:
-            self.assertEquals(
+            self.assertEqual(
                 parameter['error_description'], expectedError.detail,
                 msg='Result contained a different error description than expected.')
         if expectedError.errorUri is not None:
             self.assertIn('error_uri', parameter,
                           msg='Missing error_uri parameter in response.')
-            self.assertEquals(parameter['error_uri'], expectedError.errorUri,
-                              msg='Result contained an unexpected error_uri.')
+            self.assertEqual(parameter['error_uri'], expectedError.errorUri,
+                             msg='Result contained an unexpected error_uri.')
         self.assertIn('state', parameter, msg='Missing state parameter in response.')
-        self.assertEquals(
+        self.assertEqual(
             parameter['state'], expectedError.state if isinstance(expectedError.state, str)
             else expectedError.state.decode('utf-8', errors='replace'),
             msg='Result contained an unexpected state.')
@@ -133,17 +133,17 @@ class FullExampleTestCase(TwistedTestCase):
             'data_key': dataKey
         })
         self._SERVER.makeSynchronousRequest(request)
-        self.assertEquals(request.responseCode, 302,
-                          msg='Expected the auth resource to redirect the request.')
+        self.assertEqual(request.responseCode, 302,
+                         msg='Expected the auth resource to redirect the request.')
         redirectUrl = request.getResponseHeader(b'location')
         self.assertIsNotNone(redirectUrl, msg='Expected the auth resource to redirect the request.')
         parameter = AbstractAuthResourceTest.getParameterFromRedirectUrl(redirectUrl, False)
         self.assertIn('error', parameter, msg='Missing error parameter in response.')
-        self.assertEquals(
+        self.assertEqual(
             parameter['error'], UserDeniesAuthorization().message,
             msg='Result contained an unexpected error.')
         self.assertIn('state', parameter, msg='Missing state parameter in response.')
-        self.assertEquals(
+        self.assertEqual(
             parameter['state'], state if isinstance(state, str)
             else state.decode('utf-8', errors='replace'),
             msg='Result contained an unexpected state.')
@@ -166,21 +166,21 @@ class FullExampleTestCase(TwistedTestCase):
         self.assertSubstring(
             b'<!DOCTYPE html>', response,
             msg='Expected the auth resource to send the content returned by onAuthenticate.')
-        dataKey = re.search(b"<input.*name=\"data_key\".*value=\"(?P<dataKey>.*)\">", response)\
+        dataKey = re.search(b"<input.*name=\"data_key\".*value=\"(?P<dataKey>.*)\">", response) \
             .group('dataKey')
         request = MockRequest('POST', 'oauth2', arguments={
             'confirm': 'yes',
             'data_key': dataKey
         })
         self._SERVER.makeSynchronousRequest(request)
-        self.assertEquals(request.responseCode, 302,
-                          msg='Expected the auth resource to redirect the request.')
+        self.assertEqual(request.responseCode, 302,
+                         msg='Expected the auth resource to redirect the request.')
         redirectUrl = request.getResponseHeader(b'location')
         self.assertIsNotNone(redirectUrl, msg='Expected the auth resource to redirect the request.')
         parameter = AbstractAuthResourceTest.getParameterFromRedirectUrl(redirectUrl, False)
         self.assertIn('code', parameter, msg='Missing code parameter in response.')
         self.assertIn('state', parameter, msg='Missing state parameter in response.')
-        self.assertEquals(
+        self.assertEqual(
             parameter['state'], state if isinstance(state, str)
             else state.decode('utf-8', errors='replace'),
             msg='Result contained an unexpected state.')
@@ -191,8 +191,8 @@ class FullExampleTestCase(TwistedTestCase):
             'redirect_uri': self._VALID_CLIENT.redirectUris[0],
         }, url='oauth2/token', authentication=self._VALID_CLIENT)
         self._SERVER.makeSynchronousRequest(request)
-        self.assertEquals(request.responseCode, 200,
-                          msg='Expected the token resource to accept the request.')
+        self.assertEqual(request.responseCode, 200,
+                         msg='Expected the token resource to accept the request.')
         jsonResult = json.loads(request.getResponse().decode('utf-8'), encoding='utf-8')
         self.assertIn('access_token', jsonResult, msg='Expected the result from the token resource '
                                                       'to contain an access_token parameter.')
@@ -218,8 +218,8 @@ class FullExampleTestCase(TwistedTestCase):
             'scope': ' '.join(self._VALID_SCOPE)
         }, url='oauth2/token', authentication=self._VALID_CLIENT)
         self._SERVER.makeSynchronousRequest(request)
-        self.assertEquals(request.responseCode, 200,
-                          msg='Expected the token resource to accept the request.')
+        self.assertEqual(request.responseCode, 200,
+                         msg='Expected the token resource to accept the request.')
         jsonResult = json.loads(request.getResponse().decode('utf-8'), encoding='utf-8')
         self.assertIn('access_token', jsonResult, msg='Expected the result from the token resource '
                                                       'to contain an access_token parameter.')

@@ -11,8 +11,10 @@ class TestExtensionGrant(AbstractTokenResourceTest):
     Test that one can use a custom authorization method to authorize a token request.
     See https://tools.ietf.org/html/rfc6749#section-4.5
     """
+
     class TestTokenResource(TokenResource):
         """ A test TokenResource that returns the parameter given to onCustomGrantTypeRequest. """
+
         def onCustomGrantTypeRequest(self, request, grantType):
             return request, grantType
 
@@ -31,8 +33,8 @@ class TestExtensionGrant(AbstractTokenResourceTest):
                          msg='Expected the token resource not to close the request.')
         self.assertIs(result[0], request, msg='Expected the token resource to pass '
                                               'the request to onCustomGrantTypeRequest.')
-        self.assertEquals(result[1], grantType, msg='Expected the token resource to pass the '
-                                                    'grant type to onCustomGrantTypeRequest.')
+        self.assertEqual(result[1], grantType, msg='Expected the token resource to pass the '
+                                                   'grant type to onCustomGrantTypeRequest.')
 
     def testCustomGrantTypeNotAllowed(self):
         """ Test that a request with a custom grant type is rejected if it is not enabled. """
