@@ -1,7 +1,7 @@
 """ Test for the Client class. """
-from txoauth2 import GrantTypes
 
 from tests import TwistedTestCase
+from txoauth2 import GrantTypes
 from txoauth2.util import isAnyStr
 from txoauth2.clients import Client, PasswordClient
 

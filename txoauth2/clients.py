@@ -3,6 +3,7 @@
 """ Classes for representing and dealing with oauth2 clients """
 
 from abc import abstractmethod, ABCMeta
+
 try:
     from urlparse import urlparse
 except ImportError:
@@ -103,6 +104,7 @@ class PublicClient(Client):
     credentials and thus are not required to authenticate themselves.
     See: https://tools.ietf.org/html/rfc6749#section-2.1
     """
+
     def __init__(self, *args, **kwargs):
         super(PublicClient, self).__init__(*args, **kwargs)
 
@@ -112,6 +114,7 @@ class PasswordClient(Client):
     This is a confidential client which authenticates himself with a password/secret.
     See: https://tools.ietf.org/html/rfc6749#section-2.3.1
     """
+
     def __init__(self, clientId, redirectUris, authorizedGrantTypes, secret):
         super(PasswordClient, self).__init__(clientId, redirectUris, authorizedGrantTypes)
         self.secret = secret
