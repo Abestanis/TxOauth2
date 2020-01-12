@@ -27,5 +27,11 @@ jobs:
           pylint txoauth2 tests example/main.py --rcfile=.pylint.rc
       - name: Run nose tests
         run: |
-          pip install --upgrade nose
-          nosetests
+          pip install --upgrade nose coverage
+          nosetests --with-coverage --cover-package=txoauth2
+      - name: Upload coverage results
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: unittests
+          name: TxOauth2 Coverage

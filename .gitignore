@@ -20,6 +20,7 @@ $RECYCLE.BIN/
 
 example/clientStorage
 tests/_trial*
+.coverage
 build
 dist
 txoauth2.egg-info

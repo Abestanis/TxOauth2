@@ -1,4 +1,4 @@
-# TxOAuth2 [![Build Status](https://github.com/Abestanis/TxOauth2/workflows/Tests/badge.svg)](https://github.com/Abestanis/TxOauth2/actions)
+# TxOAuth2 [![Build Status](https://github.com/Abestanis/TxOauth2/workflows/Tests/badge.svg)](https://github.com/Abestanis/TxOauth2/actions) [![codecov](https://codecov.io/gh/Abestanis/TxOauth2/branch/master/graph/badge.svg)](https://codecov.io/gh/Abestanis/TxOauth2)
 This Python module helps to implement an OAuth2 Endpoint in Twisted and provides mechanism to protect resources with OAuth2 authentication.
 
 ## Usage
