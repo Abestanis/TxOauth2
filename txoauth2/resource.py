@@ -340,7 +340,7 @@ class OAuth2(Resource, object):
         try:
             client = self._clientStorage.getClient(data['client_id'])
         except KeyError:
-            return InvalidParameterError('client_id')\
+            return InvalidParameterError('client_id', state=state)\
                 .generate(request, redirectUri, errorInFragment)
         if not self.allowInsecureRequestDebug and not request.isSecure():
             return InsecureConnectionError(state).generate(request, redirectUri, errorInFragment)

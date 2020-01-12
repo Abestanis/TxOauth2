@@ -669,6 +669,25 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):  # pylint: disable=too-
             request, result, InvalidScopeError(scope, state), redirectUri=redirectUri,
             msg='Expected grantAccess to reject an invalid scope.')
 
+    def testGrantAccessInvalidClientId(self):
+        """ Test that grandAccess rejects a call with an invlid clientId. """
+        dataKey = 'dataKeyInvalidClientId' + self._RESPONSE_TYPE
+        redirectUri = self._VALID_CLIENT.redirectUris[0]
+        request = MockRequest('GET', 'some/path')
+        state = b'state\xFF\xFF'
+        data = {
+            'response_type': self._RESPONSE_GRANT_TYPE_MAPPING[self._RESPONSE_TYPE],
+            'redirect_uri': redirectUri,
+            'client_id': 'invalidClientId',
+            'scope': ['All'],
+            'state': state
+        }
+        self._PERSISTENT_STORAGE.put(dataKey, data)
+        result = self._AUTH_RESOURCE.grantAccess(request, dataKey)
+        self.assertFailedRequest(
+            request, result, InvalidParameterError('client_id', state=state),
+            redirectUri=redirectUri, msg='Expected grantAccess to reject an invalid client id.')
+
     def testGrantAccess(self):
         """ Test that grandAccess redirects with the expected parameters. """
         dataKey = 'dataKey' + self._RESPONSE_TYPE
