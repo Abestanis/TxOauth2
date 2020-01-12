@@ -4,7 +4,7 @@ from twisted.web.server import NOT_DONE_YET
 from txoauth2 import GrantTypes
 
 from tests import MockRequest
-from tests.unit.testOAuth2Resource import AbstractSharedGrantTest
+from tests.unit.testGrant import AbstractSharedGrantTest
 
 
 class TestAuthorizationCodeGrant(AbstractSharedGrantTest):

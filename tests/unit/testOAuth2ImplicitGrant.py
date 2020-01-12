@@ -4,7 +4,7 @@ from twisted.web.server import NOT_DONE_YET
 from txoauth2 import GrantTypes
 
 from tests import MockRequest
-from tests.unit.testOAuth2Resource import AbstractSharedGrantTest, AbstractAuthResourceTest
+from tests.unit.testGrant import AbstractSharedGrantTest
 
 
 class TestImplicitCodeGrant(AbstractSharedGrantTest):
@@ -114,7 +114,7 @@ class TestImplicitCodeGrant(AbstractSharedGrantTest):
             'state': b'state\xFF\xFF'
         }
         self._PERSISTENT_STORAGE.put(dataKey, data)
-        authResource = AbstractAuthResourceTest.TestOAuth2Resource(
+        authResource = self.TestOAuth2Resource(
             self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._CLIENT_STORAGE,
             authTokenLifeTime=lifetime, authTokenStorage=self._TOKEN_STORAGE)
         result = authResource.grantAccess(request, dataKey, scope=scope)
