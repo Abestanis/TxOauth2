@@ -293,13 +293,6 @@ class OAuth2(Resource, object):
             raise InvalidDataKeyError(dataKey)
         errorInFragment = data['response_type'] == GrantTypes.Implicit.value
         redirectUri = data['redirect_uri']
-        if redirectUri is None:
-            try:
-                client = self._clientStorage.getClient(data['client_id'])
-            except KeyError:
-                return InvalidParameterError('client_id') \
-                    .generate(request, redirectUri, errorInFragment)
-            redirectUri = client.redirectUris[0]
         return UserDeniesAuthorization(data['state'])\
             .generate(request, redirectUri, errorInFragment)
 
@@ -349,8 +342,6 @@ class OAuth2(Resource, object):
         except KeyError:
             return InvalidParameterError('client_id')\
                 .generate(request, redirectUri, errorInFragment)
-        if redirectUri is None:
-            redirectUri = client.redirectUris[0]
         if not self.allowInsecureRequestDebug and not request.isSecure():
             return InsecureConnectionError(state).generate(request, redirectUri, errorInFragment)
         if not allowInsecureRedirectUri and urlparse(redirectUri).scheme != 'https':
@@ -404,7 +395,7 @@ class OAuth2(Resource, object):
         dataKey = 'request' + str(uuid4())
         self._persistentStorage.put(dataKey, {
             'response_type': grantType,
-            'redirect_uri': None if b'redirect_uri' not in request.args else redirectUri,
+            'redirect_uri': redirectUri,
             'client_id': client.id,
             'scope': scope,
             'state': state

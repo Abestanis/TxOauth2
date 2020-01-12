@@ -366,7 +366,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):  # pylint: disable=too-
         self._CLIENT_STORAGE.addClient(client)
         request = self.createAuthRequest(arguments=parameter)
         result = self._AUTH_RESOURCE.render_GET(request)
-        parameter['redirect_uri'] = None
+        parameter['redirect_uri'] = client.redirectUris[0]
         self.assertValidAuthRequest(request, result, parameter,
                                     msg='Expected the auth resource to accept a request '
                                         'without a redirect uri if the client has one.')
