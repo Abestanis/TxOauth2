@@ -28,7 +28,7 @@ jobs:
       - name: Run nose tests
         run: |
           pip install --upgrade nose coverage
-          nosetests --with-coverage --cover-package=txoauth2
+          nosetests --with-coverage --cover-package=txoauth2 --cover-xml
       - name: Upload coverage results
         uses: codecov/codecov-action@v1
         with:
