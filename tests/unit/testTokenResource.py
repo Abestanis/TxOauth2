@@ -1,9 +1,9 @@
 """ Tests for the token resource. """
 
 import json
+import warnings
 
-# noinspection PyProtectedMember
-from twisted.web.error import UnsupportedMethod
+from twisted.web import error
 from twisted.web.server import NOT_DONE_YET
 
 from txoauth2.clients import PublicClient
@@ -259,11 +259,11 @@ class TestTokenResource(AbstractTokenResourceTest):
         for method in methods:
             if method == 'POST':
                 continue
-            self.assertRaises(UnsupportedMethod, self._TOKEN_RESOURCE.render,
+            self.assertRaises(error.UnsupportedMethod, self._TOKEN_RESOURCE.render,
                               MockRequest(method, 'token'))
         try:
             self._TOKEN_RESOURCE.render(MockRequest('POST', 'token'))
-        except UnsupportedMethod:
+        except error.UnsupportedMethod:
             self.fail('Expected the token resource to accept POST requests.')
 
     def testInvalidContentType(self):
@@ -579,3 +579,38 @@ class TestTokenResource(AbstractTokenResourceTest):
         self.assertValidTokenResponse(
             request, result, newAuthToken,
             self._TOKEN_RESOURCE.authTokenLifeTime, expectedScope=self._VALID_SCOPE)
+
+    def testWarnsOnOverwritingTokenStorage(self):
+        """
+        Test that a warning is emitted if a second token resource is created with a different
+        token storage. This makes the new token storage the new global singleton,
+        overwriting the old one, which might be unintended.
+        """
+        with warnings.catch_warnings(record=True) as caughtWarnings:
+            warnings.simplefilter('always')
+            TokenResource(
+                self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._REFRESH_TOKEN_STORAGE,
+                self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE,
+                passwordManager=self._PASSWORD_MANAGER)
+            self.assertEqual(len(caughtWarnings), 0,
+                             msg='Expected the token resource not to generate a warning, if it is '
+                                 'created with the same token storage as the previous one')
+        try:
+            with warnings.catch_warnings(record=True) as caughtWarnings:
+                warnings.simplefilter('always')
+                differentTokenStorage = DictTokenStorage()
+                TokenResource(
+                    self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._REFRESH_TOKEN_STORAGE,
+                    differentTokenStorage, self._CLIENT_STORAGE,
+                    passwordManager=self._PASSWORD_MANAGER)
+                self.assertEqual(len(caughtWarnings), 1,
+                                 msg='Expected the token resource to generate a warning, if it is '
+                                     'created with a different token storage as the previous one')
+                self.assertTrue(issubclass(caughtWarnings[0].category, RuntimeWarning),
+                                msg='Expected the token resource to generate a RuntimeWarning')
+                self.assertIn(
+                    'overwrites previously registered singleton', str(caughtWarnings[0].message),
+                    msg='Expected the token resource to generate a RuntimeWarning explaining that '
+                        'the previously registered token storage singleton will be overwritten.')
+        finally:
+            setattr(TokenResource, '_OAuthTokenStorage', self._AUTH_TOKEN_STORAGE)

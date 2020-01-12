@@ -5,6 +5,7 @@
 import string
 import time
 import json
+import warnings
 
 from abc import ABCMeta, abstractmethod
 from twisted.web.resource import Resource
@@ -266,6 +267,15 @@ class TokenResource(Resource, object):
         self.authTokenLifeTime = authTokenLifeTime
         self.minRefreshTokenLifeTime = minRefreshTokenLifeTime
         self.defaultScope = defaultScope
+        if TokenResource._OAuthTokenStorage is not None \
+                and TokenResource._OAuthTokenStorage != authTokenStorage:
+            warnings.warn(
+                'Registering {newStorage!r} as the token storage singleton overwrites previously '
+                'registered singleton {oldStorage!r}. The @auth decorator and isAuthorized methods '
+                'won\'t be able to see tokens stored in the old token storage.'.format(
+                    newStorage=authTokenStorage, oldStorage=TokenResource._OAuthTokenStorage),
+                RuntimeWarning
+            )
         TokenResource._OAuthTokenStorage = authTokenStorage
         if grantTypes is not None:
             if GrantTypes.Implicit in grantTypes:
@@ -289,7 +299,7 @@ class TokenResource(Resource, object):
         if not self.allowInsecureRequestDebug and not request.isSecure():
             return InsecureConnectionError().generate(request)
         contentTypeHeader = request.getHeader(b'Content-Type')
-        if contentTypeHeader is None or\
+        if contentTypeHeader is None or \
                 not contentTypeHeader.startswith(b'application/x-www-form-urlencoded'):
             message = 'The Content-Type must be "application/x-www-form-urlencoded"'
             return MalformedRequestError(message).generate(request)
@@ -594,7 +604,7 @@ class TokenResource(Resource, object):
         clientId = None
         secret = None
         authorizationHeader = request.getHeader(b'Authorization')
-        if authorizationHeader is not None and\
+        if authorizationHeader is not None and \
                 authorizationHeader.strip().lower().startswith(b'basic'):
             clientId = request.getUser()
             clientId = None if clientId == '' else clientId
