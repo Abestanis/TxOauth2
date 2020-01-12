@@ -57,8 +57,10 @@ class ClientTest(TwistedTestCase):
                 Client('clientId', [], [])
             except ValueError:
                 self.fail('Expected Client to accept a client id of type ' + str(type(clientId)))
-        for clientId in [b'clientId', 1, None, True, [], {}, object()]:
+        for clientId in [1, None, True, [], {}, object()]:
             self.assertRaises(ValueError, Client, clientId, [], [])
+        if not isinstance(b'', str):
+            self.assertRaises(ValueError, Client, b'clientId', [], [])
 
     def testValidatesUris(self):
         """ Test that the client only accepts list of strings as uris. """
@@ -68,10 +70,11 @@ class ClientTest(TwistedTestCase):
                 Client('clientId', urls, [])
             except ValueError:
                 self.fail('Expected Client to accept these urls: ' + str(urls))
-        for urls in ['x', 1, None, True, object(), [b'https://valid.nonexistent'], [None], [True],
-                     [object()], [b'https://valid.nonexistent', 'https://valid.nonexistent'],
-                     [None, 'https://valid.nonexistent'], [True, 'https://valid.nonexistent'],
-                     [object(), 'https://valid.nonexistent']]:
+        notString = b'https://valid.nonexistent' if isinstance(u'', str) \
+            else u'https://valid.nonexistent'
+        for urls in ['x', 1, None, True, object(), [notString], [None], [True], [object()],
+                     [notString, 'https://valid.nonexistent'], [None, 'https://valid.nonexistent'],
+                     [True, 'https://valid.nonexistent'], [object(), 'https://valid.nonexistent']]:
             self.assertRaises(ValueError, Client, 'clientId', urls, [])
 
     def testValidatesGrantTypes(self):
@@ -87,8 +90,9 @@ class ClientTest(TwistedTestCase):
                 Client('clientId', [], [GrantTypes.AuthorizationCode, grantType])
             except ValueError as error:
                 self.fail('Expected Client to accept a GrantType object: ' + str(error))
-        for grantTypes in ['x', 1, None, True, object(), [b'test'], [None], [True],
-                           [object()], [b'test', GrantTypes.AuthorizationCode],
+        notString = b'Test' if isinstance(u'', str) else u'Test'
+        for grantTypes in ['x', 1, None, True, object(), [notString], [None], [True], [object()],
+                           [notString, GrantTypes.AuthorizationCode],
                            [None, GrantTypes.AuthorizationCode],
                            [True, GrantTypes.AuthorizationCode],
                            [object(), GrantTypes.AuthorizationCode]]:
