@@ -998,3 +998,34 @@ class AuthResourceTest(AbstractAuthResourceTest):
             self._PERSISTENT_STORAGE.pop(dataKey)
         except KeyError:
             self.fail('Expected the data to still be in the persistent storage.')
+
+    def testWithMultipleStates(self):
+        """ Test the rejection of a request with multiple states. """
+        redirectUri = self._VALID_CLIENT.redirectUris[0]
+        request = self.createAuthRequest(arguments={
+            'response_type': 'code',
+            'client_id': self._VALID_CLIENT.id,
+            'redirect_uri': redirectUri,
+            'scope': 'All',
+            'state': [b'state\xFF\xFF'] * 2
+        })
+        result = self._AUTH_RESOURCE.render_GET(request)
+        self.assertFailedRequest(
+            request, result, MultipleParameterError('state'),
+            redirectUri=redirectUri, msg='Expected the auth resource to reject '
+                                         'a request with multiple states.')
+
+    def testRequiresTokenLifetime(self):
+        """ Test that the authorization resource requires a token lifetime. """
+        self.assertRaises(ValueError, self.TestOAuth2Resource, self._TOKEN_FACTORY,
+                          self._PERSISTENT_STORAGE, self._CLIENT_STORAGE,
+                          authTokenStorage=self._TOKEN_STORAGE, authTokenLifeTime=None)
+
+    def testRequiresTokenStorageOnImplicitGrant(self):
+        """
+        Test that the authorization resource requires a token storage
+        if the implicit grant flow is enabled.
+        """
+        self.assertRaises(ValueError, self.TestOAuth2Resource, self._TOKEN_FACTORY,
+                          self._PERSISTENT_STORAGE, self._CLIENT_STORAGE,
+                          grantTypes=[GrantTypes.Implicit])
