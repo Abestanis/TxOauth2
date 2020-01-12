@@ -1,4 +1,5 @@
 """ Test for the Client class. """
+from txoauth2 import GrantTypes
 
 from tests import TwistedTestCase
 from txoauth2.util import isAnyStr
@@ -48,3 +49,47 @@ class ClientTest(TwistedTestCase):
         self.assertRaises(ValueError, Client, 'clientId', ['/relative'], [])
         self.assertRaises(ValueError, Client, 'clientId',
                           ['https://valid.nonexistent', '/test?q=1'], [])
+
+    def testValidatesClientId(self):
+        """ Test that the client only accepts client ids that are a string. """
+        for clientId in ['clientId', u'clientId']:
+            try:
+                Client('clientId', [], [])
+            except ValueError:
+                self.fail('Expected Client to accept a client id of type ' + str(type(clientId)))
+        for clientId in [b'clientId', 1, None, True, [], {}, object()]:
+            self.assertRaises(ValueError, Client, clientId, [], [])
+
+    def testValidatesUris(self):
+        """ Test that the client only accepts list of strings as uris. """
+        for urls in [['https://valid.nonexistent'],
+                     ['https://valid.nonexistent', 'http://valid.nonexistent']]:
+            try:
+                Client('clientId', urls, [])
+            except ValueError:
+                self.fail('Expected Client to accept these urls: ' + str(urls))
+        for urls in ['x', 1, None, True, object(), [b'https://valid.nonexistent'], [None], [True],
+                     [object()], [b'https://valid.nonexistent', 'https://valid.nonexistent'],
+                     [None, 'https://valid.nonexistent'], [True, 'https://valid.nonexistent'],
+                     [object(), 'https://valid.nonexistent']]:
+            self.assertRaises(ValueError, Client, 'clientId', urls, [])
+
+    def testValidatesGrantTypes(self):
+        """ Test that the client only accepts list of strings as grant types. """
+        for grantType in GrantTypes:
+            try:
+                Client('clientId', [], [grantType.value])
+                Client('clientId', [], [GrantTypes.AuthorizationCode.value, grantType.value])
+            except ValueError as error:
+                self.fail('Expected Client to accept a string grant type: ' + str(error))
+            try:
+                Client('clientId', [], [grantType])
+                Client('clientId', [], [GrantTypes.AuthorizationCode, grantType])
+            except ValueError as error:
+                self.fail('Expected Client to accept a GrantType object: ' + str(error))
+        for grantTypes in ['x', 1, None, True, object(), [b'test'], [None], [True],
+                           [object()], [b'test', GrantTypes.AuthorizationCode],
+                           [None, GrantTypes.AuthorizationCode],
+                           [True, GrantTypes.AuthorizationCode],
+                           [object(), GrantTypes.AuthorizationCode]]:
+            self.assertRaises(ValueError, Client, 'clientId', [], grantTypes)

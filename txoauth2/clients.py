@@ -83,11 +83,11 @@ class Client(object):
                 raise ValueError('Got a redirect uri with a fragment: ' + uri)
             if parsedUri.netloc == '':
                 raise ValueError('Got a redirect uri that is not absolute: ' + uri)
-        authorizedGrantTypes = [grantType.value if isinstance(grantType, GrantTypes) else grantType
-                                for grantType in authorizedGrantTypes]
         if not isinstance(authorizedGrantTypes, list):
             raise ValueError('Expected authorizedGrantTypes to be of type list, got '
                              + str(type(authorizedGrantTypes)))
+        authorizedGrantTypes = [grantType.value if isinstance(grantType, GrantTypes) else grantType
+                                for grantType in authorizedGrantTypes]
         for grantType in authorizedGrantTypes:
             if not isinstance(grantType, str):
                 raise ValueError('Expected the grant types to be of type str, got '
@@ -103,8 +103,8 @@ class PublicClient(Client):
     credentials and thus are not required to authenticate themselves.
     See: https://tools.ietf.org/html/rfc6749#section-2.1
     """
-    def __init__(self, clientId, redirectUris, authorizedGrantTypes):
-        super(PublicClient, self).__init__(clientId, redirectUris, authorizedGrantTypes)
+    def __init__(self, *args, **kwargs):
+        super(PublicClient, self).__init__(*args, **kwargs)
 
 
 class PasswordClient(Client):
