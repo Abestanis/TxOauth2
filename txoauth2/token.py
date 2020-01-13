@@ -374,8 +374,6 @@ class TokenResource(Resource, object):
                     raise InvalidScopeError(scope)
         else:
             scope = tokenScope
-        if not self.refreshTokenStorage.contains(refreshToken):
-            raise InvalidTokenError('refresh token')
         try:
             accessToken = self._storeNewAccessToken(client, scope, additionalData)
         except ValueError:
