@@ -6,11 +6,12 @@ import warnings
 from twisted.web import error
 from twisted.web.server import NOT_DONE_YET
 
+from txoauth2 import GrantTypes
 from txoauth2.clients import PublicClient
 from txoauth2.errors import InsecureConnectionError, UnsupportedGrantTypeError, \
     MalformedRequestError, NoClientAuthenticationError, MultipleClientAuthenticationError, \
     MultipleClientCredentialsError, InvalidClientIdError, InvalidClientAuthenticationError, \
-    MalformedParameterError, MultipleParameterError
+    MalformedParameterError, MultipleParameterError, MissingParameterError, InvalidParameterError
 from txoauth2.imp import DictTokenStorage
 from txoauth2.token import TokenResource
 
@@ -312,6 +313,40 @@ class TestTokenResource(AbstractTokenResourceTest):
             msg='Expected the token resource to reject a request with multiple grant_type '
                 'parameters, even if one parameter is an unknown grant type.')
 
+    def testUnsupportedGrantType(self):
+        """ Test the rejection of a request with an unsupported grant type. """
+        grantType = 'extendedFunctionalityGrantType'
+        request = self.generateValidTokenRequest(arguments={'grant_type': grantType},
+                                                 authentication=self._VALID_CLIENT)
+        result = self._TOKEN_RESOURCE.render_POST(request)
+        self.assertFailedTokenRequest(
+            request, result, UnsupportedGrantTypeError(grantType),
+            msg='Expected the token resource to reject a request with an unknown grant type.')
+        tokenResource = TokenResource(
+            self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._REFRESH_TOKEN_STORAGE,
+            self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE, grantTypes=[grantType])
+        result = tokenResource.render_POST(request)
+        self.assertFailedTokenRequest(
+            request, result, UnsupportedGrantTypeError(grantType),
+            msg='Expected the token resource to reject a request with an unsupported grant type.')
+
+    def testNoGrantType(self):
+        """ Test the rejection of a request without a grant type. """
+        request = self.generateValidTokenRequest(authentication=self._VALID_CLIENT)
+        result = self._TOKEN_RESOURCE.render_POST(request)
+        self.assertFailedTokenRequest(
+            request, result, MissingParameterError(name='grant_type'),
+            msg='Expected the token resource to reject a request without a grant type.')
+
+    def testInvalidGrantType(self):
+        """ Test the rejection of a request with an invalid grant type. """
+        request = self.generateValidTokenRequest(arguments={'grant_type': b'grantType\xFF\xFF'},
+                                                 authentication=self._VALID_CLIENT)
+        result = self._TOKEN_RESOURCE.render_POST(request)
+        self.assertFailedTokenRequest(
+            request, result, InvalidParameterError('grant_type'),
+            msg='Expected the token resource to reject a request with an invalid grant type.')
+
     def testIsValidToken(self):
         """ Test that the isValidToken method rejects invalid tokens and accepts valid ones. """
         self.assertTrue(TokenResource.isValidToken('aValidToken'),
@@ -322,16 +357,6 @@ class TestTokenResource(AbstractTokenResourceTest):
                          msg='Expected isValidToken to accept an invalid token.')
         self.assertFalse(TokenResource.isValidToken('an invalid Token'),
                          msg='Expected isValidToken to accept an invalid token.')
-
-    def testUnsupportedGrantType(self):
-        """ Test the rejection of a request with an unsupported grant type. """
-        grantType = 'someGrantTypeThatIsNotSupported'
-        request = self.generateValidTokenRequest(arguments={'grant_type': grantType},
-                                                 authentication=self._VALID_CLIENT)
-        result = self._TOKEN_RESOURCE.render_POST(request)
-        self.assertFailedTokenRequest(
-            request, result, UnsupportedGrantTypeError(grantType),
-            msg='Expected the token resource to reject a request with an unknown grant type.')
 
     def testAuthorizationWithoutClientAuth(self):
         """ Test the rejection of a request without client authentication. """
@@ -580,6 +605,48 @@ class TestTokenResource(AbstractTokenResourceTest):
             request, result, newAuthToken,
             self._TOKEN_RESOURCE.authTokenLifeTime, expectedScope=self._VALID_SCOPE)
 
+    def testWarnsOnReturningErrorFromAuthenticateClient(self):
+        """
+        Test that the Token resource generates a warning if authenticateClient
+        returns an error instead of raising it.
+        """
+        class ErrorTestClientStorage(TestClientStorage):
+            def __init__(self, errorToReturn):
+                super(ErrorTestClientStorage, self).__init__()
+                self.error = errorToReturn
+
+            def authenticateClient(self, client, request, secret=None):
+                return self.error
+        validRequest = self.generateValidTokenRequest(arguments={
+            'grant_type': 'refresh_token',
+            'client_id': self._VALID_CLIENT.id,
+            'client_secret': self._VALID_CLIENT.secret,
+            'refresh_token': self._VALID_REFRESH_TOKEN
+        })
+        tokenResource = TokenResource(
+            self._TOKEN_FACTORY, self._PERSISTENT_STORAGE,
+            self._REFRESH_TOKEN_STORAGE, self._AUTH_TOKEN_STORAGE,
+            ErrorTestClientStorage(errorToReturn=MalformedParameterError('client_secret')),
+            passwordManager=self._PASSWORD_MANAGER)
+        with warnings.catch_warnings(record=True) as caughtWarnings:
+            warnings.simplefilter('always')
+            result = tokenResource.render_POST(validRequest)
+            self.assertEqual(
+                len(caughtWarnings), 1,
+                msg='Expected the token resource to generate a warning, if '
+                    'authenticateClient returns an OAuth2Error instead of raising it')
+            self.assertTrue(issubclass(caughtWarnings[0].category, DeprecationWarning),
+                            msg='Expected the token resource to generate a DeprecationWarning')
+            self.assertIn(
+                'Returning an error from authenticateClient is deprecated',
+                str(caughtWarnings[0].message),
+                msg='Expected the token resource to generate a DeprecationWarning explaining that '
+                    'returning an error from authenticateClient is deprecated.')
+        self.assertFailedTokenRequest(
+            validRequest, result, MalformedParameterError('client_secret'),
+            msg='Expected the token resource to reject the request '
+                'if authenticateClient returns an error.')
+
     def testWarnsOnOverwritingTokenStorage(self):
         """
         Test that a warning is emitted if a second token resource is created with a different
@@ -614,3 +681,21 @@ class TestTokenResource(AbstractTokenResourceTest):
                         'the previously registered token storage singleton will be overwritten.')
         finally:
             setattr(TokenResource, '_OAuthTokenStorage', self._AUTH_TOKEN_STORAGE)
+
+    def testIgnoresImplicitCodeGrant(self):
+        """ Test that the token resource ignores the implicit code grant. """
+        tokenResource = TokenResource(
+            self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._REFRESH_TOKEN_STORAGE,
+            self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE, grantTypes=[
+                GrantTypes.Implicit, GrantTypes.AuthorizationCode])
+        self.assertEqual(tokenResource.acceptedGrantTypes, [GrantTypes.AuthorizationCode.value],
+                         msg='Expected the token resource to ignore the implicit grant.')
+
+    def testRequiresPasswordManagerForPasswordGrant(self):
+        """
+        Test that the token resource requires a password manager
+        if the password grant is enabled.
+        """
+        self.assertRaises(ValueError, TokenResource, self._TOKEN_FACTORY, self._PERSISTENT_STORAGE,
+                          self._REFRESH_TOKEN_STORAGE, self._AUTH_TOKEN_STORAGE,
+                          self._CLIENT_STORAGE, grantTypes=[GrantTypes.Password])

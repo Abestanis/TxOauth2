@@ -1,7 +1,7 @@
 # Copyright (c) Sebastian Scholz
 # See LICENSE for details.
 """ The token endpoint. """
-
+import logging
 import string
 import time
 import json
@@ -9,14 +9,15 @@ import warnings
 
 from abc import ABCMeta, abstractmethod
 from twisted.web.resource import Resource
+from twisted.web.http import OK
 
 from txoauth2.clients import PublicClient
 from txoauth2.granttypes import GrantTypes
 from .errors import InsecureConnectionError, MissingParameterError, InvalidParameterError, \
-    InvalidTokenError, InvalidScopeError, UnsupportedGrantTypeError, OK, MultipleParameterError, \
+    InvalidTokenError, InvalidScopeError, UnsupportedGrantTypeError, MultipleParameterError, \
     MultipleClientCredentialsError, OAuth2Error, InvalidClientIdError, DifferentRedirectUriError, \
     UnauthorizedClientError, MalformedParameterError, MultipleClientAuthenticationError, \
-    NoClientAuthenticationError, MalformedRequestError
+    NoClientAuthenticationError, MalformedRequestError, ServerError
 
 
 class TokenFactory(object):
@@ -313,23 +314,31 @@ class TokenResource(Resource, object):
             return InvalidParameterError('grant_type').generate(request)
         if grantType not in self.acceptedGrantTypes:
             return UnsupportedGrantTypeError(grantType).generate(request)
-        # noinspection PyTypeChecker
-        if grantType not in [stdGrantType.value for stdGrantType in GrantTypes]:
-            return self.onCustomGrantTypeRequest(request, grantType)
-        client = self._authenticateClient(request)
-        if isinstance(client, OAuth2Error):
-            return client.generate(request)
-        if grantType not in client.authorizedGrantTypes:
-            return UnauthorizedClientError(grantType).generate(request)
-        if grantType == GrantTypes.RefreshToken.value:
-            return self._handleRefreshRequest(request, client)
-        elif grantType == GrantTypes.AuthorizationCode.value:
-            return self._handleAuthorizationCodeRequest(request, client)
-        elif grantType == GrantTypes.ClientCredentials.value:
-            return self._handleClientCredentialsRequest(request, client)
-        elif grantType == GrantTypes.Password.value:
-            return self._handlePasswordRequest(request, client)
-        return UnsupportedGrantTypeError(grantType).generate(request)
+        try:
+            if grantType == GrantTypes.RefreshToken.value:
+                return self._handleRefreshRequest(
+                    request, self._authenticateClient(request, grantType))
+            elif grantType == GrantTypes.AuthorizationCode.value:
+                return self._handleAuthorizationCodeRequest(
+                    request, self._authenticateClient(request, grantType))
+            elif grantType == GrantTypes.ClientCredentials.value:
+                return self._handleClientCredentialsRequest(
+                    request, self._authenticateClient(request, grantType))
+            elif grantType == GrantTypes.Password.value:
+                return self._handlePasswordRequest(
+                    request, self._authenticateClient(request, grantType))
+            result = self.onCustomGrantTypeRequest(request, grantType)
+            if isinstance(result, OAuth2Error):
+                warnings.warn('Returning an error from onCustomGrantTypeRequest is '
+                              'deprecated, it should be raised instead.', DeprecationWarning)
+                raise result
+            return result
+        except OAuth2Error as error:
+            return error.generate(request)
+        except Exception as error:  # pylint: disable=broad-except
+            logging.getLogger('txOauth2').error('Caught exception while handling a token request: '
+                                                '{msg}'.format(msg=error), exc_info=True)
+            return ServerError(message=str(error)).generate(request)
 
     def _handleRefreshRequest(self, request, client):
         """
@@ -340,36 +349,36 @@ class TokenResource(Resource, object):
         :return: The result of the request.
         """
         if b'refresh_token' not in request.args:
-            return MissingParameterError('refresh_token').generate(request)
+            raise MissingParameterError('refresh_token')
         if len(request.args[b'refresh_token']) != 1:
-            return MultipleParameterError('refresh_token').generate(request)
+            raise MultipleParameterError('refresh_token')
         try:
             refreshToken = request.args[b'refresh_token'][0].decode('utf-8')
             tokenScope = self.refreshTokenStorage.getTokenScope(refreshToken)
             additionalData = self.refreshTokenStorage.getTokenAdditionalData(refreshToken)
             clientId = self.refreshTokenStorage.getTokenClient(refreshToken)
         except (KeyError, UnicodeDecodeError):
-            return InvalidTokenError('refresh token').generate(request)
+            raise InvalidTokenError('refresh token')
         if clientId != client.id:
-            return InvalidTokenError('refresh token').generate(request)
+            raise InvalidTokenError('refresh token')
         if b'scope' in request.args:
             if len(request.args[b'scope']) != 1:
-                return MultipleParameterError('scope').generate(request)
+                raise MultipleParameterError('scope')
             try:
                 scope = request.args[b'scope'][0].decode('utf-8').split()
             except UnicodeDecodeError:
-                return InvalidScopeError(request.args[b'scope'][0]).generate(request)
+                raise InvalidScopeError(request.args[b'scope'][0])
             for requestedScope in scope:
                 if requestedScope not in tokenScope:
-                    return InvalidScopeError(scope).generate(request)
+                    raise InvalidScopeError(scope)
         else:
             scope = tokenScope
         if not self.refreshTokenStorage.contains(refreshToken):
-            return InvalidTokenError('refresh token').generate(request)
+            raise InvalidTokenError('refresh token')
         try:
             accessToken = self._storeNewAccessToken(client, scope, additionalData)
         except ValueError:
-            return InvalidScopeError(scope).generate(request)
+            raise InvalidScopeError(scope)
         newRefreshToken = None
         if self._shouldExpireRefreshToken(refreshToken):
             self.refreshTokenStorage.remove(refreshToken)
@@ -386,27 +395,27 @@ class TokenResource(Resource, object):
         """
         redirectUri = None
         if b'code' not in request.args:
-            return MissingParameterError('code').generate(request)
+            raise MissingParameterError('code')
         if len(request.args[b'code']) != 1:
-            return MultipleParameterError('code').generate(request)
+            raise MultipleParameterError('code')
         if b'redirect_uri' in request.args:
             if len(request.args[b'redirect_uri']) != 1:
-                return MultipleParameterError('redirect_uri').generate(request)
+                raise MultipleParameterError('redirect_uri')
             try:
                 redirectUri = request.args[b'redirect_uri'][0].decode('utf-8')
             except UnicodeDecodeError:
-                return InvalidParameterError('redirect_uri').generate(request)
+                raise InvalidParameterError('redirect_uri')
         try:
             data = self.persistentStorage.pop('code' + request.args[b'code'][0].decode('utf-8'))
         except (KeyError, UnicodeDecodeError):
-            return InvalidTokenError('authorization code').generate(request)
+            raise InvalidTokenError('authorization code')
         if data['client_id'] != client.id:
-            return InvalidTokenError('authorization code').generate(request)
+            raise InvalidTokenError('authorization code')
         if data['redirect_uri'] is not None:
             if redirectUri is None:
-                return MissingParameterError('redirect_uri').generate(request)
+                raise MissingParameterError('redirect_uri')
             if data['redirect_uri'] != redirectUri:
-                return DifferentRedirectUriError().generate(request)
+                raise DifferentRedirectUriError()
         additionalData = data['additional_data']
         scope = data['scope']
         accessToken = self._storeNewAccessToken(client, scope, additionalData)
@@ -424,22 +433,22 @@ class TokenResource(Resource, object):
         :return: The result of the request.
         """
         if isinstance(client, PublicClient):
-            return UnauthorizedClientError(GrantTypes.ClientCredentials.value).generate(request)
+            raise UnauthorizedClientError(GrantTypes.ClientCredentials.value)
         if b'scope' in request.args:
             if len(request.args[b'scope']) != 1:
-                return MultipleParameterError('scope').generate(request)
+                raise MultipleParameterError('scope')
             try:
                 scope = request.args[b'scope'][0].decode('utf-8').split()
             except UnicodeDecodeError:
-                return InvalidScopeError(request.args[b'scope'][0]).generate(request)
+                raise InvalidScopeError(request.args[b'scope'][0])
         else:
             if self.defaultScope is None:
-                return MissingParameterError('scope').generate(request)
+                raise MissingParameterError('scope')
             scope = self.defaultScope
         try:
             accessToken = self._storeNewAccessToken(client, scope, None)
         except ValueError:
-            return InvalidScopeError(scope).generate(request)
+            raise InvalidScopeError(scope)
         return self._buildResponse(request, accessToken, scope)
 
     def _handlePasswordRequest(self, request, client):
@@ -452,45 +461,45 @@ class TokenResource(Resource, object):
         """
         for name in [b'username', b'password']:
             if name not in request.args:
-                return MissingParameterError(name.decode('utf-8')).generate(request)
+                raise MissingParameterError(name.decode('utf-8'))
             if len(request.args[name]) != 1:
-                return MultipleParameterError(name.decode('utf-8')).generate(request)
+                raise MultipleParameterError(name.decode('utf-8'))
         username = request.args[b'username'][0]
         password = request.args[b'password'][0]
         if b'scope' in request.args:
             if len(request.args[b'scope']) != 1:
-                return MultipleParameterError('scope').generate(request)
+                raise MultipleParameterError('scope')
             try:
                 scope = request.args[b'scope'][0].decode('utf-8').split()
             except UnicodeDecodeError:
-                return InvalidScopeError(request.args[b'scope'][0]).generate(request)
+                raise InvalidScopeError(request.args[b'scope'][0])
         else:
             if self.defaultScope is None:
-                return MissingParameterError('scope').generate(request)
+                raise MissingParameterError('scope')
             scope = self.defaultScope
         if not self.passwordManager.authenticate(username, password):
-            return InvalidTokenError('username or password').generate(request)
+            raise InvalidTokenError('username or password')
         try:
             accessToken = self._storeNewAccessToken(client, scope, None)
         except ValueError:
-            return InvalidScopeError(scope).generate(request)
+            raise InvalidScopeError(scope)
         refreshToken = None
         if self.authTokenLifeTime is not None:
             refreshToken = self._storeNewRefreshToken(client, scope, None)
         return self._buildResponse(request, accessToken, scope, refreshToken)
 
-    # noinspection PyMethodMayBeStatic
     # pylint: disable=no-self-use
     def onCustomGrantTypeRequest(self, request, grantType):
         """
         Gets called when a request with a custom grant type is encountered.
         It is up to this method to extract the client from the request and authenticate him.
         This method should get overwritten to handle the request.
+        :raises OAuth2Error: If an error occurred.
         :param request: The request.
         :param grantType: The custom grant type.
         :return: The result of the POST request.
         """
-        return UnsupportedGrantTypeError(grantType).generate(request)
+        raise UnsupportedGrantTypeError(grantType)
 
     def _shouldExpireRefreshToken(self, refreshToken):
         """
@@ -565,41 +574,48 @@ class TokenResource(Resource, object):
         request.setResponseCode(OK)
         return json.dumps(result).encode('utf-8')
 
-    def _authenticateClient(self, request):
+    def _authenticateClient(self, request, grantType):
         """
         Identify and authenticate a client by the credentials in the request.
+        :raises OAuth2Error: If the client could not be authenticated.
         :param request: The request.
-        :return: The authenticated client or an OAuth2Error.
+        :param grantType: The grant type extracted from the request.
+        :return: The authenticated client.
         """
-        clientCredentials = self._getClientCredentials(request)
-        if isinstance(clientCredentials, OAuth2Error):
-            return clientCredentials
-        clientId, secret = clientCredentials
+        clientId, secret = self._getClientCredentials(request)
         if clientId is None:
-            return NoClientAuthenticationError()
+            raise NoClientAuthenticationError()
         try:
             clientId = clientId.decode('utf-8')
         except UnicodeDecodeError:
-            return MalformedParameterError('client_id')
+            raise MalformedParameterError('client_id')
         if secret is not None:
             try:
                 secret = secret.decode('utf-8')
             except UnicodeDecodeError:
-                return MalformedParameterError('client_secret')
+                raise MalformedParameterError('client_secret')
         try:
             client = self.clientStorage.getClient(clientId)
         except KeyError:
-            return InvalidClientIdError()
-        if isinstance(client, PublicClient):
-            return client
-        return self.clientStorage.authenticateClient(client, request, secret)
+            raise InvalidClientIdError()
+        if not isinstance(client, PublicClient):
+            result = self.clientStorage.authenticateClient(client, request, secret)
+            if isinstance(result, OAuth2Error):
+                warnings.warn('Returning an error from authenticateClient is deprecated, '
+                              'it should be raised instead.', DeprecationWarning)
+                raise result
+            client = result
+        if grantType not in client.authorizedGrantTypes:
+            raise UnauthorizedClientError(grantType)
+        return client
 
     @staticmethod
     def _getClientCredentials(request):
         """
         Parse the client id and secret from the request, if the request contains them.
+        :raises OAuth2Error: If an error occurred.
         :param request: The request that may contain client credentials.
-        :return: An OAuth2Error or an optional user id and an optional client secret.
+        :return: An optional user id and an optional client secret.
         """
         clientId = None
         secret = None
@@ -613,15 +629,15 @@ class TokenResource(Resource, object):
                 secret = None if secret == '' else secret
         if b'client_id' in request.args:
             if len(request.args[b'client_id']) != 1:
-                return MultipleClientCredentialsError()
+                raise MultipleClientCredentialsError()
             if clientId is not None and clientId != request.args[b'client_id'][0]:
-                return MultipleClientCredentialsError()
+                raise MultipleClientCredentialsError()
             clientId = request.args[b'client_id'][0]
         if b'client_secret' in request.args:
             if secret is not None:
-                return MultipleClientAuthenticationError()
+                raise MultipleClientAuthenticationError()
             if len(request.args[b'client_secret']) != 1:
-                return MultipleParameterError('client_secret')
+                raise MultipleParameterError('client_secret')
             secret = request.args[b'client_secret'][0]
         return clientId, secret
 

@@ -3,6 +3,7 @@
 """ The authorization endpoint. """
 import logging
 import time
+import warnings
 
 from uuid import uuid4
 from abc import ABCMeta, abstractmethod
@@ -20,7 +21,7 @@ from txoauth2.granttypes import GrantTypes
 from .errors import MissingParameterError, InsecureConnectionError, InvalidRedirectUriError, \
     UserDeniesAuthorization, UnsupportedResponseTypeError, \
     UnauthorizedClientError, ServerError, AuthorizationError, MalformedParameterError, \
-    MultipleParameterError, InvalidScopeError, InvalidParameterError
+    MultipleParameterError, InvalidScopeError, InvalidParameterError, OAuth2Error
 
 
 class InvalidDataKeyError(KeyError):
@@ -403,10 +404,22 @@ class OAuth2(Resource, object):
         try:
             result = self.onAuthenticate(request, client, grantType, scope,
                                          redirectUri, state, dataKey)
+            if isinstance(result, OAuth2Error):
+                warnings.warn('Returning an error from onAuthenticate is deprecated, '
+                              'raise it instead.', DeprecationWarning)
+                raise result
+            return result
+        except AuthorizationError as error:
+            return error.generate(request, redirectUri, errorInFragment)
+        except OAuth2Error as error:
+            message = error.message
+            if error.detail is not None:
+                message += ': ' + error.detail
+            warnings.warn('Only AuthorizationErrors are expected to occur during authorization, '
+                          'other errors will get converted to a ServerError.', RuntimeWarning)
+            return ServerError(state, message).generate(request, redirectUri, errorInFragment)
         except Exception as error:  # pylint: disable=broad-except
             logging.getLogger('txOauth2').error(
-                'Caught exception in onAuthenticate: %s', str(error), exc_info=1)
-            return ServerError(state).generate(request, redirectUri, errorInFragment)
-        if isinstance(result, AuthorizationError):
-            return result.generate(request, redirectUri, errorInFragment)
-        return result
+                'Caught exception in onAuthenticate: {msg}'.format(msg=error), exc_info=True)
+            return ServerError(state, message=str(error)).generate(
+                request, redirectUri, errorInFragment)

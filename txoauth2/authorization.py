@@ -3,6 +3,7 @@
 """ Provides methods to authorize requests. """
 
 from functools import wraps
+
 try:
     from urlparse import urlparse, parse_qs
 except ImportError:
@@ -12,7 +13,7 @@ except ImportError:
 from twisted.web.server import NOT_DONE_YET
 
 from txoauth2.errors import MissingTokenError, InvalidTokenRequestError, InsecureConnectionError, \
-    InsufficientScopeRequestError, MultipleTokensError
+    InsufficientScopeRequestError, MultipleTokensError, OAuth2Error
 from txoauth2.token import TokenResource
 
 
@@ -43,7 +44,6 @@ def _getToken(request):
     return token
 
 
-# pylint: disable=too-many-nested-blocks
 def isAuthorized(request, scope, allowInsecureRequestDebug=False):
     """
     Returns True if the token in the request grants access to the given
@@ -59,34 +59,30 @@ def isAuthorized(request, scope, allowInsecureRequestDebug=False):
            insecure connections. Only use for local testing!
     :return: True, if the request is authorized, False otherwise.
     """
-    error = None
-    scope = scope if isinstance(scope, list) else [scope]
-    if not (allowInsecureRequestDebug or request.isSecure()):
-        error = InsecureConnectionError()
-    else:
+    try:
+        scope = scope if isinstance(scope, list) else [scope]
+        if not (allowInsecureRequestDebug or request.isSecure()):
+            raise InsecureConnectionError()
         try:
             requestToken = _getToken(request)
         except ValueError:
-            error = MultipleTokensError(scope)
-        else:
-            if requestToken is None:
-                error = MissingTokenError(scope)
-            else:
-                try:
-                    requestToken = requestToken.decode('utf-8')
-                except UnicodeDecodeError:
-                    pass
-                else:
-                    tokenStorage = TokenResource.getTokenStorageSingleton()
-                    if tokenStorage.contains(requestToken):
-                        if tokenStorage.hasAccess(requestToken, scope):
-                            return True
-                        error = InsufficientScopeRequestError(scope)
-            if error is None:
-                error = InvalidTokenRequestError(scope)
-    request.write(error.generate(request))
-    request.finish()
-    return False
+            raise MultipleTokensError(scope)
+        if requestToken is None:
+            raise MissingTokenError(scope)
+        try:
+            requestToken = requestToken.decode('utf-8')
+        except UnicodeDecodeError:
+            raise InvalidTokenRequestError(scope)
+        tokenStorage = TokenResource.getTokenStorageSingleton()
+        if not tokenStorage.contains(requestToken):
+            raise InvalidTokenRequestError(scope)
+        if tokenStorage.hasAccess(requestToken, scope):
+            return True
+        raise InsufficientScopeRequestError(scope)
+    except OAuth2Error as error:
+        request.write(error.generate(request))
+        request.finish()
+        return False
 
 
 def oauth2(scope, allowInsecureRequestDebug=False):

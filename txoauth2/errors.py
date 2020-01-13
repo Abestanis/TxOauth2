@@ -11,11 +11,11 @@ from twisted.web.http import OK, BAD_REQUEST, UNAUTHORIZED, FORBIDDEN, SERVICE_U
 from txoauth2.util import addToUrl
 
 
-class OAuth2Error(object):
+class OAuth2Error(Exception):
     """
-    Represents an OAuth2 error. This is not a Python exception and cannot be raised.
-    It is intended to return a json description of the error and setting the response
-    code of the request via the generate method, to comply with the OAuth2 specification.
+    Represents an OAuth2 error. It is intended to return a json description of the error and setting
+    the response code of the request via the generate method,
+    to comply with the OAuth2 specification.
     """
     message = None
     detail = None
@@ -24,6 +24,7 @@ class OAuth2Error(object):
     _logger = logging.getLogger('txOauth2')
 
     def __init__(self, code, message, detail, errorUri=None):
+        super().__init__(message)
         self.code = code
         self.message = message
         self.detail = detail
@@ -178,10 +179,11 @@ class UnsupportedResponseTypeError(AuthorizationError):
 
 class ServerError(AuthorizationError):
     """ General server error. """
-    def __init__(self, state=None):
-        message = 'An unexpected condition was encountered and the request could not get fulfilled.'
+    def __init__(self, state=None, message=None):
+        msg = 'An unexpected condition was encountered and the request could not get fulfilled'
+        msg += '.' if message is None else ': ' + message
         super(ServerError, self).__init__(
-            SERVICE_UNAVAILABLE, 'server_error', message, state=state)
+            SERVICE_UNAVAILABLE, 'server_error', msg, state=state)
 
 
 class TemporarilyUnavailableError(AuthorizationError):

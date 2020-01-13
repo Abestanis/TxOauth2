@@ -1,6 +1,7 @@
 """ Tests for the authorization resource. """
 
 import json
+import warnings
 
 try:
     from urlparse import urlparse, parse_qs
@@ -13,7 +14,7 @@ from txoauth2 import GrantTypes
 from txoauth2.clients import PasswordClient
 from txoauth2.errors import MissingParameterError, UnauthorizedClientError, \
     UnsupportedResponseTypeError, MalformedParameterError, MultipleParameterError, \
-    InsecureConnectionError, ServerError, InvalidScopeError
+    InsecureConnectionError, ServerError, InvalidScopeError, InvalidTokenError
 from txoauth2.imp import DictTokenStorage
 from txoauth2.resource import OAuth2, InvalidDataKeyError
 
@@ -37,13 +38,20 @@ class AbstractAuthResourceTest(TwistedTestCase):
         """ A test OAuth2 resource that returns the parameters given to onAuthenticate. """
         raiseErrorInOnAuthenticate = False
         UNKNOWN_SCOPE = 'unknown'
+        UNKNOWN_SCOPE_RETURN = 'unknown_return'
+        UNKNOWN_SCOPE_RAISING_OAUTH2_ERROR = 'unknown_raise_oauth2_error'
+        ERROR_MESSAGE = 'Expected the auth resource to catch this error'
 
         def onAuthenticate(self, request, client, responseType, scope, redirectUri, state, dataKey):
             if self.raiseErrorInOnAuthenticate:
                 self.raiseErrorInOnAuthenticate = False
-                raise RuntimeError('Expected the auth resource to catch this error')
+                raise RuntimeError(self.ERROR_MESSAGE)
             if self.UNKNOWN_SCOPE in scope:
+                raise InvalidScopeError(scope, state=state)
+            if self.UNKNOWN_SCOPE_RETURN in scope:
                 return InvalidScopeError(scope, state=state)
+            if self.UNKNOWN_SCOPE_RAISING_OAUTH2_ERROR in scope:
+                raise InvalidTokenError(self.ERROR_MESSAGE)
             return request, client, responseType, scope, redirectUri, state, dataKey
 
     @classmethod
@@ -340,11 +348,12 @@ class AuthResourceTest(AbstractAuthResourceTest):
         self._AUTH_RESOURCE.raiseErrorInOnAuthenticate = True
         result = self._AUTH_RESOURCE.render_GET(request)
         self.assertFailedRequest(
-            request, result, ServerError(state=state), redirectUri=redirectUri,
+            request, result, ServerError(state=state, message=self._AUTH_RESOURCE.ERROR_MESSAGE),
+            redirectUri=redirectUri,
             msg='Expected the auth resource to catch errors thrown in the onAuthenticate method.')
 
     def testSendsErrorInOnAuthenticate(self):
-        """ Test tat any AuthorizationErrors returned by onAuthenticate are handled. """
+        """ Test that any AuthorizationErrors raised in onAuthenticate are handled. """
         state = b'state\xFF\xFF'
         scope = self._AUTH_RESOURCE.UNKNOWN_SCOPE
         redirectUri = self._VALID_CLIENT.redirectUris[0]
@@ -358,6 +367,72 @@ class AuthResourceTest(AbstractAuthResourceTest):
         result = self._AUTH_RESOURCE.render_GET(request)
         self.assertFailedRequest(
             request, result, InvalidScopeError(scope, state=state), redirectUri=redirectUri,
+            msg='Expected the auth resource to send the error raised by the onAuthenticate method.')
+
+    def testSendsErrorReturnedByOnAuthenticate(self):
+        """
+        Test that any AuthorizationErrors returned by onAuthenticate
+        are handled with a deprecation warning.
+        """
+        state = b'state\xFF\xFF'
+        scope = self._AUTH_RESOURCE.UNKNOWN_SCOPE_RETURN
+        redirectUri = self._VALID_CLIENT.redirectUris[0]
+        request = self.createAuthRequest(arguments={
+            'response_type': 'code',
+            'client_id': self._VALID_CLIENT.id,
+            'redirect_uri': redirectUri,
+            'scope': scope,
+            'state': state
+        })
+        with warnings.catch_warnings(record=True) as caughtWarnings:
+            warnings.simplefilter('always')
+            result = self._AUTH_RESOURCE.render_GET(request)
+            self.assertEqual(
+                len(caughtWarnings), 1,
+                msg='Expected the OAuth2 resource to generate a warning, if '
+                    'onAuthenticate returns an OAuth2Error instead of raising it')
+            self.assertTrue(issubclass(caughtWarnings[0].category, DeprecationWarning),
+                            msg='Expected the token resource to generate a DeprecationWarning')
+            self.assertIn(
+                'Returning an error from onAuthenticate is deprecated',
+                str(caughtWarnings[0].message),
+                msg='Expected the token resource to generate a DeprecationWarning explaining that '
+                    'returning an error from onAuthenticate is deprecated.')
+        self.assertFailedRequest(
+            request, result, InvalidScopeError(scope, state=state), redirectUri=redirectUri,
+            msg='Expected the auth resource to send the error '
+                'returned from the onAuthenticate method.')
+
+    def testWarnsIfOnAuthenticateThrowsAnOAuth2Error(self):
+        """ Test that any OAuth2Error returned by onAuthenticate produces a warning. """
+        state = b'state\xFF\xFF'
+        scope = self._AUTH_RESOURCE.UNKNOWN_SCOPE_RAISING_OAUTH2_ERROR
+        redirectUri = self._VALID_CLIENT.redirectUris[0]
+        request = self.createAuthRequest(arguments={
+            'response_type': 'code',
+            'client_id': self._VALID_CLIENT.id,
+            'redirect_uri': redirectUri,
+            'scope': scope,
+            'state': state
+        })
+        with warnings.catch_warnings(record=True) as caughtWarnings:
+            warnings.simplefilter('always')
+            result = self._AUTH_RESOURCE.render_GET(request)
+            self.assertEqual(
+                len(caughtWarnings), 1,
+                msg='Expected the OAuth2 resource to generate a warning, if '
+                    'onAuthenticate returns an OAuth2Error instead of raising it')
+            self.assertTrue(issubclass(caughtWarnings[0].category, RuntimeWarning),
+                            msg='Expected the token resource to generate a RuntimeWarning')
+            self.assertIn(
+                'Only AuthorizationErrors are expected to occur during authorization',
+                str(caughtWarnings[0].message),
+                msg='Expected the token resource to generate a warning explaining that '
+                    'only AuthorizationErrors are expected to occur during authorization.')
+        self.assertFailedRequest(
+            request, result, ServerError(
+                state=state, message='invalid_grant: The provided {type} is invalid'.format(
+                    type=self._AUTH_RESOURCE.ERROR_MESSAGE)), redirectUri=redirectUri,
             msg='Expected the auth resource to send the error '
                 'returned from the onAuthenticate method.')
 

@@ -22,28 +22,25 @@ class ClientStorage(object):
     """
     __metaclass__ = ABCMeta
 
-    # noinspection PyMethodMayBeStatic
-    # pylint: disable=no-self-use
     def authenticateClient(self, client, request, secret=None):
         """
         Authenticate a given client.
+        :raises OAuth2Error: If the client could not be authenticated.
         :param client: The client that should get authenticated.
         :param request: The request that may contain the credentials for a client.
         :param secret: The client secret, if it could get extracted from the request.
-        :return: The client that was authenticated by the request or an OAuth2Error.
+        :return: The client that was authenticated by the request.
         """
-        del request  # Unused
         if secret is not None:
             if isinstance(client, PasswordClient) and client.secret == secret:
                 return client
-            return InvalidClientAuthenticationError()
-        return NoClientAuthenticationError()
+            raise InvalidClientAuthenticationError()
+        raise NoClientAuthenticationError()
 
     @abstractmethod
     def getClient(self, clientId):
         """
-        Return a Client object representing the client with
-        the given clientId.
+        Return a Client object representing the client with the given clientId.
         :raises KeyError: If no client with the given clientId is found.
         :param clientId: The client id of the client.
         :return: The Client object.
