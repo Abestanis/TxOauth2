@@ -34,4 +34,4 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: unittests
-          name: TxOauth2 Coverage
+          name: TxOauth2 Coverage on ${{ matrix.os }} Python ${{ matrix.python-version }}
