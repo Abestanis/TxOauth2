@@ -520,8 +520,7 @@ class TokenResource(Resource, object):
         refreshToken = self.tokenFactory.generateToken(
             None, client, scope=scope, additionalData=additionalData)
         if not self.isValidToken(refreshToken):
-            raise ValueError('Generated token is invalid: {token}'
-                             .format(token=refreshToken))
+            raise RuntimeError('Generated token is invalid: {token}'.format(token=refreshToken))
         self.refreshTokenStorage.store(refreshToken, client, scope=scope,
                                        additionalData=additionalData)
         return refreshToken
@@ -538,7 +537,7 @@ class TokenResource(Resource, object):
         accessToken = self.tokenFactory.generateToken(
             self.authTokenLifeTime, client, scope=scope, additionalData=additionalData)
         if not self.isValidToken(accessToken):
-            raise ValueError('Generated token is invalid: {token}'.format(token=accessToken))
+            raise RuntimeError('Generated token is invalid: {token}'.format(token=accessToken))
         expireTime = None
         if self.authTokenLifeTime is not None:
             expireTime = time.time() + self.authTokenLifeTime

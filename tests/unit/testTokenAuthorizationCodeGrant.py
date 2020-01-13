@@ -2,7 +2,8 @@
 
 from txoauth2 import GrantTypes
 from txoauth2.errors import UnauthorizedClientError, DifferentRedirectUriError, \
-    MissingParameterError, InvalidTokenError, MultipleParameterError, InvalidParameterError
+    MissingParameterError, InvalidTokenError, MultipleParameterError, InvalidParameterError, \
+    ServerError
 
 from tests import getTestPasswordClient
 from tests.unit.testTokenResource import AbstractTokenResourceTest
@@ -269,3 +270,43 @@ class TestAuthorizationCodeGrant(AbstractTokenResourceTest):
             request, result, accessToken, self._TOKEN_RESOURCE.authTokenLifeTime,
             expectedRefreshToken=refreshToken, expectedScope=self._VALID_SCOPE,
             expectedAdditionalData=additionalData)
+
+    def testTokenGeneratorGeneratesInvalidToken(self):
+        """
+        Test that the token resource handles the case
+        when the TokenGenerator generates an invalid token.
+        """
+        code = 'codeInvalidTokenFromGenerator'
+        accessToken = 'codeGrantAccessTokenInvalidTokenFromGenerator'
+        refreshToken = 'invalidToken!'
+        self._addAuthorizationToStorage(code, self._VALID_CLIENT, self._VALID_SCOPE)
+        request = self.generateValidTokenRequest(arguments={
+            'grant_type': 'authorization_code',
+            'code': code,
+        }, authentication=self._VALID_CLIENT)
+        self._TOKEN_FACTORY.expectTokenRequest(accessToken, self._TOKEN_RESOURCE.authTokenLifeTime,
+                                               self._VALID_CLIENT, self._VALID_SCOPE)
+        self._TOKEN_FACTORY.expectTokenRequest(
+            refreshToken, None, self._VALID_CLIENT, self._VALID_SCOPE)
+        result = self._TOKEN_RESOURCE.render_POST(request)
+        self._TOKEN_FACTORY.assertAllTokensRequested()
+        self.assertFailedTokenRequest(
+            request, result, ServerError(
+                message='Generated token is invalid: {token}'.format(token=refreshToken)),
+            msg='Expected the resource token to generate a ServerError for an authorization_code '
+                'request if the token factory generates an invalid refresh token.')
+        accessToken = 'invalidToken#'
+        self._addAuthorizationToStorage(code, self._VALID_CLIENT, self._VALID_SCOPE)
+        request = self.generateValidTokenRequest(arguments={
+            'grant_type': 'authorization_code',
+            'code': code,
+        }, authentication=self._VALID_CLIENT)
+        self._TOKEN_FACTORY.expectTokenRequest(accessToken, self._TOKEN_RESOURCE.authTokenLifeTime,
+                                               self._VALID_CLIENT, self._VALID_SCOPE)
+        result = self._TOKEN_RESOURCE.render_POST(request)
+        self._TOKEN_FACTORY.assertAllTokensRequested()
+        self.assertFailedTokenRequest(
+            request, result, ServerError(
+                message='Generated token is invalid: {token}'.format(token=accessToken)),
+            msg='Expected the resource token to generate a ServerError for an authorization_code '
+                'request if the token factory generates an invalid access token.')
