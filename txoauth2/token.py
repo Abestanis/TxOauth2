@@ -489,7 +489,7 @@ class TokenResource(Resource, object):
             refreshToken = self._storeNewRefreshToken(client, scope, None)
         return self._buildResponse(request, accessToken, scope, refreshToken)
 
-    # pylint: disable=no-self-use
+    # pylint: disable=no-self-use, unused-argument
     def onCustomGrantTypeRequest(self, request, grantType):
         """
         Gets called when a request with a custom grant type is encountered.
