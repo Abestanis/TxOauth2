@@ -660,5 +660,5 @@ class TokenResource(Resource, object):
         :return: The access token storage.
         """
         if TokenResource._OAuthTokenStorage is None:
-            raise ValueError('The access token storage is not initialized')
+            raise RuntimeError('The access token storage is not initialized')
         return TokenResource._OAuthTokenStorage

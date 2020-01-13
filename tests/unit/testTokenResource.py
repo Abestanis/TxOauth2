@@ -2,6 +2,7 @@
 
 import json
 import warnings
+from unittest.mock import patch
 
 from twisted.web import error
 from twisted.web.server import NOT_DONE_YET
@@ -700,3 +701,8 @@ class TestTokenResource(AbstractTokenResourceTest):
         self.assertRaises(ValueError, TokenResource, self._TOKEN_FACTORY, self._PERSISTENT_STORAGE,
                           self._REFRESH_TOKEN_STORAGE, self._AUTH_TOKEN_STORAGE,
                           self._CLIENT_STORAGE, grantTypes=[GrantTypes.Password])
+
+    @patch('txoauth2.token.TokenResource._OAuthTokenStorage', None)
+    def testGetTokenStorageSingletonRaisesErrorOnNoSingleton(self):
+        """ Test that getTokenStorageSingleton raises an error if no singleton is registered. """
+        self.assertRaises(RuntimeError, TokenResource.getTokenStorageSingleton)
