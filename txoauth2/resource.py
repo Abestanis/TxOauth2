@@ -420,6 +420,6 @@ class OAuth2(Resource, object):
             return ServerError(state, message).generate(request, redirectUri, errorInFragment)
         except Exception as error:  # pylint: disable=broad-except
             logging.getLogger('txOauth2').error(
-                'Caught exception in onAuthenticate: {msg}'.format(msg=error), exc_info=True)
+                'Caught exception in onAuthenticate: %s', str(error), exc_info=True)
             return ServerError(state, message=str(error)).generate(
                 request, redirectUri, errorInFragment)

@@ -611,6 +611,7 @@ class TestTokenResource(AbstractTokenResourceTest):
         returns an error instead of raising it.
         """
         class ErrorTestClientStorage(TestClientStorage):
+            """ A ClientStorage to test returning errors from authenticateClient. """
             def __init__(self, errorToReturn):
                 super(ErrorTestClientStorage, self).__init__()
                 self.error = errorToReturn

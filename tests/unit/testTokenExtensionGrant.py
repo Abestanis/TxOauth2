@@ -16,10 +16,10 @@ class TestExtensionGrant(AbstractTokenResourceTest):
     class TestTokenResource(TokenResource):
         """ A test TokenResource that returns the parameter given to onCustomGrantTypeRequest. """
 
-        def __init__(self, *args, error=None, returnError=False, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.error = error
-            self.returnError = returnError
+        def __init__(self, *args, **kwargs):
+            self.error = kwargs.pop('error', None)
+            self.returnError = kwargs.pop('returnError', False)
+            super(TestExtensionGrant.TestTokenResource, self).__init__(*args, **kwargs)
 
         def onCustomGrantTypeRequest(self, request, grantType):
             if self.error is not None:

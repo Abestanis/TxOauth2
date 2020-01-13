@@ -24,7 +24,7 @@ class OAuth2Error(Exception):
     _logger = logging.getLogger('txOauth2')
 
     def __init__(self, code, message, detail, errorUri=None):
-        super().__init__(message)
+        super(OAuth2Error, self).__init__(message)
         self.code = code
         self.message = message
         self.detail = detail

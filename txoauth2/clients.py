@@ -22,6 +22,7 @@ class ClientStorage(object):
     """
     __metaclass__ = ABCMeta
 
+    # pylint: disable=no-self-use
     def authenticateClient(self, client, request, secret=None):
         """
         Authenticate a given client.

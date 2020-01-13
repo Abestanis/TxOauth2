@@ -327,6 +327,7 @@ class TokenResource(Resource, object):
             elif grantType == GrantTypes.Password.value:
                 return self._handlePasswordRequest(
                     request, self._authenticateClient(request, grantType))
+            # pylint: disable=assignment-from-no-return
             result = self.onCustomGrantTypeRequest(request, grantType)
             if isinstance(result, OAuth2Error):
                 warnings.warn('Returning an error from onCustomGrantTypeRequest is '
@@ -336,8 +337,8 @@ class TokenResource(Resource, object):
         except OAuth2Error as error:
             return error.generate(request)
         except Exception as error:  # pylint: disable=broad-except
-            logging.getLogger('txOauth2').error('Caught exception while handling a token request: '
-                                                '{msg}'.format(msg=error), exc_info=True)
+            logging.getLogger('txOauth2').error(
+                'Caught exception while handling a token request: %s', str(error), exc_info=True)
             return ServerError(message=str(error)).generate(request)
 
     def _handleRefreshRequest(self, request, client):
