@@ -90,6 +90,18 @@ class TestTokenRefresh(AbstractTokenResourceTest):
             request, result, newAuthToken, self._TOKEN_RESOURCE.authTokenLifeTime,
             expectedScope=self._VALID_SCOPE)
 
+    def testMultipleScopes(self):
+        """ Test the rejection of a request with multiple scopes. """
+        request = self.generateValidTokenRequest(arguments={
+            'grant_type': 'refresh_token',
+            'refresh_token': self._VALID_REFRESH_TOKEN,
+            'scope': self._VALID_SCOPE
+        }, authentication=self._VALID_CLIENT)
+        result = self._TOKEN_RESOURCE.render_POST(request)
+        self.assertFailedTokenRequest(request, result, MultipleParameterError('scope'),
+                                      msg='Expected the token resource to reject a refresh_token '
+                                          'request with multiple scopes.')
+
     def testInvalidScope(self):
         """ Test the rejection of a valid request with an invalid scope. """
         invalidScope = 'invalidScope'
@@ -102,6 +114,21 @@ class TestTokenRefresh(AbstractTokenResourceTest):
         self.assertFailedTokenRequest(request, result, InvalidScopeError(invalidScope),
                                       msg='Expected the token resource to reject a refresh_token '
                                           'request with an invalid scope.')
+        invalidScope = self._VALID_SCOPE[0]
+        request = self.generateValidTokenRequest(arguments={
+            'grant_type': 'refresh_token',
+            'refresh_token': self._VALID_REFRESH_TOKEN,
+            'scope': invalidScope
+        }, authentication=self._VALID_CLIENT)
+        self._TOKEN_FACTORY.expectTokenRequest(
+            None, self._TOKEN_RESOURCE.authTokenLifeTime, self._VALID_CLIENT,
+            [invalidScope], validScope=False)
+        result = self._TOKEN_RESOURCE.render_POST(request)
+        self._TOKEN_FACTORY.assertAllTokensRequested()
+        self.assertFailedTokenRequest(
+            request, result, InvalidScopeError(invalidScope),
+            msg='Expected the token resource to reject a refresh_token request with '
+                'a scope that is rejected by the token factory.')
 
     def testMalformedScope(self):
         """ Test the rejection of a valid request with a malformed scope. """

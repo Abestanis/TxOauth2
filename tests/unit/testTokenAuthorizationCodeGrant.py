@@ -162,6 +162,18 @@ class TestAuthorizationCodeGrant(AbstractTokenResourceTest):
             request, result, accessToken, self._TOKEN_RESOURCE.authTokenLifeTime,
             expectedRefreshToken=refreshToken, expectedScope=self._VALID_SCOPE)
 
+    def testWithoutCode(self):
+        """ Test the rejection of a request without an authorization code. """
+        request = self.generateValidTokenRequest(arguments={
+            'grant_type': 'authorization_code',
+            'redirect_uri': self._VALID_CLIENT.redirectUris[0],
+        }, authentication=self._VALID_CLIENT)
+        result = self._TOKEN_RESOURCE.render_POST(request)
+        self.assertFailedTokenRequest(
+            request, result, MissingParameterError('code'),
+            msg='Expected the resource token to reject an authorization_code request '
+                'without an authorization code.')
+
     def testInvalidCode(self):
         """ Test the rejection of a request with an invalid authorization code. """
         request = self.generateValidTokenRequest(arguments={

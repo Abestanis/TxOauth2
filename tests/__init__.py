@@ -239,12 +239,12 @@ class TestTokenFactory(TokenFactory):
 
     def assertAllTokensRequested(self):
         """ Assert that all expected tokens have been requested from the token factory. """
-        self._testCase.assertTrue(
-            len(self._tokens) == 0,
+        self._testCase.assertListEqual(
+            self._tokens, [],
             msg='Not all expected tokens have been requested from the token factory: '
                 '{tokens}'.format(tokens=', '.join(data[0] for data in self._tokens)))
-        self._testCase.assertTrue(
-            len(self._requestedTokens) == 0,
+        self._testCase.assertListEqual(
+            self._requestedTokens, [],
             msg='More tokens have been requested from the token factory than expected: '
                 '{tokens}'.format(tokens=', '.join(data[0] for data in self._tokens)))
 
@@ -262,7 +262,7 @@ class TestTokenFactory(TokenFactory):
         """ Validate that the actual parameters to generateToken match the expected. """
         self._testCase.assertEquals(
             lifetime, expectedLifetime,
-            msg='generateToken was called with a different the lifetime than '
+            msg='generateToken was called with a different lifetime than '
                 'expected for the requested token {token}'.format(token=token))
         assertClientEquals(self._testCase, client, expectedClient,
                            message='generateToken was called with a different client than '
