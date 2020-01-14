@@ -368,6 +368,15 @@ class TestTokenResource(AbstractTokenResourceTest):
         self.assertFailedTokenRequest(
             request, result, NoClientAuthenticationError(),
             msg='Expected the token resource to reject a request without any authentication.')
+        request = self.generateValidTokenRequest(arguments={
+            'grant_type': 'refresh_token',
+            'refresh_token': self._VALID_REFRESH_TOKEN,
+            'client_id': self._VALID_CLIENT.id,
+        })
+        result = self._TOKEN_RESOURCE.render_POST(request)
+        self.assertFailedTokenRequest(
+            request, result, NoClientAuthenticationError(),
+            msg='Expected the token resource to reject a request without client authentication.')
 
     def testAuthorizationClientAuthInHeader(self):
         """ Test that a request with valid client authentication in the header is accepted. """
