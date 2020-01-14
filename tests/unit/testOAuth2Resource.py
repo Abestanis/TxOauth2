@@ -14,7 +14,8 @@ from txoauth2 import GrantTypes
 from txoauth2.clients import PasswordClient
 from txoauth2.errors import MissingParameterError, UnauthorizedClientError, \
     UnsupportedResponseTypeError, MalformedParameterError, MultipleParameterError, \
-    InsecureConnectionError, ServerError, InvalidScopeError, InvalidTokenError
+    InsecureConnectionError, ServerError, InvalidScopeError, InvalidTokenError, \
+    TemporarilyUnavailableError
 from txoauth2.imp import DictTokenStorage
 from txoauth2.resource import OAuth2, InvalidDataKeyError
 
@@ -40,6 +41,7 @@ class AbstractAuthResourceTest(TwistedTestCase):
         UNKNOWN_SCOPE = 'unknown'
         UNKNOWN_SCOPE_RETURN = 'unknown_return'
         UNKNOWN_SCOPE_RAISING_OAUTH2_ERROR = 'unknown_raise_oauth2_error'
+        TEMPORARY_UNAVAILABLE_SCOPE = 'temporary_unavailable'
         ERROR_MESSAGE = 'Expected the auth resource to catch this error'
 
         def onAuthenticate(self, request, client, responseType, scope, redirectUri, state, dataKey):
@@ -52,6 +54,8 @@ class AbstractAuthResourceTest(TwistedTestCase):
                 return InvalidScopeError(scope, state=state)
             if self.UNKNOWN_SCOPE_RAISING_OAUTH2_ERROR in scope:
                 raise InvalidTokenError(self.ERROR_MESSAGE)
+            if self.TEMPORARY_UNAVAILABLE_SCOPE in scope:
+                raise TemporarilyUnavailableError(state=state)
             return request, client, responseType, scope, redirectUri, state, dataKey
 
     @classmethod
@@ -576,3 +580,20 @@ class AuthResourceTest(AbstractAuthResourceTest):
         self.assertRaises(ValueError, self.TestOAuth2Resource, self._TOKEN_FACTORY,
                           self._PERSISTENT_STORAGE, self._CLIENT_STORAGE,
                           grantTypes=[GrantTypes.Implicit])
+
+    def testTemporaryUnavailable(self):
+        """ Test that the OAuth2 resource correctly handles a TemporarilyUnavailableError. """
+        redirectUri = self._VALID_CLIENT.redirectUris[0]
+        state = b'state\xFF\xFF'
+        request = self.createAuthRequest(arguments={
+            'response_type': 'code',
+            'client_id': self._VALID_CLIENT.id,
+            'redirect_uri': redirectUri,
+            'scope': self.TestOAuth2Resource.TEMPORARY_UNAVAILABLE_SCOPE,
+            'state': state
+        })
+        result = self._AUTH_RESOURCE.render_GET(request)
+        self.assertFailedRequest(
+            request, result, TemporarilyUnavailableError(state=state),
+            redirectUri=redirectUri, msg='Expected the auth resource to correctly report a '
+                                         'TemporarilyUnavailableError error.')
