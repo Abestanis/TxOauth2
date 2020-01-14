@@ -61,7 +61,7 @@ class TokenStorage(object):
 
         :raises KeyError: If the token is not in the token store.
         :param token: The token to validate.
-        :param scope: The scopes the token must grant access to.
+        :param scope: The scope or scope list the token must grant access to.
         :return: True, if the token grants access to the scopes, False otherwise.
         """
         raise NotImplementedError()

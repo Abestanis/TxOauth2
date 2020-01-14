@@ -49,7 +49,10 @@ class AbstractTokenStorageTest(TwistedTestCase):
         self.assertTrue(self._TOKEN_STORAGE.hasAccess(self._VALID_TOKEN, self._VALID_SCOPE[0:1]),
                         msg='Expected hasAccess to return True for a valid token '
                             'and a subset of the valid scopes.')
-        self.assertFalse(self._TOKEN_STORAGE.hasAccess(self._VALID_TOKEN, ['invalidScope']),
+        self.assertTrue(self._TOKEN_STORAGE.hasAccess(self._VALID_TOKEN, self._VALID_SCOPE[0]),
+                        msg='Expected hasAccess to return True '
+                            'for a valid token and a single valid scope.')
+        self.assertFalse(self._TOKEN_STORAGE.hasAccess(self._VALID_TOKEN, 'invalidScope'),
                          msg='Expected hasAccess to return False '
                              'for a valid token and an invalid scope.')
         self.assertFalse(
@@ -83,6 +86,13 @@ class AbstractTokenStorageTest(TwistedTestCase):
         self._TOKEN_STORAGE.store(token, self._DUMMY_CLIENT, self._VALID_SCOPE[0:1])
         self.assertListEqual(self._VALID_SCOPE[0:1], self._TOKEN_STORAGE.getTokenScope(token),
                              msg='Expected getTokenScope to return the scope given to store.')
+        token = 'differentValidToken'
+        scope = self._VALID_SCOPE[0]
+        self._TOKEN_STORAGE.store(token, self._DUMMY_CLIENT, scope)
+        self.assertListEqual(
+            [scope], self._TOKEN_STORAGE.getTokenScope(token),
+            msg='Expected the token storage return the scope as a list '
+                'even if it was passed as a single string to store.')
         self.assertRaises(KeyError, self._TOKEN_STORAGE.getTokenScope, 'invalidToken')
 
     def testAdditionalData(self):
@@ -122,7 +132,8 @@ class AbstractTokenStorageTest(TwistedTestCase):
         self.assertTrue(self._TOKEN_STORAGE.contains(token),
                         msg='Expected the token storage to contain the token after it was stored.')
         self.assertTrue(self._TOKEN_STORAGE.hasAccess(token, self._VALID_SCOPE),
-                        msg='Expected the token storage to contain the token after it was stored.')
+                        msg='Expected the token storage to indicate that the token '
+                            'has access to the scopes it was created with.')
         self.assertListEqual(
             self._VALID_SCOPE, self._TOKEN_STORAGE.getTokenScope(token),
             msg='Expected the token storage return the same scope that was supplied to store.')

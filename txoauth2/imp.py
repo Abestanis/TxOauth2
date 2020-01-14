@@ -124,6 +124,8 @@ class DictTokenStorage(TokenStorage):
     def hasAccess(self, token, scope):
         if self._checkExpire(token):
             raise KeyError('Token expired')
+        if not isinstance(scope, list):
+            scope = [scope]
         for scopeItem in scope:
             if scopeItem not in self._tokens[token]['scope']:
                 return False
