@@ -140,22 +140,16 @@ class UnauthorizedOAuth2Error(OAuth2Error):
 
 class MissingParameterError(AuthorizationError):
     """ Error due to a missing parameter. """
-    def __init__(self, name=None, state=None):
-        if name is None:
-            message = 'A required parameter was missing from the request'
-        else:
-            message = 'Request was missing the \'{name}\' parameter'.format(name=name)
+    def __init__(self, name, state=None):
+        message = 'Request was missing the \'{name}\' parameter'.format(name=name)
         super(MissingParameterError, self).__init__(BAD_REQUEST, 'invalid_request',
                                                     message, state=state)
 
 
 class InvalidParameterError(AuthorizationError):
     """ Error due to an invalid parameter. """
-    def __init__(self, name=None, state=None):
-        if name is None:
-            message = 'A required parameter was invalid'
-        else:
-            message = 'The parameter \'{name}\' is invalid'.format(name=name)
+    def __init__(self, name, state=None):
+        message = 'The parameter \'{name}\' is invalid'.format(name=name)
         super(InvalidParameterError, self).__init__(BAD_REQUEST, 'invalid_request',
                                                     message, state=state)
 
