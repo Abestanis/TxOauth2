@@ -1,8 +1,9 @@
 """ Client storage tests. """
 
 import os
+import shutil
 
-from tempfile import NamedTemporaryFile
+from tempfile import NamedTemporaryFile, mkdtemp
 
 from txoauth2 import GrantTypes
 from txoauth2.clients import Client, PublicClient, PasswordClient
@@ -67,6 +68,7 @@ class AbstractClientStorageTest(TwistedTestCase):
 
 class ConfigParserClientStorageTest(AbstractClientStorageTest):
     """ Test the ConfigParserClientStorage. """
+    NOT_FOUND_CLASS_CLIENT_ID = 'notFoundClassClientId'
 
     @classmethod
     def setUpClass(cls):
@@ -76,6 +78,14 @@ class ConfigParserClientStorageTest(AbstractClientStorageTest):
         cls.setupClientStorage(clientStorage)
         for client in cls._VALID_CLIENTS:
             clientStorage.addClient(client)
+
+        class TestNotFoundClassClient(PublicClient):
+            """ A Client class that will not be found by getClient. """
+
+            def __init__(self):
+                super(TestNotFoundClassClient, self).__init__(
+                    ConfigParserClientStorageTest.NOT_FOUND_CLASS_CLIENT_ID, [], [])
+        clientStorage.addClient(TestNotFoundClassClient())
 
     @classmethod
     def tearDownClass(cls):
@@ -98,3 +108,22 @@ class ConfigParserClientStorageTest(AbstractClientStorageTest):
         self.assertEqual(
             self._CLIENT_STORAGE.getClient(client.id).secret, client.secret,
             msg='Expected the client storage to contain a client after adding him.')
+
+    def testGetUnknownClient(self):
+        """ Test handling of requests for clients that do net exist in the client storage. """
+        self.assertRaises(
+            ValueError, self._CLIENT_STORAGE.getClient, self.NOT_FOUND_CLASS_CLIENT_ID)
+
+    def testWritingInNonexistentDirectory(self):
+        """ Test that the client storage is able to write to a location that doesn't exist. """
+        tempDir = mkdtemp()
+        try:
+            clientStorage = ConfigParserClientStorage(
+                os.path.join(tempDir, 'nonexistentDir', 'test.ini'))
+            try:
+                clientStorage.addClient(self._VALID_CLIENTS[0])
+            except IOError as error:
+                self.fail('Expected the ConfigParserClientStorage to write to a location that does '
+                          'not exist, but got an error: {msg}'.format(msg=error))
+        finally:
+            shutil.rmtree(tempDir, ignore_errors=True)

@@ -91,8 +91,10 @@ class ConfigParserClientStorage(ClientStorage):
         for name, value in client.__dict__.items():
             if name not in ['id', 'redirectUris', 'authorizedGrantTypes']:
                 self._configParser.set(sectionName, name, value)
-        if not os.path.exists(os.path.dirname(self.path)):
+        try:
             os.makedirs(os.path.dirname(self.path))
+        except OSError:
+            pass
         with open(self.path, 'w') as configFile:
             self._configParser.write(configFile)
 
