@@ -85,17 +85,17 @@ class FullExampleTestCase(TwistedTestCase):
         self.assertIsNotNone(redirectUrl, msg='Expected the auth resource to redirect the request.')
         parameter = AbstractAuthResourceTest.getParameterFromRedirectUrl(redirectUrl, False)
         self.assertIn('error', parameter, msg='Missing error parameter in response.')
-        self.assertEqual(parameter['error'], expectedError.message,
+        self.assertEqual(parameter['error'], expectedError.name,
                          msg='Result contained a different error than expected.')
         self.assertIn('error_description', parameter,
                       msg='Missing error_description parameter in response.')
-        if not isinstance(expectedError.detail, (bytes, str)):
+        if not isinstance(expectedError.description, (bytes, str)):
             self.assertEqual(
-                parameter['error_description'], expectedError.detail.encode('utf-8'),
+                parameter['error_description'], expectedError.description.encode('utf-8'),
                 msg='Result contained a different error description than expected.')
         else:
             self.assertEqual(
-                parameter['error_description'], expectedError.detail,
+                parameter['error_description'], expectedError.description,
                 msg='Result contained a different error description than expected.')
         if expectedError.errorUri is not None:
             self.assertIn('error_uri', parameter,
@@ -140,7 +140,7 @@ class FullExampleTestCase(TwistedTestCase):
         parameter = AbstractAuthResourceTest.getParameterFromRedirectUrl(redirectUrl, False)
         self.assertIn('error', parameter, msg='Missing error parameter in response.')
         self.assertEqual(
-            parameter['error'], UserDeniesAuthorization().message,
+            parameter['error'], UserDeniesAuthorization().name,
             msg='Result contained an unexpected error.')
         self.assertIn('state', parameter, msg='Missing state parameter in response.')
         self.assertEqual(

@@ -412,9 +412,9 @@ class OAuth2(Resource, object):
         except AuthorizationError as error:
             return error.generate(request, redirectUri, errorInFragment)
         except OAuth2Error as error:
-            message = error.message
-            if error.detail is not None:
-                message += ': ' + error.detail
+            message = error.name
+            if error.description is not None:
+                message += ': ' + error.description
             warnings.warn('Only AuthorizationErrors are expected to occur during authorization, '
                           'other errors will get converted to a ServerError.', RuntimeWarning)
             return ServerError(state, message).generate(request, redirectUri, errorInFragment)

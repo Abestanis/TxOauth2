@@ -183,19 +183,19 @@ class AbstractTokenResourceTest(TwistedTestCase):
                              'with the HTTP code {code}.'.format(code=expectedError.code))
         errorResult = json.loads(result.decode('utf-8'), encoding='utf-8')
         self.assertIn('error', errorResult, msg=msg + ': Missing error parameter in response.')
-        self.assertEqual(errorResult['error'], expectedError.message,
+        self.assertEqual(errorResult['error'], expectedError.name,
                          msg=msg + ': Result contained a different error than expected.')
         self.assertIn('error_description', errorResult,
                       msg=msg + ': Missing error_description parameter in response.')
         self.assertEqual(
-            errorResult['error_description'], expectedError.detail,
+            errorResult['error_description'], expectedError.description,
             msg=msg + ': Result contained a different error description than expected.')
         if expectedError.errorUri is not None:
             self.assertIn('error_uri', errorResult,
                           msg=msg + ': Missing error_uri parameter in response.')
             self.assertEqual(errorResult['error_uri'], expectedError.errorUri,
                              msg=msg + ': Result contained an unexpected error_uri.')
-        if expectedError.message == 'invalid_client':
+        if expectedError.name == 'invalid_client':
             self.assertEqual(
                 401, request.responseCode,
                 msg='Expected the token resource to return UNAUTHORIZED as the response code.')

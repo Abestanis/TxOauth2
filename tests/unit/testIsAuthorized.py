@@ -46,8 +46,8 @@ class TestIsAuthorized(TwistedTestCase):
         authParameter = {
             'realm': request.prePathURL(),
             'scope': ' '.join(expectedError.scope),
-            'error': expectedError.message,
-            'error_description': expectedError.detail
+            'error': expectedError.name,
+            'error_description': expectedError.description
         }
         if expectedError.errorUri is not None:
             authParameter['error_uri'] = expectedError.errorUri

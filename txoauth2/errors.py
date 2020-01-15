@@ -17,23 +17,23 @@ class OAuth2Error(Exception):
     the response code of the request via the generate method,
     to comply with the OAuth2 specification.
     """
-    message = None
-    detail = None
+    name = None
+    description = None
     errorUri = None
     code = BAD_REQUEST
     _logger = logging.getLogger('txOauth2')
 
-    def __init__(self, code, message, detail, errorUri=None):
-        super(OAuth2Error, self).__init__(message)
+    def __init__(self, code, name, description=None, errorUri=None):
+        super(OAuth2Error, self).__init__(name)
         self.code = code
-        self.message = message
-        self.detail = detail
+        self.name = name
+        self.description = description
         self.errorUri = errorUri
 
     def _generateErrorBody(self):
-        error = {'error': self.message}
-        if self.detail is not None:
-            error['error_description'] = self.detail
+        error = {'error': self.name}
+        if self.description is not None:
+            error['error_description'] = self.description
         if self.errorUri is not None:
             error['error_uri'] = self.errorUri
         return error
@@ -62,8 +62,8 @@ class AuthorizationError(OAuth2Error):
     """
     state = None
 
-    def __init__(self, code, message, detail, errorUri=None, state=None):
-        super(AuthorizationError, self).__init__(code, message, detail, errorUri)
+    def __init__(self, code, name, description=None, errorUri=None, state=None):
+        super(AuthorizationError, self).__init__(code, name, description, errorUri)
         self.state = state
 
     def _generateErrorBody(self):
@@ -101,13 +101,13 @@ class OAuth2RequestError(OAuth2Error):
     _wwwAuthenticateContent = ''
     scope = []
 
-    def __init__(self, code, message, detail, scope, errorUri=None, addDetailsToHeader=True):
-        super(OAuth2RequestError, self).__init__(code, message, detail, errorUri)
+    def __init__(self, code, name, scope, description=None, errorUri=None, addDetailsToHeader=True):
+        super(OAuth2RequestError, self).__init__(code, name, description, errorUri)
         self.scope = scope
         if addDetailsToHeader:
             self._wwwAuthenticateContent += ',scope="' + ' '.join(scope) + '"'
-            self._wwwAuthenticateContent += ',error="' + message + '"'
-            self._wwwAuthenticateContent += ',error_description="' + detail + '"'
+            self._wwwAuthenticateContent += ',error="' + name + '"'
+            self._wwwAuthenticateContent += ',error_description="' + description + '"'
             if errorUri is not None:
                 self._wwwAuthenticateContent += ',error_uri="' + errorUri + '"'
 
@@ -125,9 +125,6 @@ class OAuth2RequestError(OAuth2Error):
 
 class UnauthorizedOAuth2Error(OAuth2Error):
     """ Error during a request to the token resource without valid client credentials. """
-
-    def __init__(self, code, message, detail, errorUri=None):
-        super(UnauthorizedOAuth2Error, self).__init__(code, message, detail, errorUri)
 
     def generate(self, request):
         authorizationHeader = request.getHeader(b'Authorization')
@@ -319,7 +316,7 @@ class MissingTokenError(OAuth2RequestError):
     def __init__(self, scope):
         message = 'No access token provided'
         super(MissingTokenError, self).__init__(
-            UNAUTHORIZED, 'invalid_request', message, scope, addDetailsToHeader=False)
+            UNAUTHORIZED, 'invalid_request', scope, message, addDetailsToHeader=False)
 
 
 class InvalidTokenRequestError(OAuth2RequestError):
@@ -327,7 +324,7 @@ class InvalidTokenRequestError(OAuth2RequestError):
     def __init__(self, scope):
         message = 'The access token is invalid'
         super(InvalidTokenRequestError, self).__init__(
-            UNAUTHORIZED, 'invalid_token', message, scope)
+            UNAUTHORIZED, 'invalid_token', scope, message)
 
 
 class InsufficientScopeRequestError(OAuth2RequestError):
@@ -335,11 +332,11 @@ class InsufficientScopeRequestError(OAuth2RequestError):
     def __init__(self, scope):
         message = 'The request requires higher privileges than provided by the access token'
         super(InsufficientScopeRequestError, self).__init__(
-            FORBIDDEN, 'insufficient_scope', message, scope)
+            FORBIDDEN, 'insufficient_scope', scope, message)
 
 
 class MultipleTokensError(OAuth2RequestError):
     """ Error because a request contained multiple tokens. """
     def __init__(self, scope):
         message = 'The request contained multiple access tokens'
-        super(MultipleTokensError, self).__init__(BAD_REQUEST, 'invalid_request', message, scope)
+        super(MultipleTokensError, self).__init__(BAD_REQUEST, 'invalid_request', scope, message)
