@@ -66,7 +66,7 @@ class OAuth2Endpoint(OAuth2):
     def onAuthenticate(self, request, client, responseType, scope, redirectUri, state, dataKey):
         for scopeItem in scope:
             if scopeItem not in self._VALID_SCOPES:
-                return InvalidScopeError(scope, state)
+                raise InvalidScopeError(scope, state)
         return """<!DOCTYPE html>
 <html lang="en">
 <head>
