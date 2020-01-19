@@ -3,9 +3,10 @@
 """ Utility methods. """
 
 try:
-    from __builtin__ import basestring as StringType
+    from __builtin__ import basestring as StringType, long as LongType
 except ImportError:
     StringType = str
+    LongType = int
 try:
     from urlparse import urlparse, parse_qsl, urlunparse
     from urllib import urlencode
@@ -20,6 +21,14 @@ def isAnyStr(val):
     :return: If it is a string value (includes unicode).
     """
     return isinstance(val, StringType)
+
+
+def isIntType(val):
+    """
+    :param val: The value to check
+    :return: If it is a number value (includes long).
+    """
+    return isinstance(val, (int, LongType))
 
 
 def addToUrl(url, query=None, fragment=None):
