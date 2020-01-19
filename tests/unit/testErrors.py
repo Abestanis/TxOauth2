@@ -109,7 +109,7 @@ class OAuth2ErrorTest(TwistedTestCase):
                 msg='Expected the error not to include a WWW-Authenticate header.')
         self.assertIsInstance(
             resultBytes, bytes, message='Expected the error to generate bytes.')
-        result = json.loads(resultBytes, encoding='utf-8')
+        result = json.loads(resultBytes.decode('utf-8'))
         self.assertIsInstance(result, dict, message='Expected the error return a json object.')
         parameter['scope'] = None
         for parameterName, value in parameter.items():
