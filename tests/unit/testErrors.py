@@ -3,17 +3,16 @@ import json
 import warnings
 
 try:
-    from __builtin__ import unichr
+    from __builtin__ import unichr as _unichr
 except ImportError:
-    # noinspection PyShadowingBuiltins
-    unichr = chr
+    _unichr = chr
 
 try:
-    from urlparse import urlparse, parse_qs
+    from urlparse import urlparse
     from urllib import urlencode
 except ImportError:
     # noinspection PyUnresolvedReferences
-    from urllib.parse import urlparse, parse_qs, urlencode
+    from urllib.parse import urlparse, urlencode
 
 from twisted.web.server import NOT_DONE_YET
 from twisted.web.http import ACCEPTED, UNAUTHORIZED, FOUND
@@ -81,27 +80,26 @@ class OAuth2ErrorTest(TwistedTestCase):
                              msg='Expected the error to use the configured auth scheme '
                                  'in the WWW-Authenticate header.')
             authenticateParameter = dict(item.split('=', 1) for item in params.split(','))
-            for name, value in parameter.items():
+            for parameterName, value in parameter.items():
                 if value is None:
-                    self.assertNotIn(name, authenticateParameter,
-                                     msg='Expected the error not to add the {name} parameter '
-                                         'to the WWW-Authenticate header.'.format(name=name))
+                    self.assertNotIn(parameterName, authenticateParameter,
+                                     msg='Expected the error not to add the {name} parameter to '
+                                         'the WWW-Authenticate header.'.format(name=parameterName))
                     continue
-                self.assertIn(name, authenticateParameter,
+                self.assertIn(parameterName, authenticateParameter,
                               msg='Expected the error to add the {name} parameter '
-                                  'to the WWW-Authenticate header.'.format(name=name))
+                                  'to the WWW-Authenticate header.'.format(name=parameterName))
                 self.assertEqual(
-                    '"' + value + '"', authenticateParameter.pop(name),
+                    '"' + value + '"', authenticateParameter.pop(parameterName),
                     msg='Expected the error to include the correct value for the parameter {name} '
-                        'in the WWW-Authenticate header.'.format(name=name))
+                        'in the WWW-Authenticate header.'.format(name=parameterName))
             self.assertIn('realm', authenticateParameter,
-                          msg='Expected the error to add the realm '
-                              'to the WWW-Authenticate header.'.format(name=name))
+                          msg='Expected the error to add the realm to the WWW-Authenticate header.')
             self.assertEqual(
                 '"{realm}"'.format(realm=request.prePathURL().decode('utf-8')),
                 authenticateParameter.pop('realm'),
                 msg='Expected the error to include the correct realm '
-                    'in the WWW-Authenticate header.'.format(name=name))
+                    'in the WWW-Authenticate header.')
             self.assertDictEqual(
                 authenticateParameter, {}, msg='Expected the error not to return any additional '
                                                'parameters in the WWW-Authenticate header.')
@@ -114,16 +112,18 @@ class OAuth2ErrorTest(TwistedTestCase):
         result = json.loads(resultBytes, encoding='utf-8')
         self.assertIsInstance(result, dict, message='Expected the error return a json object.')
         parameter['scope'] = None
-        for name, value in parameter.items():
+        for parameterName, value in parameter.items():
             if value is None:
-                self.assertNotIn(name, result, msg='Expected the error not to add the {name} '
-                                                   'parameter to the response.'.format(name=name))
+                self.assertNotIn(parameterName, result,
+                                 msg='Expected the error not to add the {name} '
+                                     'parameter to the response.'.format(name=parameterName))
                 continue
-            self.assertIn(name, result, msg='Expected the error to add the {name} parameter '
-                                            'to the response.'.format(name=name))
-            self.assertEqual(
-                value, result.pop(name), msg='Expected the error to return the correct value '
-                                             'for the parameter {name}.'.format(name=name))
+            self.assertIn(parameterName, result,
+                          msg='Expected the error to add the {name} parameter '
+                              'to the response.'.format(name=parameterName))
+            self.assertEqual(value, result.pop(parameterName),
+                             msg='Expected the error to return the correct value '
+                                 'for the parameter {name}.'.format(name=parameterName))
         self.assertDictEqual(
             result, {}, msg='Expected the error not to return any additional parameters.')
 
@@ -149,14 +149,14 @@ class OAuth2ErrorTest(TwistedTestCase):
         self.assertListEqual(error.scope, self._VALID_SCOPE,
                              msg='Expected the {error} to use the scope that it has been '
                                  'initialized with.'.format(error=error.__class__.__name__))
-        self.assertTrue(error._addWwwAuthenticateHeader,
+        self.assertTrue(error._addWwwAuthenticateHeader,  # pylint: disable=protected-access
                         msg='Expected the {error} to enable the WWW-Authenticate header.'.format(
                             error=error.__class__.__name__))
-        self.assertEqual(authScheme, error._authScheme,
+        self.assertEqual(authScheme, error._authScheme,  # pylint: disable=protected-access
                          msg='Expected the {error} to use the auth scheme that it has been '
                              'initialized with.'.format(error=error.__class__.__name__))
         error = self._initializeError(UNAUTHORIZED, self._VALID_NAME, scope=self._VALID_SCOPE[0])
-        self.assertTrue(error._addWwwAuthenticateHeader,
+        self.assertTrue(error._addWwwAuthenticateHeader,  # pylint: disable=protected-access
                         msg='Expected the {error} to enable the WWW-Authenticate header if the '
                             'code is 401 (UNAUTHORIZED).'.format(error=error.__class__.__name__))
         self.assertListEqual(error.scope, self._VALID_SCOPE,
@@ -164,7 +164,7 @@ class OAuth2ErrorTest(TwistedTestCase):
                              .format(error=error.__class__.__name__))
         error = self._initializeError(
             self._VALID_CODE, self._VALID_NAME, scope=[], addWwwAuthenticateHeader=False)
-        self.assertFalse(error._addWwwAuthenticateHeader,
+        self.assertFalse(error._addWwwAuthenticateHeader,  # pylint: disable=protected-access
                          msg='Expected the {error} not to enable the WWW-Authenticate header if it '
                              'is explicitly disabled.'.format(error=error.__class__.__name__))
         self.assertIsNone(error.scope, msg='Expected the {error} to treat an empty scope list as '
@@ -195,7 +195,7 @@ class OAuth2ErrorTest(TwistedTestCase):
         self.assertRaises(TypeError, self._initializeError, self._VALID_CODE,
                           self._VALID_NAME, addWwwAuthenticateHeader=object())
         invalidCharacters = [chr(char) for char in range(0x20)] + [
-            unichr(char) for char in range(0x7F, 0x120)] + ['"', '\\', '\xFF']
+            _unichr(char) for char in range(0x7F, 0x120)] + ['"', '\\', '\xFF']
         for invalidCharacter in invalidCharacters:
             with warnings.catch_warnings(record=True) as caughtWarnings:
                 warnings.simplefilter('always')
@@ -333,7 +333,7 @@ class AuthorizationErrorTest(OAuth2ErrorTest):
         :param baseRedirectUri: The redirect url that will be given to the error.
         :param errorInFragment: Whether the error should add the error information
                                 to the fragment or to the query.
-        :param targetUrl: The exact target url the error should reirect to.
+        :param targetUrl: The exact target url the error should redirect to.
         :param msg: An assertion message for failures.
         """
         request = MockRequest('GET', 'test')
@@ -426,17 +426,17 @@ class AuthorizationErrorTest(OAuth2ErrorTest):
         for i in range(1, 2 ** len(additionalErrorInfo)):
             info = {key: value for j, (key, value) in enumerate(additionalErrorInfo.items())
                     if (i >> j) & 0b1}
-            url_info = {nameMapping.get(key, key): value for key, value in info.items()}
+            urlInfo = {nameMapping.get(key, key): value for key, value in info.items()}
             self.assertErrorRedirectsTo(
                 error=self._initializeError(self._VALID_CODE, 'name', **info),
                 baseRedirectUri='https://redirect.com',
                 errorInFragment=False,
-                targetUrl='https://redirect.com?error=name&' + urlencode(url_info),
+                targetUrl='https://redirect.com?error=name&' + urlencode(urlInfo),
                 msg='Expected the error to include all error information in the redirect url query')
             self.assertErrorRedirectsTo(
                 error=self._initializeError(self._VALID_CODE, 'name', **info),
                 baseRedirectUri='https://redirect.com',
                 errorInFragment=True,
-                targetUrl='https://redirect.com#error=name&' + urlencode(url_info),
+                targetUrl='https://redirect.com#error=name&' + urlencode(urlInfo),
                 msg='Expected the error to include all error information '
                     'in the redirect url fragment')
