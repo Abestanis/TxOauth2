@@ -199,21 +199,18 @@ class AbstractTokenResourceTest(TwistedTestCase):
             self.assertEqual(
                 401, request.responseCode,
                 msg='Expected the token resource to return UNAUTHORIZED as the response code.')
-            authorizationHeader = request.getHeader(b'Authorization')
-            if authorizationHeader is not None:
-                authenticateResponse = request.getResponseHeader('WWW-Authenticate')
-                self.assertIsNotNone(
-                    authenticateResponse,
-                    msg='If the request has authentication via the "Authorization" header field, '
-                        'the result must include the "WWW-Authenticate" response header field.')
-                authenticateResponse = authenticateResponse.encode('utf-8')
-                authType, _ = authenticateResponse.split()
-                self.assertTrue(authorizationHeader.startswith(authType),
-                                msg='Expected an WWW-Authenticate response matching the request.')
-                expectedHeaderValue = b'realm="' + request.prePathURL() + b'"'
-                self.assertIn(expectedHeaderValue, authenticateResponse,
-                              msg='The "realm" auth-parameter does not contain the '
-                                  'expected value: ' + expectedHeaderValue.decode('utf-8'))
+            authenticateResponse = request.getResponseHeader('WWW-Authenticate')
+            self.assertIsNotNone(
+                authenticateResponse,
+                msg='If the request has authentication via the "Authorization" header field, '
+                    'the result must include the "WWW-Authenticate" response header field.')
+            authType, _ = authenticateResponse.split(' ', 1)
+            self.assertEqual(authType, 'Bearer',
+                             msg='Expected an WWW-Authenticate response to use the Bearer scheme.')
+            expectedHeaderValue = 'realm="' + request.prePathURL().decode('utf-8') + '"'
+            self.assertIn(expectedHeaderValue, authenticateResponse,
+                          msg='The "realm" auth-parameter does not contain the '
+                              'expected value: ' + expectedHeaderValue)
 
 
 # pylint: disable=too-many-public-methods

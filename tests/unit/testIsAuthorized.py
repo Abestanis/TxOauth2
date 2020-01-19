@@ -44,7 +44,7 @@ class TestIsAuthorized(TwistedTestCase):
                         msg='The "WWW-Authenticate" header must '
                             'have one or more auth-param values.')
         authParameter = {
-            'realm': request.prePathURL(),
+            'realm': request.prePathURL().decode('utf-8'),
             'scope': ' '.join(expectedError.scope),
             'error': expectedError.name,
             'error_description': expectedError.description
@@ -57,9 +57,11 @@ class TestIsAuthorized(TwistedTestCase):
             self.assertTrue(key + '=' not in header.replace(key + '=', ''),
                             msg='The "{key}" auth-parameter must not be present multiple times.'
                             .format(key=key))
-            self.assertIn('{key}="{value}"'.format(key=key, value=content), header,
-                          msg='The "{key}" auth-parameter does not contain the expected value.'
-                          .format(key=key))
+            value = '{key}="{value}"'.format(key=key, value=content)
+            self.assertIn(
+                value, header,
+                msg='The "{key}" auth-parameter does not contain the expected value: '
+                    '{value!r} not in {header!r}'.format(key=key, value=value, header=header))
         self.assertTrue(request.finished, msg='Expected the request to be closed '
                                               'after it has been rejected.')
 
