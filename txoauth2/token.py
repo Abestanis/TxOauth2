@@ -433,17 +433,7 @@ class TokenResource(Resource, object):
         """
         if isinstance(client, PublicClient):
             raise UnauthorizedClientError(GrantTypes.ClientCredentials.value)
-        if b'scope' in request.args:
-            if len(request.args[b'scope']) != 1:
-                raise MultipleParameterError('scope')
-            try:
-                scope = request.args[b'scope'][0].decode('utf-8').split()
-            except UnicodeDecodeError:
-                raise InvalidScopeError(request.args[b'scope'][0])
-        else:
-            if self.defaultScope is None:
-                raise MissingParameterError('scope')
-            scope = self.defaultScope
+        scope = self._getScope(request)
         try:
             accessToken = self._storeNewAccessToken(client, scope, None)
         except ValueError:
@@ -465,17 +455,7 @@ class TokenResource(Resource, object):
                 raise MultipleParameterError(name.decode('utf-8'))
         username = request.args[b'username'][0]
         password = request.args[b'password'][0]
-        if b'scope' in request.args:
-            if len(request.args[b'scope']) != 1:
-                raise MultipleParameterError('scope')
-            try:
-                scope = request.args[b'scope'][0].decode('utf-8').split()
-            except UnicodeDecodeError:
-                raise InvalidScopeError(request.args[b'scope'][0])
-        else:
-            if self.defaultScope is None:
-                raise MissingParameterError('scope')
-            scope = self.defaultScope
+        scope = self._getScope(request)
         if not self.passwordManager.authenticate(username, password):
             raise InvalidTokenError('username or password')
         try:
@@ -499,6 +479,25 @@ class TokenResource(Resource, object):
         :return: The result of the POST request.
         """
         raise UnsupportedGrantTypeError(grantType)
+
+    def _getScope(self, request):
+        """
+        Get the scope from the request.
+
+        :param request: The request that might contain the scope.
+        :return: The list of scopes.
+        """
+        if b'scope' in request.args:
+            if len(request.args[b'scope']) != 1:
+                raise MultipleParameterError('scope')
+            try:
+                return request.args[b'scope'][0].decode('utf-8').split()
+            except UnicodeDecodeError:
+                raise InvalidScopeError(request.args[b'scope'][0])
+        else:
+            if self.defaultScope is None:
+                raise MissingParameterError('scope')
+            return self.defaultScope
 
     def _shouldExpireRefreshToken(self, refreshToken):
         """

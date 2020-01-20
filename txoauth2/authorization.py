@@ -29,7 +29,7 @@ def _getToken(request):
     if authHeader is not None and authHeader.startswith(b'Bearer '):
         token = authHeader[7:]
     if b'access_token' in request.args:
-        if request.method == b'POST' and\
+        if request.method == b'POST' and \
                 request.getHeader(b'Content-Type') == b'application/x-www-form-urlencoded':
             accessTokenArg = request.args[b'access_token']
         else:
@@ -96,11 +96,14 @@ def oauth2(scope, allowInsecureRequestDebug=False):
            insecure connections. Only use for local testing!
     :return: The wrapped function.
     """
+
     def decorator(func):  # pylint: disable=missing-docstring
         @wraps(func)
         def wrapper(self, request, *args, **kwargs):  # pylint: disable=missing-docstring
             if not isAuthorized(request, scope, allowInsecureRequestDebug):
                 return NOT_DONE_YET
             return func(self, request, *args, **kwargs)
+
         return wrapper
+
     return decorator
