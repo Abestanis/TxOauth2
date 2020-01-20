@@ -1,4 +1,5 @@
 """ Abstract tests for the grant types supported by the authorization resource. """
+from twisted.web.server import NOT_DONE_YET
 
 from txoauth2 import GrantTypes
 from txoauth2.clients import PublicClient
@@ -18,8 +19,7 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):  # pylint: disable=too-
     """
     _RESPONSE_TYPE = None
 
-    def assertValidCodeResponse(self, request, result, data, msg,
-                                expectedAdditionalData=None, expectedScope=None, **kwargs):
+    def assertValidCodeResponse(self, request, result, data, msg, parameterInFragment=False, **_):
         """
         Validate the parameters of the uri that the authorization endpoint redirected to.
 
@@ -27,11 +27,33 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):  # pylint: disable=too-
         :param result: The result of the grantAccess call.
         :param data: The data that was stored in the persistent storage.
         :param msg: The assertion message.
-        :param expectedAdditionalData: Expected additional data stored alongside the code.
-        :param expectedScope: The expected scope of the code.
-        :param kwargs: Additional keyword arguments.
+        :param parameterInFragment: Whether or not the return parameters
+                                    are in the query or fragment of the redirect uri.
+        :return: The redirect parameters extracted from the redirect url.
         """
-        raise NotImplementedError()
+        if msg.endswith('.'):
+            msg = msg[:-1]
+        self.assertEqual(NOT_DONE_YET, result, msg=msg + ': Expected the authorization resource '
+                                                         'to redirect the resource owner.')
+        self.assertTrue(request.finished,
+                        msg=msg + ': Expected the authorization resource to close the request.')
+        redirectUrl = self.assertRedirectsTo(request, data['redirect_uri'], msg)
+        redirectParameter = self.getParameterFromRedirectUrl(redirectUrl, parameterInFragment)
+        if data['state'] is None:
+            self.assertNotIn(
+                'state', redirectParameter,
+                msg=msg + ': Expected the authorization resource not to send a state '
+                          'to the redirect uri if it did not receive one.')
+        else:
+            self.assertIn('state', redirectParameter,
+                          msg=msg + ': Expected the authorization resource to '
+                                    'send a state to the redirect uri.')
+            self.assertEqual(
+                data['state'] if isinstance(data['state'], str)
+                else data['state'].decode('utf-8', errors='replace'), redirectParameter['state'],
+                msg=msg + ': Expected the authorization resource to send '
+                          'the exact same state back to the redirect uri.')
+        return redirectParameter
 
     def assertFailedRequest(self, request, result, expectedError, msg=None, redirectUri=None,
                             parameterInFragment=None):
@@ -555,3 +577,26 @@ class AbstractSharedGrantTest(AbstractAuthResourceTest):  # pylint: disable=too-
             request, result, data, expectedScope=scope,
             msg='Expected the auth resource to correctly handle a valid accepted {type} grant '
                 'with a subset of the scope original requested.'.format(type=self._RESPONSE_TYPE))
+
+    def _testGrantAccessAdditionalData(self, dataKey, responseType, msg):
+        """
+        Ensure that additional data given to grantAccess is stored with the code.
+
+        :param dataKey: The  key to store the data.
+        :param responseType: The response type of the authorization request.
+        :param msg: The assertion message.
+        """
+        redirectUri = self._VALID_CLIENT.redirectUris[0]
+        request = MockRequest('GET', 'some/path')
+        additionalData = 'someData'
+        data = {
+            'response_type': responseType,
+            'redirect_uri': redirectUri,
+            'client_id': self._VALID_CLIENT.id,
+            'scope': ['All'],
+            'state': b'state\xFF\xFF'
+        }
+        self._PERSISTENT_STORAGE.put(dataKey, data)
+        result = self._AUTH_RESOURCE.grantAccess(request, dataKey, additionalData=additionalData)
+        self.assertValidCodeResponse(
+            request, result, data, expectedAdditionalData=additionalData, msg=msg)

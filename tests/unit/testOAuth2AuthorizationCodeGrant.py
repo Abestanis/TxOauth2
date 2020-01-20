@@ -1,6 +1,5 @@
 """ Tests for the authorization resource side of the authorization code grant flow. """
 
-from twisted.web.server import NOT_DONE_YET
 from txoauth2 import GrantTypes
 
 from tests import MockRequest
@@ -15,8 +14,9 @@ class TestAuthorizationCodeGrant(AbstractSharedGrantTest):
     _RESPONSE_TYPE = 'code'
 
     # pylint: disable=arguments-differ
-    def assertValidCodeResponse(self, request, result, data, msg, expectedCodeDataLifetime=120,
-                                expectedAdditionalData=None, expectedScope=None):
+    def assertValidCodeResponse(self, request, result, data, msg, expectedAdditionalData=None,
+                                expectedScope=None, parameterInFragment=False,
+                                expectedCodeDataLifetime=120):
         """
         Validate the parameters of the uri that the authorization endpoint redirected to.
 
@@ -24,36 +24,21 @@ class TestAuthorizationCodeGrant(AbstractSharedGrantTest):
         :param result: The result of the grantAccess call.
         :param data: The data that was stored in the persistent storage.
         :param msg: The assertion message.
-        :param expectedCodeDataLifetime: The expected life time of the
-                                         code stored in the persistent storage.
         :param expectedAdditionalData: Expected additional data stored alongside the code.
         :param expectedScope: The expected scope of the code.
+        :param parameterInFragment: Whether or not the return parameters
+                                    are in the query or fragment of the redirect uri.
+        :param expectedCodeDataLifetime: The expected life time of the
+                                         code stored in the persistent storage.
+        :return: The redirect parameters extracted from the redirect url.
         """
         if msg.endswith('.'):
             msg = msg[:-1]
-        self.assertEqual(NOT_DONE_YET, result, msg=msg + ': Expected the authorization resource '
-                                                         'to redirect the resource owner.')
-        self.assertTrue(request.finished,
-                        msg=msg + ': Expected the authorization resource to close the request.')
-        redirectUrl = self.assertRedirectsTo(request, data['redirect_uri'], msg)
-        redirectParameter = self.getParameterFromRedirectUrl(redirectUrl, False)
+        redirectParameter = super(TestAuthorizationCodeGrant, self).assertValidCodeResponse(
+            request, result, data, msg, parameterInFragment)
         self.assertIn(
             'code', redirectParameter,
             msg=msg + ': Expected the authorization resource to send a code to the redirect uri.')
-        if data['state'] is None:
-            self.assertNotIn(
-                'state', redirectParameter,
-                msg=msg + ': Expected the authorization resource not to send a state '
-                          'to the redirect uri if it did not receive one.')
-        else:
-            self.assertIn('state', redirectParameter,
-                          msg=msg + ': Expected the authorization resource to '
-                                    'send a state to the redirect uri.')
-            self.assertEqual(
-                data['state'] if isinstance(data['state'], str)
-                else data['state'].decode('utf-8', errors='replace'), redirectParameter['state'],
-                msg=msg + ': Expected the authorization resource to send '
-                          'the exact same state back to the redirect uri.')
         code = 'code' + redirectParameter['code']
         try:
             self.assertApproximates(
@@ -83,6 +68,7 @@ class TestAuthorizationCodeGrant(AbstractSharedGrantTest):
             self.assertEqual(data[key], codeData[key],
                              msg=msg + ': Expected the authorization resource to store the '
                                        'expected {name} in the code date.'.format(name=key))
+        return redirectParameter
 
     def testGrantAccessCodeLifetime(self):
         """ Ensure that the code lifetime is controlled by the codeDataLifetime parameter. """
@@ -106,20 +92,8 @@ class TestAuthorizationCodeGrant(AbstractSharedGrantTest):
 
     def testGrantAccessAdditionalData(self):
         """ Ensure that additional data given to grantAccess is stored with the code. """
-        dataKey = 'authorizationCodeGrantDataKeyAdditionalData'
-        redirectUri = self._VALID_CLIENT.redirectUris[0]
-        request = MockRequest('GET', 'some/path')
-        additionalData = 'someData'
-        data = {
-            'response_type': GrantTypes.AuthorizationCode.value,
-            'redirect_uri': redirectUri,
-            'client_id': self._VALID_CLIENT.id,
-            'scope': ['All'],
-            'state': b'state\xFF\xFF'
-        }
-        self._PERSISTENT_STORAGE.put(dataKey, data)
-        result = self._AUTH_RESOURCE.grantAccess(request, dataKey, additionalData=additionalData)
-        self.assertValidCodeResponse(
-            request, result, data, expectedAdditionalData=additionalData,
+        self._testGrantAccessAdditionalData(
+            dataKey='authorizationCodeGrantDataKeyAdditionalData',
+            responseType=GrantTypes.AuthorizationCode.value,
             msg='Expected the auth resource to correctly handle a valid accepted code grant '
                 'and store the code data with the given additional data.')
