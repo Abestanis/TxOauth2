@@ -17,6 +17,29 @@ class TestTokenRefresh(AbstractTokenResourceTest):
     See https://tools.ietf.org/html/rfc6749#section-6
     """
 
+    def _testTokenLifetime(self, token, lifetime):
+        """
+        Test that a request made to a token resource with the given default auth token lifetime
+        is valid and generates a token with the lifetime.
+
+        :param token: The token that should get generated.
+        :param lifetime: The default and expected lifetime of the token.
+        """
+        tokenResource = TokenResource(
+            self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._REFRESH_TOKEN_STORAGE,
+            self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE, authTokenLifeTime=lifetime,
+            passwordManager=self._PASSWORD_MANAGER)
+        request = self.generateValidTokenRequest(arguments={
+            'grant_type': 'refresh_token',
+            'refresh_token': self._VALID_REFRESH_TOKEN
+        }, authentication=self._VALID_CLIENT)
+        self._TOKEN_FACTORY.expectTokenRequest(
+            token, lifetime, self._VALID_CLIENT, self._VALID_SCOPE)
+        result = tokenResource.render_POST(request)
+        self._TOKEN_FACTORY.assertAllTokensRequested()
+        self.assertValidTokenResponse(request, result, token, lifetime,
+                                      expectedScope=self._VALID_SCOPE)
+
     def testNoRefreshToken(self):
         """ Test the rejection of a request without a refresh token. """
         request = self.generateValidTokenRequest(arguments={'grant_type': 'refresh_token'},
@@ -196,41 +219,11 @@ class TestTokenRefresh(AbstractTokenResourceTest):
 
     def testAuthTokenLifetime(self):
         """ Test that the token lifetime of the new auth token equals the specified value. """
-        tokenLifetime = 60
-        newAuthToken = 'newAuthTokenWithoutChangedLifetime'
-        tokenResource = TokenResource(
-            self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._REFRESH_TOKEN_STORAGE,
-            self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE, authTokenLifeTime=tokenLifetime,
-            passwordManager=self._PASSWORD_MANAGER)
-        request = self.generateValidTokenRequest(arguments={
-            'grant_type': 'refresh_token',
-            'refresh_token': self._VALID_REFRESH_TOKEN
-        }, authentication=self._VALID_CLIENT)
-        self._TOKEN_FACTORY.expectTokenRequest(
-            newAuthToken, tokenLifetime, self._VALID_CLIENT, self._VALID_SCOPE)
-        result = tokenResource.render_POST(request)
-        self._TOKEN_FACTORY.assertAllTokensRequested()
-        self.assertValidTokenResponse(request, result, newAuthToken, tokenLifetime,
-                                      expectedScope=self._VALID_SCOPE)
+        self._testTokenLifetime('newAuthTokenWithChangedLifetime', lifetime=60)
 
     def testInfiniteTokenLifetime(self):
         """ Test that the token lifetime of the new auth token can be infinite. """
-        tokenLifetime = None
-        newAuthToken = 'newAuthTokenWithoutChangedLifetime'
-        tokenResource = TokenResource(
-            self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._REFRESH_TOKEN_STORAGE,
-            self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE, authTokenLifeTime=tokenLifetime,
-            passwordManager=self._PASSWORD_MANAGER)
-        request = self.generateValidTokenRequest(arguments={
-            'grant_type': 'refresh_token',
-            'refresh_token': self._VALID_REFRESH_TOKEN
-        }, authentication=self._VALID_CLIENT)
-        self._TOKEN_FACTORY.expectTokenRequest(
-            newAuthToken, tokenLifetime, self._VALID_CLIENT, self._VALID_SCOPE)
-        result = tokenResource.render_POST(request)
-        self._TOKEN_FACTORY.assertAllTokensRequested()
-        self.assertValidTokenResponse(request, result, newAuthToken, tokenLifetime,
-                                      expectedScope=self._VALID_SCOPE)
+        self._testTokenLifetime('newAuthTokenWithoutLifetime', lifetime=None)
 
     def testRefreshTokenRenewal(self):
         """ Test that the refresh token is refreshed when expected. """
