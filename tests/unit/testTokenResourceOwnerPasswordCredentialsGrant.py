@@ -59,9 +59,13 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
                                       msg='Expected the resource token to reject a password '
                                           'request with multiple user names.')
 
-    def testInvalidUserName(self):
-        """ Test the rejection of a request with an invalid user name. """
-        userName = b'invalidUser'
+    def testInvalidUserName(self, userName=b'invalidUser', usernameProblem='invalid'):
+        """
+        Test the rejection of a request with an invalid user name.
+
+        :param userName: The username to use in the request.
+        :param usernameProblem: The reason why the username is invalid.
+        """
         request = self.generateValidTokenRequest(arguments={
             'grant_type': 'password',
             'scope': ' '.join(self._VALID_SCOPE),
@@ -74,28 +78,14 @@ class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
         self.assertTrue(self._PASSWORD_MANAGER.allPasswordsChecked(),
                         msg='Expected the token resource to check if the given '
                             'user name and password combination is valid.')
-        self.assertFailedTokenRequest(request, result, InvalidTokenError('username or password'),
-                                      msg='Expected the resource token to reject a password '
-                                          'request with an invalid username.')
+        self.assertFailedTokenRequest(
+            request, result, InvalidTokenError('username or password'),
+            msg='Expected the resource token to reject a password request with a username '
+                'that is {problem}.'.format(problem=usernameProblem))
 
     def testMalformedUserName(self):
         """ Test the rejection of a request with a malformed user name. """
-        userName = b'malformedUser\xFF\xFF'
-        request = self.generateValidTokenRequest(arguments={
-            'grant_type': 'password',
-            'scope': ' '.join(self._VALID_SCOPE),
-            'username': userName,
-            'password': b'somePassword',
-        }, authentication=self._VALID_CLIENT)
-        self._PASSWORD_MANAGER.expectAuthenticateRequest(
-            userName, self._PASSWORD_MANAGER.INVALID_PASSWORD)
-        result = self._TOKEN_RESOURCE.render_POST(request)
-        self.assertTrue(self._PASSWORD_MANAGER.allPasswordsChecked(),
-                        msg='Expected the token resource to check if the given '
-                            'user name and password combination is valid.')
-        self.assertFailedTokenRequest(request, result, InvalidTokenError('username or password'),
-                                      msg='Expected the resource token to reject a password '
-                                          'request with a malformed username.')
+        self.testInvalidUserName(userName=b'malformedUser\xFF\xFF', usernameProblem='malformed')
 
     def testMissingPassword(self):
         """ Test the rejection of a request without a password. """

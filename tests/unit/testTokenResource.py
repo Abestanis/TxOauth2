@@ -399,7 +399,7 @@ class TestTokenResource(AbstractTokenResourceTest):
             'client_id': self._VALID_CLIENT.id,
             'client_secret': self._VALID_CLIENT.secret
         })
-        newAuthToken = 'tokenWithAuthInHeader'
+        newAuthToken = 'tokenWithAuthInParameter'
         self._TOKEN_FACTORY.expectTokenRequest(newAuthToken, self._TOKEN_RESOURCE.authTokenLifeTime,
                                                self._VALID_CLIENT, self._VALID_SCOPE)
         result = self._TOKEN_RESOURCE.render_POST(request)
