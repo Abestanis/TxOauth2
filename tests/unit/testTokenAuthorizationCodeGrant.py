@@ -14,6 +14,7 @@ class TestAuthorizationCodeGrant(AbstractTokenResourceTest):
     Test the token resource part of the Authorization Code Grant flow.
     See https://tools.ietf.org/html/rfc6749#section-4.1
     """
+
     def _addAuthorizationToStorage(self, code, client, scope,
                                    redirectUri=None, additionalData=None):
         """
@@ -31,6 +32,30 @@ class TestAuthorizationCodeGrant(AbstractTokenResourceTest):
             'scope': scope,
             'additional_data': additionalData
         })
+
+    def _doValidTokenRequest(
+            self, code, accessToken, refreshToken, requestArguments, redirectUri=None):
+        """
+        Make a request to the token resource and assert that the two tokens have been stored.
+
+        :param code: The code parameter for the request.
+        :param accessToken: The expected generated access token.
+        :param refreshToken: The expected generated refresh token.
+        :param requestArguments: Arguments for the request.
+        :param redirectUri: The redirect uri that was used to get the code.
+        :return: The request and the generated response.
+        """
+        self._addAuthorizationToStorage(
+            code, self._VALID_CLIENT, self._VALID_SCOPE, redirectUri=redirectUri)
+        request = self.generateValidTokenRequest(
+            arguments=requestArguments, authentication=self._VALID_CLIENT)
+        self._TOKEN_FACTORY.expectTokenRequest(accessToken, self._TOKEN_RESOURCE.authTokenLifeTime,
+                                               self._VALID_CLIENT, self._VALID_SCOPE)
+        self._TOKEN_FACTORY.expectTokenRequest(
+            refreshToken, None, self._VALID_CLIENT, self._VALID_SCOPE)
+        result = self._TOKEN_RESOURCE.render_POST(request)
+        self._TOKEN_FACTORY.assertAllTokensRequested()
+        return request, result
 
     def testUnauthorizedClient(self):
         """
@@ -123,17 +148,10 @@ class TestAuthorizationCodeGrant(AbstractTokenResourceTest):
         code = 'withoutRedirectUriCode'
         accessToken = 'codeGrantAccessTokenWithoutRedirectUri'
         refreshToken = 'codeGrantRefreshTokenWithoutRedirectUri'
-        self._addAuthorizationToStorage(code, self._VALID_CLIENT, self._VALID_SCOPE)
-        request = self.generateValidTokenRequest(arguments={
+        request, result = self._doValidTokenRequest(code, accessToken, refreshToken, {
             'grant_type': 'authorization_code',
             'code': code,
-        }, authentication=self._VALID_CLIENT)
-        self._TOKEN_FACTORY.expectTokenRequest(accessToken, self._TOKEN_RESOURCE.authTokenLifeTime,
-                                               self._VALID_CLIENT, self._VALID_SCOPE)
-        self._TOKEN_FACTORY.expectTokenRequest(
-            refreshToken, None, self._VALID_CLIENT, self._VALID_SCOPE)
-        result = self._TOKEN_RESOURCE.render_POST(request)
-        self._TOKEN_FACTORY.assertAllTokensRequested()
+        })
         self.assertValidTokenResponse(
             request, result, accessToken, self._TOKEN_RESOURCE.authTokenLifeTime,
             expectedRefreshToken=refreshToken, expectedScope=self._VALID_SCOPE)
@@ -146,18 +164,11 @@ class TestAuthorizationCodeGrant(AbstractTokenResourceTest):
         code = 'withoutRedirectUriCodeButInParameter'
         accessToken = 'codeGrantAccessTokenWithoutRedirectUriButInParameter'
         refreshToken = 'codeGrantRefreshTokenWithoutRedirectUriButInParameter'
-        self._addAuthorizationToStorage(code, self._VALID_CLIENT, self._VALID_SCOPE)
-        request = self.generateValidTokenRequest(arguments={
+        request, result = self._doValidTokenRequest(code, accessToken, refreshToken, {
             'grant_type': 'authorization_code',
             'code': code,
             'redirect_uri': self._VALID_CLIENT.redirectUris[0],
-        }, authentication=self._VALID_CLIENT)
-        self._TOKEN_FACTORY.expectTokenRequest(accessToken, self._TOKEN_RESOURCE.authTokenLifeTime,
-                                               self._VALID_CLIENT, self._VALID_SCOPE)
-        self._TOKEN_FACTORY.expectTokenRequest(
-            refreshToken, None, self._VALID_CLIENT, self._VALID_SCOPE)
-        result = self._TOKEN_RESOURCE.render_POST(request)
-        self._TOKEN_FACTORY.assertAllTokensRequested()
+        })
         self.assertValidTokenResponse(
             request, result, accessToken, self._TOKEN_RESOURCE.authTokenLifeTime,
             expectedRefreshToken=refreshToken, expectedScope=self._VALID_SCOPE)
@@ -238,19 +249,11 @@ class TestAuthorizationCodeGrant(AbstractTokenResourceTest):
         code = 'validCode'
         accessToken = 'codeGrantAccessToken'
         refreshToken = 'codeGrantRefreshToken'
-        self._addAuthorizationToStorage(code, self._VALID_CLIENT, self._VALID_SCOPE,
-                                        self._VALID_CLIENT.redirectUris[0])
-        request = self.generateValidTokenRequest(arguments={
+        request, result = self._doValidTokenRequest(code, accessToken, refreshToken, {
             'grant_type': 'authorization_code',
             'code': code,
             'redirect_uri': self._VALID_CLIENT.redirectUris[0],
-        }, authentication=self._VALID_CLIENT)
-        self._TOKEN_FACTORY.expectTokenRequest(accessToken, self._TOKEN_RESOURCE.authTokenLifeTime,
-                                               self._VALID_CLIENT, self._VALID_SCOPE)
-        self._TOKEN_FACTORY.expectTokenRequest(
-            refreshToken, None, self._VALID_CLIENT, self._VALID_SCOPE)
-        result = self._TOKEN_RESOURCE.render_POST(request)
-        self._TOKEN_FACTORY.assertAllTokensRequested()
+        }, redirectUri=self._VALID_CLIENT.redirectUris[0])
         self.assertValidTokenResponse(
             request, result, accessToken, self._TOKEN_RESOURCE.authTokenLifeTime,
             expectedRefreshToken=refreshToken, expectedScope=self._VALID_SCOPE)
@@ -291,17 +294,10 @@ class TestAuthorizationCodeGrant(AbstractTokenResourceTest):
         code = 'codeInvalidTokenFromGenerator'
         accessToken = 'codeGrantAccessTokenInvalidTokenFromGenerator'
         refreshToken = 'invalidToken!'
-        self._addAuthorizationToStorage(code, self._VALID_CLIENT, self._VALID_SCOPE)
-        request = self.generateValidTokenRequest(arguments={
+        request, result = self._doValidTokenRequest(code, accessToken, refreshToken, {
             'grant_type': 'authorization_code',
             'code': code,
-        }, authentication=self._VALID_CLIENT)
-        self._TOKEN_FACTORY.expectTokenRequest(accessToken, self._TOKEN_RESOURCE.authTokenLifeTime,
-                                               self._VALID_CLIENT, self._VALID_SCOPE)
-        self._TOKEN_FACTORY.expectTokenRequest(
-            refreshToken, None, self._VALID_CLIENT, self._VALID_SCOPE)
-        result = self._TOKEN_RESOURCE.render_POST(request)
-        self._TOKEN_FACTORY.assertAllTokensRequested()
+        })
         self.assertFailedTokenRequest(
             request, result, ServerError(
                 message='Generated token is invalid: {token}'.format(token=refreshToken)),
