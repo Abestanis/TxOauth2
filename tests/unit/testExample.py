@@ -108,7 +108,7 @@ class FullExampleTestCase(TwistedTestCase):
                 msg='Result contained a different error description than expected.')
         else:
             self.assertEqual(
-                parameter['error_description'], expectedError.description,
+                expectedError.description, parameter['error_description'],
                 msg='Result contained a different error description than expected.')
         if expectedError.errorUri is not None:
             self.assertIn('error_uri', parameter,

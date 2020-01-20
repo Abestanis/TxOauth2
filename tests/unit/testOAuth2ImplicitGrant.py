@@ -33,7 +33,7 @@ class TestImplicitCodeGrant(AbstractSharedGrantTest):
         """
         if msg.endswith('.'):
             msg = msg[:-1]
-        self.assertEqual(result, NOT_DONE_YET, msg=msg + ': Expected the authorization resource '
+        self.assertEqual(NOT_DONE_YET, result, msg=msg + ': Expected the authorization resource '
                                                          'to redirect the resource owner.')
         self.assertTrue(request.finished,
                         msg=msg + ': Expected the authorization resource to close the request.')
@@ -49,8 +49,8 @@ class TestImplicitCodeGrant(AbstractSharedGrantTest):
                           msg=msg + ': Expected the authorization resource to '
                                     'send a state to the redirect uri.')
             self.assertEqual(
-                redirectParameter['state'], data['state'] if isinstance(data['state'], str)
-                else data['state'].decode('utf-8', errors='replace'),
+                data['state'] if isinstance(data['state'], str)
+                else data['state'].decode('utf-8', errors='replace'), redirectParameter['state'],
                 msg=msg + ': Expected the authorization resource to send '
                           'the exact same state back to the redirect uri.')
         if expectedScope is None:

@@ -107,7 +107,7 @@ class AbstractAuthResourceTest(TwistedTestCase):
         :param msg: The assertion message.
         :return: The actual url the request is redirecting to.
         """
-        self.assertEqual(request.responseCode, 302,
+        self.assertEqual(302, request.responseCode,
                          msg=msg + ': Expected the auth resource to redirect the resource owner.')
         redirectUrl = request.getResponseHeader(b'location')
         self.assertIsNotNone(
@@ -159,28 +159,28 @@ class AbstractAuthResourceTest(TwistedTestCase):
                                  'with the HTTP code {code}.'.format(code=expectedError.code))
             errorResult = json.loads(result.decode('utf-8'), encoding='utf-8')
         self.assertIn('error', errorResult, msg=msg + ': Missing error parameter in response.')
-        self.assertEqual(errorResult['error'], expectedError.name,
+        self.assertEqual(expectedError.name, errorResult['error'],
                          msg=msg + ': Result contained a different error than expected.')
         self.assertIn('error_description', errorResult,
                       msg=msg + ': Missing error_description parameter in response.')
         if not isinstance(expectedError.description, (bytes, str)):
             self.assertEqual(
-                errorResult['error_description'], expectedError.description.encode('utf-8'),
+                expectedError.description.encode('utf-8'), errorResult['error_description'],
                 msg=msg + ': Result contained a different error description than expected.')
         else:
             self.assertEqual(
-                errorResult['error_description'], expectedError.description,
+                expectedError.description, errorResult['error_description'],
                 msg=msg + ': Result contained a different error description than expected.')
         if expectedError.errorUri is not None:
             self.assertIn('error_uri', errorResult,
                           msg=msg + ': Missing error_uri parameter in response.')
-            self.assertEqual(errorResult['error_uri'], expectedError.errorUri,
+            self.assertEqual(expectedError.errorUri, errorResult['error_uri'],
                              msg=msg + ': Result contained an unexpected error_uri.')
         if hasattr(expectedError, 'state') and getattr(expectedError, 'state') is not None:
             self.assertIn('state', errorResult, msg=msg + ': Missing state parameter in response.')
             self.assertEqual(
-                errorResult['state'], expectedError.state if isinstance(expectedError.state, str)
-                else expectedError.state.decode('utf-8', errors='replace'),
+                expectedError.state if isinstance(expectedError.state, str)
+                else expectedError.state.decode('utf-8', errors='replace'), errorResult['state'],
                 msg=msg + ': Result contained an unexpected state.')
 
     def assertValidAuthRequest(self, request, result, parameters, msg, expectedDataLifetime=None):
@@ -203,12 +203,12 @@ class AbstractAuthResourceTest(TwistedTestCase):
         self.assertIs(
             request, requestParam, msg=msg + ': Expected the auth resource to pass the request '
                                              'to onAuthenticate as the first parameter.')
-        self.assertEqual(client.id, parameters['client_id'],
+        self.assertEqual(parameters['client_id'], client.id,
                          msg=msg + ': Expected the auth resource to pass the received '
                                    'client to onAuthenticate as the second parameter.')
         parameters['response_type'] = self._RESPONSE_GRANT_TYPE_MAPPING.get(
             parameters['response_type'], parameters['response_type'])
-        self.assertEqual(responseType, parameters['response_type'],
+        self.assertEqual(parameters['response_type'], responseType,
                          msg=msg + ': Expected the auth resource to pass the response '
                                    'type to onAuthenticate as the third parameter.')
         parameters['scope'] = parameters['scope'].split(' ')
@@ -217,11 +217,11 @@ class AbstractAuthResourceTest(TwistedTestCase):
                                        'to onAuthenticate as the fourth parameter.')
         expectedRedirectUri = parameters['redirect_uri'] if parameters['redirect_uri'] is not None \
             else self._VALID_CLIENT.redirectUris[0]
-        self.assertEqual(redirectUri, expectedRedirectUri,
+        self.assertEqual(expectedRedirectUri, redirectUri,
                          msg=msg + ': Expected the auth resource to pass the redirect '
                                    'uri to onAuthenticate as the fifth parameter.')
         expectedState = parameters.get('state', None)
-        self.assertEqual(state, expectedState,
+        self.assertEqual(expectedState, state,
                          msg=msg + ': Expected the auth resource to pass the state '
                                    'to onAuthenticate as the sixth parameter.')
         if expectedDataLifetime is None:
@@ -392,7 +392,7 @@ class AuthResourceTest(AbstractAuthResourceTest):
             warnings.simplefilter('always')
             result = self._AUTH_RESOURCE.render_GET(request)
             self.assertEqual(
-                len(caughtWarnings), 1,
+                1, len(caughtWarnings),
                 msg='Expected the OAuth2 resource to generate a warning, if '
                     'onAuthenticate returns an OAuth2Error instead of raising it')
             self.assertTrue(issubclass(caughtWarnings[0].category, DeprecationWarning),
@@ -423,7 +423,7 @@ class AuthResourceTest(AbstractAuthResourceTest):
             warnings.simplefilter('always')
             result = self._AUTH_RESOURCE.render_GET(request)
             self.assertEqual(
-                len(caughtWarnings), 1,
+                1, len(caughtWarnings),
                 msg='Expected the OAuth2 resource to generate a warning, if '
                     'onAuthenticate returns an OAuth2Error instead of raising it')
             self.assertTrue(issubclass(caughtWarnings[0].category, RuntimeWarning),

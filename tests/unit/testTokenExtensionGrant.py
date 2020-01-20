@@ -43,7 +43,7 @@ class TestExtensionGrant(AbstractTokenResourceTest):
                          msg='Expected the token resource not to close the request.')
         self.assertIs(result[0], request, msg='Expected the token resource to pass '
                                               'the request to onCustomGrantTypeRequest.')
-        self.assertEqual(result[1], grantType, msg='Expected the token resource to pass the '
+        self.assertEqual(grantType, result[1], msg='Expected the token resource to pass the '
                                                    'grant type to onCustomGrantTypeRequest.')
 
     def testCustomGrantTypeError(self):
@@ -76,7 +76,7 @@ class TestExtensionGrant(AbstractTokenResourceTest):
             warnings.simplefilter('always')
             result = tokenResource.render_POST(request)
             self.assertEqual(
-                len(caughtWarnings), 1,
+                1, len(caughtWarnings),
                 msg='Expected the token resource to generate a warning, if '
                     'onCustomGrantTypeRequest returns an OAuth2Error instead of raising it')
             self.assertTrue(issubclass(caughtWarnings[0].category, DeprecationWarning),

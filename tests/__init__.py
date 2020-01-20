@@ -260,8 +260,8 @@ class TestTokenFactory(TokenFactory):
     def _validateParameter(self, token, lifetime, expectedLifetime, client, expectedClient, scope,
                            expectedScope, additionalData, expectedAdditionalData):
         """ Validate that the actual parameters to generateToken match the expected. """
-        self._testCase.assertEquals(
-            lifetime, expectedLifetime,
+        self._testCase.assertEqual(
+            expectedLifetime, lifetime,
             msg='generateToken was called with a different lifetime than '
                 'expected for the requested token {token}'.format(token=token))
         assertClientEquals(self._testCase, client, expectedClient,
@@ -271,8 +271,8 @@ class TestTokenFactory(TokenFactory):
             scope, expectedScope,
             msg='generateToken was called with a different scope than '
                 'expected for the requested token {token}'.format(token=token))
-        self._testCase.assertEquals(
-            additionalData, expectedAdditionalData,
+        self._testCase.assertEqual(
+            expectedAdditionalData, additionalData,
             msg='generateToken was called with different additional data than '
                 'expected for the requested token {token}'.format(token=token))
 
@@ -373,7 +373,7 @@ def assertClientEquals(testCase, client, expectedClient, message):
     for name, value in expectedClient.__dict__.items():
         testCase.assertTrue(hasattr(client, name),
                             msg=message + ': Missing attribute "{name}"'.format(name=name))
-        testCase.assertEquals(
+        testCase.assertEqual(
             value, getattr(client, name),
             msg=message + ': Attribute "{name}" differs from expected value'.format(name=name))
 

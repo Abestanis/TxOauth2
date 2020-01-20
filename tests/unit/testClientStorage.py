@@ -106,7 +106,7 @@ class ConfigParserClientStorageTest(AbstractClientStorageTest):
             ['client_credentials'], 'newClientSecret')
         self._CLIENT_STORAGE.addClient(client)
         self.assertEqual(
-            self._CLIENT_STORAGE.getClient(client.id).secret, client.secret,
+            client.secret, self._CLIENT_STORAGE.getClient(client.id).secret,
             msg='Expected the client storage to contain a client after adding him.')
 
     def testGetUnknownClient(self):

@@ -99,12 +99,12 @@ class AbstractTokenResourceTest(TwistedTestCase):
         jsonResult = json.loads(result.decode('utf-8'), encoding='utf-8')
         self.assertIn('access_token', jsonResult, msg='Expected the result from the token resource '
                                                       'to contain an access_token parameter.')
-        self.assertEqual(jsonResult['access_token'], expectedAccessToken,
+        self.assertEqual(expectedAccessToken, jsonResult['access_token'],
                          msg='The token resource returned a different access token than expected.')
         self.assertIn('token_type', jsonResult, msg='Expected the result from the token resource '
                                                     'to contain a token_type parameter.')
         self.assertEqual(
-            jsonResult['token_type'].lower(), expectedTokenType.lower(),
+            expectedTokenType.lower(), jsonResult['token_type'].lower(),
             msg='The token resource returned a different access token type than expected.')
         if expectedExpireTime is None:
             self.assertNotIn('expires_in', jsonResult,
@@ -114,7 +114,7 @@ class AbstractTokenResourceTest(TwistedTestCase):
             self.assertIn('expires_in', jsonResult,
                           msg='Expected the result from the token resource '
                               'to contain an expires_in parameter.')
-            self.assertEqual(jsonResult['expires_in'], expectedExpireTime,
+            self.assertEqual(expectedExpireTime, jsonResult['expires_in'],
                              msg='The token resource returned a different '
                                  'access token expire time than expected.')
         if expectedRefreshToken is None:
@@ -125,7 +125,7 @@ class AbstractTokenResourceTest(TwistedTestCase):
             self.assertIn('refresh_token', jsonResult,
                           msg='Expected the result from the token resource '
                               'to contain a refresh_token parameter.')
-            self.assertEqual(jsonResult['refresh_token'], expectedRefreshToken,
+            self.assertEqual(expectedRefreshToken, jsonResult['refresh_token'],
                              msg='The token resource returned a different '
                                  'refresh token than expected.')
         if expectedScope is None:
@@ -183,17 +183,17 @@ class AbstractTokenResourceTest(TwistedTestCase):
                              'with the HTTP code {code}.'.format(code=expectedError.code))
         errorResult = json.loads(result.decode('utf-8'), encoding='utf-8')
         self.assertIn('error', errorResult, msg=msg + ': Missing error parameter in response.')
-        self.assertEqual(errorResult['error'], expectedError.name,
+        self.assertEqual(expectedError.name, errorResult['error'],
                          msg=msg + ': Result contained a different error than expected.')
         self.assertIn('error_description', errorResult,
                       msg=msg + ': Missing error_description parameter in response.')
         self.assertEqual(
-            errorResult['error_description'], expectedError.description,
+            expectedError.description, errorResult['error_description'],
             msg=msg + ': Result contained a different error description than expected.')
         if expectedError.errorUri is not None:
             self.assertIn('error_uri', errorResult,
                           msg=msg + ': Missing error_uri parameter in response.')
-            self.assertEqual(errorResult['error_uri'], expectedError.errorUri,
+            self.assertEqual(expectedError.errorUri, errorResult['error_uri'],
                              msg=msg + ': Result contained an unexpected error_uri.')
         if expectedError.name == 'invalid_client':
             self.assertEqual(
@@ -205,7 +205,7 @@ class AbstractTokenResourceTest(TwistedTestCase):
                 msg='If the request has authentication via the "Authorization" header field, '
                     'the result must include the "WWW-Authenticate" response header field.')
             authType, _ = authenticateResponse.split(' ', 1)
-            self.assertEqual(authType, 'Bearer',
+            self.assertEqual('Bearer', authType,
                              msg='Expected an WWW-Authenticate response to use the Bearer scheme.')
             expectedHeaderValue = 'realm="' + request.prePathURL().decode('utf-8') + '"'
             self.assertIn(expectedHeaderValue, authenticateResponse,
@@ -250,8 +250,8 @@ class TestTokenResource(AbstractTokenResourceTest):
 
     def testRequiresPostMethod(self):
         """ Test the rejection of any request that is not a POST request. """
-        self.assertEqual([b'POST'], self._TOKEN_RESOURCE.allowedMethods,
-                         msg='Expected the token resource to only accept POST requests.')
+        self.assertListEqual([b'POST'], self._TOKEN_RESOURCE.allowedMethods,
+                             msg='Expected the token resource to only accept POST requests.')
         methods = [name[7:] for name in dir(self._TOKEN_RESOURCE)
                    if name.startswith('render_') and callable(getattr(self._TOKEN_RESOURCE, name))]
         for method in methods:
@@ -639,7 +639,7 @@ class TestTokenResource(AbstractTokenResourceTest):
             warnings.simplefilter('always')
             result = tokenResource.render_POST(validRequest)
             self.assertEqual(
-                len(caughtWarnings), 1,
+                1, len(caughtWarnings),
                 msg='Expected the token resource to generate a warning, if '
                     'authenticateClient returns an OAuth2Error instead of raising it')
             self.assertTrue(issubclass(caughtWarnings[0].category, DeprecationWarning),
@@ -666,7 +666,7 @@ class TestTokenResource(AbstractTokenResourceTest):
                 self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._REFRESH_TOKEN_STORAGE,
                 self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE,
                 passwordManager=self._PASSWORD_MANAGER)
-            self.assertEqual(len(caughtWarnings), 0,
+            self.assertEqual(0, len(caughtWarnings),
                              msg='Expected the token resource not to generate a warning, if it is '
                                  'created with the same token storage as the previous one')
         try:
@@ -677,7 +677,7 @@ class TestTokenResource(AbstractTokenResourceTest):
                     self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._REFRESH_TOKEN_STORAGE,
                     differentTokenStorage, self._CLIENT_STORAGE,
                     passwordManager=self._PASSWORD_MANAGER)
-                self.assertEqual(len(caughtWarnings), 1,
+                self.assertEqual(1, len(caughtWarnings),
                                  msg='Expected the token resource to generate a warning, if it is '
                                      'created with a different token storage as the previous one')
                 self.assertTrue(issubclass(caughtWarnings[0].category, RuntimeWarning),
@@ -695,8 +695,8 @@ class TestTokenResource(AbstractTokenResourceTest):
             self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._REFRESH_TOKEN_STORAGE,
             self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE, grantTypes=[
                 GrantTypes.Implicit, GrantTypes.AuthorizationCode])
-        self.assertEqual(tokenResource.acceptedGrantTypes, [GrantTypes.AuthorizationCode.value],
-                         msg='Expected the token resource to ignore the implicit grant.')
+        self.assertListEqual([GrantTypes.AuthorizationCode.value], tokenResource.acceptedGrantTypes,
+                             msg='Expected the token resource to ignore the implicit grant.')
 
     def testRequiresPasswordManagerForPasswordGrant(self):
         """
