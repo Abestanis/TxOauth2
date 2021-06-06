@@ -199,7 +199,7 @@ class FullExampleTestCase(TwistedTestCase):
         self._makeExampleRequest(request)
         self.assertEqual(200, request.responseCode,
                          msg='Expected the token resource to accept the request.')
-        jsonResult = json.loads(request.getResponse().decode('utf-8'), encoding='utf-8')
+        jsonResult = json.loads(request.getResponse().decode('utf-8'))
         self.assertIn('access_token', jsonResult, msg='Expected the result from the token resource '
                                                       'to contain an access_token parameter.')
         self.assertIn('refresh_token', jsonResult,
@@ -226,7 +226,7 @@ class FullExampleTestCase(TwistedTestCase):
         self._makeExampleRequest(request)
         self.assertEqual(200, request.responseCode,
                          msg='Expected the token resource to accept the request.')
-        jsonResult = json.loads(request.getResponse().decode('utf-8'), encoding='utf-8')
+        jsonResult = json.loads(request.getResponse().decode('utf-8'))
         self.assertIn('access_token', jsonResult, msg='Expected the result from the token resource '
                                                       'to contain an access_token parameter.')
         self.assertIn('scope', jsonResult,

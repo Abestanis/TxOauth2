@@ -99,7 +99,7 @@ class Abstract(object):
             self.assertEqual(200, request.responseCode,
                              msg='Expected the token resource to return '
                                  'a new token with the HTTP code 200 OK.')
-            jsonResult = json.loads(result.decode('utf-8'), encoding='utf-8')
+            jsonResult = json.loads(result.decode('utf-8'))
             self.assertIn('access_token', jsonResult,
                           msg='Expected the result from the token resource '
                               'to contain an access_token parameter.')
@@ -189,7 +189,7 @@ class Abstract(object):
             self.assertEqual(expectedError.code, request.responseCode,
                              msg='Expected the token resource to return a response '
                                  'with the HTTP code {code}.'.format(code=expectedError.code))
-            errorResult = json.loads(result.decode('utf-8'), encoding='utf-8')
+            errorResult = json.loads(result.decode('utf-8'))
             self.assertIn('error', errorResult, msg=msg + ': Missing error parameter in response.')
             self.assertEqual(expectedError.name, errorResult['error'],
                              msg=msg + ': Result contained a different error than expected.')
