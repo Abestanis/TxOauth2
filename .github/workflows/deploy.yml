@@ -22,6 +22,10 @@ jobs:
           pip install --upgrade wheel
       - name: Create wheel
         run: python setup.py bdist_wheel --universal
+      - name: Publish 📦 to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.pypi_password }}
       - name: Publish 📦 to Github
         uses: softprops/action-gh-release@v1
         with:
@@ -29,10 +33,6 @@ jobs:
           body_path: changelogs/current.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish 📦 to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.pypi_password }}
       - name: Determine new version string
         run: echo ::set-env name=RELEASE_VERSION::$(echo ${GITHUB_REF:10})
       - name: Archive changelog
