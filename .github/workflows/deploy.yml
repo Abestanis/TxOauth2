@@ -34,7 +34,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Archive changelog
         run: |
-          mv changelogs/current.txt changelogs/${{ steps.release_version.VERSION }}.txt
+          mv changelogs/current.txt changelogs/${{ steps.release_version.outputs.VERSION }}.txt
           echo -n -e "\n" > changelogs/current.txt
       - name: Push archived changelog
         uses: EndBug/add-and-commit@v7
