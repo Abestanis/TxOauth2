@@ -1,18 +1,1 @@
-* The elements of the GrandTypes enum have been renamed to screaming snake case.
-* A warning is raised, if a second TokenResource is created
-  with a different token storage than the first one.
-* Errors from txoauth2 are now real exceptions and should now be thrown instead of returned in
-  OAuth2.onAuthenticate, TokenResource.onCustomGrantTypeRequest & ClientStorage.authenticateClient.
-* ServerError now takes an optional message parameter.
-* If the TokenFactory generates an invalid token,
-  a ServerError is now returned instead of a ScopeError.
-* TokenResource.getTokenStorageSingleton now raises a RuntimeError
-  instead of a ValueError if no singleton was registered.
-* TokenStorage.hasAccess must now also accept a single scope.
-* Errors with 401 return code now always add a WWW-Authenticate header.
-* Removed OAuth2RequestError and UnauthorizedOAuth2Error classes, these are now just OAuth2Errors.
-* OAuth2Error got new optional parameters scope, addWwwAuthenticateHeader and authScheme.
-* Renamed some attributes of the OAuth2Errors: message -> name, detail -> description.
-* The position of the keyword argument state and errorUri switched for AuthorizationErrors
-* Errors now validate their parameters. The OAuth2 spec only permits certain characters in the name,
-  description, scope and errorUris. Any invalid characters will be replaced by a question mark.
+
