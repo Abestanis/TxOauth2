@@ -7,7 +7,7 @@ from txoauth2.imp import DictNonPersistentStorage
 from tests import TwistedTestCase
 
 
-class Abstract:
+class Abstract(object):
     """ Wrapper for the abstract PersistentStorageTest to hide it during test discovery. """
 
     class PersistentStorageTest(TwistedTestCase):

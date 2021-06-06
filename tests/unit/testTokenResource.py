@@ -19,7 +19,7 @@ from tests import TwistedTestCase, TestTokenFactory, getTestPasswordClient, Test
     MockRequest, TestPasswordManager, TestPersistentStorage
 
 
-class Abstract:
+class Abstract(object):
     """ Wrapper for the abstract TokenResourceTest to hide it during test discovery. """
 
     class TokenResourceTest(TwistedTestCase):

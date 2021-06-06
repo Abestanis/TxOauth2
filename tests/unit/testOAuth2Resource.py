@@ -23,7 +23,7 @@ from tests import TwistedTestCase, MockRequest, TestTokenFactory, TestPersistent
     TestClientStorage
 
 
-class Abstract:
+class Abstract(object):
     """ Wrapper for the abstract AuthResourceTest to hide it during test discovery. """
 
     class AuthResourceTest(TwistedTestCase):
@@ -230,9 +230,8 @@ class Abstract:
             self.assertListEqual(scope, parameters['scope'],
                                  msg=msg + ': Expected the auth resource to pass the scope '
                                            'to onAuthenticate as the fourth parameter.')
-            expectedRedirectUri = parameters['redirect_uri'] if parameters[
-                                                                    'redirect_uri'] is not None \
-                else self._VALID_CLIENT.redirectUris[0]
+            expectedRedirectUri = parameters['redirect_uri'] \
+                if parameters['redirect_uri'] is not None else self._VALID_CLIENT.redirectUris[0]
             self.assertEqual(expectedRedirectUri, redirectUri,
                              msg=msg + ': Expected the auth resource to pass the redirect '
                                        'uri to onAuthenticate as the fifth parameter.')

@@ -12,7 +12,7 @@ from tests import getTestPasswordClient, MockRequest
 from tests.unit.testOAuth2Resource import Abstract as OAuth2Abstract
 
 
-class Abstract:
+class Abstract(object):
     """ Wrapper for the abstract SharedGrantTest to hide it during test discovery. """
 
     # pylint: disable=too-many-public-methods
@@ -551,9 +551,9 @@ class Abstract:
                 request, dataKey, allowInsecureRedirectUri=True)
             self.assertValidCodeResponse(
                 request, result, data,
-                msg='Expected the auth resource to correctly handle a valid accepted {type} grant '
-                    'with an insecure redirect uri, if it is allowed.'
-                    .format(type=self._RESPONSE_TYPE))
+                msg='Expected the auth resource to correctly handle a valid accepted '
+                    '{type} grant with an insecure redirect uri, '
+                    'if it is allowed.'.format(type=self._RESPONSE_TYPE))
 
         def testGrantAccessInsecureConnectionAllowed(self):
             """
@@ -598,9 +598,9 @@ class Abstract:
             result = self._AUTH_RESOURCE.grantAccess(request, dataKey, scope=scope)
             self.assertValidCodeResponse(
                 request, result, data, expectedScope=scope,
-                msg='Expected the auth resource to correctly handle a valid accepted {type} grant '
-                    'with a subset of the scope original requested.'
-                    .format(type=self._RESPONSE_TYPE))
+                msg='Expected the auth resource to correctly handle a valid accepted '
+                    '{type} grant with a subset of the scope original '
+                    'requested.'.format(type=self._RESPONSE_TYPE))
 
         def _testGrantAccessAdditionalData(self, dataKey, responseType, msg):
             """

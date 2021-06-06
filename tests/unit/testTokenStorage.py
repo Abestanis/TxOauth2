@@ -7,7 +7,7 @@ from txoauth2.imp import DictTokenStorage
 from tests import TwistedTestCase, getTestPasswordClient
 
 
-class Abstract:
+class Abstract(object):
     """ Wrapper for the abstract TokenStorageTest to hide it during test discovery. """
 
     class TokenStorageTest(TwistedTestCase):

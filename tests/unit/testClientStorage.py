@@ -12,7 +12,7 @@ from txoauth2.imp import ConfigParserClientStorage
 from tests import TwistedTestCase, getTestPasswordClient, assertClientEquals
 
 
-class Abstract:
+class Abstract(object):
     """ Wrapper for the abstract ClientStorageTest to hide it during test discovery. """
 
     class ClientStorageTest(TwistedTestCase):
