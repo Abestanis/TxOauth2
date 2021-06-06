@@ -6,10 +6,10 @@ from txoauth2.errors import UnauthorizedClientError, MissingParameterError, \
     MultipleParameterError, InvalidScopeError
 
 from tests import getTestPasswordClient
-from tests.unit.testTokenResource import AbstractTokenResourceTest
+from tests.unit.testTokenResource import Abstract
 
 
-class TestClientCredentialsGrant(AbstractTokenResourceTest):
+class TestClientCredentialsGrant(Abstract.TokenResourceTest):
     """
     Test the functionality of the Client Credentials Grant.
     See https://tools.ietf.org/html/rfc6749#section-4.4

@@ -8,10 +8,10 @@ from txoauth2.errors import MissingParameterError, MultipleParameterError, Inval
     InvalidScopeError, UnauthorizedClientError
 
 from tests import getTestPasswordClient, ensureByteString
-from tests.unit.testTokenResource import AbstractTokenResourceTest
+from tests.unit.testTokenResource import Abstract
 
 
-class TestTokenRefresh(AbstractTokenResourceTest):
+class TestTokenRefresh(Abstract.TokenResourceTest):
     """
     Test the refreshing of an access and refresh token.
     See https://tools.ietf.org/html/rfc6749#section-6

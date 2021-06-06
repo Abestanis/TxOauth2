@@ -9,13 +9,14 @@ from txoauth2.errors import UnauthorizedClientError, MissingParameterError, Inva
 from txoauth2.resource import InsecureRedirectUriError
 
 from tests import getTestPasswordClient, MockRequest
-from tests.unit.testOAuth2Resource import AbstractAuthResourceTest
+from tests.unit.testOAuth2Resource import Abstract as OAuth2Abstract
 
 
 class Abstract:
     """ Wrapper for the abstract SharedGrantTest to hide it during test discovery. """
 
-    class SharedGrantTest(AbstractAuthResourceTest):  # pylint: disable=too-many-public-methods
+    # pylint: disable=too-many-public-methods
+    class SharedGrantTest(OAuth2Abstract.AuthResourceTest):
         """
         This test contains test for shared functionality for
         the grant types that use the authentication resource.
@@ -244,7 +245,7 @@ class Abstract:
         def testWithoutScope(self):
             """ Test that a request without a scope is accepted if a default scope is defined. """
             defaultScope = 'default'
-            authToken = AbstractAuthResourceTest.TestOAuth2Resource(
+            authToken = OAuth2Abstract.AuthResourceTest.TestOAuth2Resource(
                 self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._CLIENT_STORAGE,
                 defaultScope=[defaultScope], authTokenStorage=self._TOKEN_STORAGE)
             parameter = {
@@ -367,7 +368,7 @@ class Abstract:
                 'scope': 'All',
                 'state': state
             })
-            authResource = AbstractAuthResourceTest.TestOAuth2Resource(
+            authResource = OAuth2Abstract.AuthResourceTest.TestOAuth2Resource(
                 self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._CLIENT_STORAGE, grantTypes=[])
             result = authResource.render_GET(request)
             self.assertFailedRequest(
@@ -390,7 +391,7 @@ class Abstract:
                 'state': b'state\xFF\xFF'
             }
             request = self.createAuthRequest(arguments=parameter)
-            authResource = AbstractAuthResourceTest.TestOAuth2Resource(
+            authResource = OAuth2Abstract.AuthResourceTest.TestOAuth2Resource(
                 self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._CLIENT_STORAGE,
                 requestDataLifeTime=lifetime, authTokenStorage=self._TOKEN_STORAGE)
             result = authResource.render_GET(request)
@@ -570,7 +571,7 @@ class Abstract:
                 'state': b'state\xFF\xFF'
             }
             self._PERSISTENT_STORAGE.put(dataKey, data)
-            authResource = AbstractAuthResourceTest.TestOAuth2Resource(
+            authResource = OAuth2Abstract.AuthResourceTest.TestOAuth2Resource(
                 self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._CLIENT_STORAGE,
                 authTokenStorage=self._TOKEN_STORAGE, allowInsecureRequestDebug=True)
             result = authResource.grantAccess(request, dataKey)

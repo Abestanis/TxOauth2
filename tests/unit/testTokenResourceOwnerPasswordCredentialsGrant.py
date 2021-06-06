@@ -5,10 +5,10 @@ from txoauth2.errors import UnauthorizedClientError, MissingParameterError, Inva
     MultipleParameterError, InvalidScopeError, UnsupportedGrantTypeError
 
 from tests import getTestPasswordClient
-from tests.unit.testTokenResource import AbstractTokenResourceTest
+from tests.unit.testTokenResource import Abstract
 
 
-class TestResourceOwnerPasswordCredentialsGrant(AbstractTokenResourceTest):
+class TestResourceOwnerPasswordCredentialsGrant(Abstract.TokenResourceTest):
     """
     Test the functionality of the Resource Owner Password Credentials Grant.
     See https://tools.ietf.org/html/rfc6749#section-4.3

@@ -6,10 +6,10 @@ from txoauth2.errors import UnauthorizedClientError, DifferentRedirectUriError, 
     ServerError
 
 from tests import getTestPasswordClient
-from tests.unit.testTokenResource import AbstractTokenResourceTest
+from tests.unit.testTokenResource import Abstract
 
 
-class TestAuthorizationCodeGrant(AbstractTokenResourceTest):
+class TestAuthorizationCodeGrant(Abstract.TokenResourceTest):
     """
     Test the token resource part of the Authorization Code Grant flow.
     See https://tools.ietf.org/html/rfc6749#section-4.1

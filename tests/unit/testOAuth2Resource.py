@@ -23,226 +23,244 @@ from tests import TwistedTestCase, MockRequest, TestTokenFactory, TestPersistent
     TestClientStorage
 
 
-class AbstractAuthResourceTest(TwistedTestCase):
-    """ Abstract base class for test targeting the OAuth2 resource. """
-    # noinspection HttpUrlsUsage
-    _VALID_CLIENT = PasswordClient('authResourceClientId',
-                                   ['https://return.nonexistent?param=retain',
-                                    'http://return.nonexistent/notSecure?param=retain'],
-                                   list(GrantTypes), secret='ClientSecret')
-    _RESPONSE_GRANT_TYPE_MAPPING = {
-        'code': GrantTypes.AUTHORIZATION_CODE.value,
-        'token': GrantTypes.IMPLICIT.value
-    }
+class Abstract:
+    """ Wrapper for the abstract AuthResourceTest to hide it during test discovery. """
 
-    class TestOAuth2Resource(OAuth2):
-        """ A test OAuth2 resource that returns the parameters given to onAuthenticate. """
-        raiseErrorInOnAuthenticate = False
-        UNKNOWN_SCOPE = 'unknown'
-        UNKNOWN_SCOPE_RETURN = 'unknown_return'
-        UNKNOWN_SCOPE_RAISING_OAUTH2_ERROR = 'unknown_raise_oauth2_error'
-        TEMPORARY_UNAVAILABLE_SCOPE = 'temporary_unavailable'
-        ERROR_MESSAGE = 'Expected the auth resource to catch this error'
+    class AuthResourceTest(TwistedTestCase):
+        """ Abstract base class for test targeting the OAuth2 resource. """
+        # noinspection HttpUrlsUsage
+        _VALID_CLIENT = PasswordClient('authResourceClientId',
+                                       ['https://return.nonexistent?param=retain',
+                                        'http://return.nonexistent/notSecure?param=retain'],
+                                       list(GrantTypes), secret='ClientSecret')
+        _RESPONSE_GRANT_TYPE_MAPPING = {
+            'code': GrantTypes.AUTHORIZATION_CODE.value,
+            'token': GrantTypes.IMPLICIT.value
+        }
 
-        def onAuthenticate(self, request, client, responseType, scope, redirectUri, state, dataKey):
-            if self.raiseErrorInOnAuthenticate:
-                self.raiseErrorInOnAuthenticate = False
-                raise RuntimeError(self.ERROR_MESSAGE)
-            if self.UNKNOWN_SCOPE in scope:
-                raise InvalidScopeError(scope, state=state)
-            if self.UNKNOWN_SCOPE_RETURN in scope:
-                return InvalidScopeError(scope, state=state)
-            if self.UNKNOWN_SCOPE_RAISING_OAUTH2_ERROR in scope:
-                raise InvalidTokenError(self.ERROR_MESSAGE)
-            if self.TEMPORARY_UNAVAILABLE_SCOPE in scope:
-                raise TemporarilyUnavailableError(state=state)
-            return request, client, responseType, scope, redirectUri, state, dataKey
+        class TestOAuth2Resource(OAuth2):
+            """ A test OAuth2 resource that returns the parameters given to onAuthenticate. """
+            raiseErrorInOnAuthenticate = False
+            UNKNOWN_SCOPE = 'unknown'
+            UNKNOWN_SCOPE_RETURN = 'unknown_return'
+            UNKNOWN_SCOPE_RAISING_OAUTH2_ERROR = 'unknown_raise_oauth2_error'
+            TEMPORARY_UNAVAILABLE_SCOPE = 'temporary_unavailable'
+            ERROR_MESSAGE = 'Expected the auth resource to catch this error'
 
-    @classmethod
-    def setUpClass(cls):
-        super(AbstractAuthResourceTest, cls).setUpClass()
-        cls._TOKEN_FACTORY = TestTokenFactory()
-        cls._TOKEN_STORAGE = DictTokenStorage()
-        cls._PERSISTENT_STORAGE = TestPersistentStorage()
-        cls._CLIENT_STORAGE = TestClientStorage()
-        cls._CLIENT_STORAGE.addClient(cls._VALID_CLIENT)
-        cls._AUTH_RESOURCE = AbstractAuthResourceTest.TestOAuth2Resource(
-            cls._TOKEN_FACTORY, cls._PERSISTENT_STORAGE, cls._CLIENT_STORAGE,
-            authTokenStorage=cls._TOKEN_STORAGE)
+            def onAuthenticate(self, request, client, responseType, scope, redirectUri, state,
+                               dataKey):
+                if self.raiseErrorInOnAuthenticate:
+                    self.raiseErrorInOnAuthenticate = False
+                    raise RuntimeError(self.ERROR_MESSAGE)
+                if self.UNKNOWN_SCOPE in scope:
+                    raise InvalidScopeError(scope, state=state)
+                if self.UNKNOWN_SCOPE_RETURN in scope:
+                    return InvalidScopeError(scope, state=state)
+                if self.UNKNOWN_SCOPE_RAISING_OAUTH2_ERROR in scope:
+                    raise InvalidTokenError(self.ERROR_MESSAGE)
+                if self.TEMPORARY_UNAVAILABLE_SCOPE in scope:
+                    raise TemporarilyUnavailableError(state=state)
+                return request, client, responseType, scope, redirectUri, state, dataKey
 
-    def setUp(self):
-        super(AbstractAuthResourceTest, self).setUp()
-        self._TOKEN_FACTORY.reset(self)
+        @classmethod
+        def setUpClass(cls):
+            super(Abstract.AuthResourceTest, cls).setUpClass()
+            cls._TOKEN_FACTORY = TestTokenFactory()
+            cls._TOKEN_STORAGE = DictTokenStorage()
+            cls._PERSISTENT_STORAGE = TestPersistentStorage()
+            cls._CLIENT_STORAGE = TestClientStorage()
+            cls._CLIENT_STORAGE.addClient(cls._VALID_CLIENT)
+            cls._AUTH_RESOURCE = cls.TestOAuth2Resource(
+                cls._TOKEN_FACTORY, cls._PERSISTENT_STORAGE, cls._CLIENT_STORAGE,
+                authTokenStorage=cls._TOKEN_STORAGE)
 
-    @staticmethod
-    def createAuthRequest(**kwargs):
-        """
-        :param kwargs: Arguments to the request.
-        :return: A GET request to the OAuth2 resource with the given arguments.
-        """
-        return MockRequest('GET', 'oauth2', **kwargs)
+        def setUp(self):
+            super(Abstract.AuthResourceTest, self).setUp()
+            self._TOKEN_FACTORY.reset(self)
 
-    @staticmethod
-    def getParameterFromRedirectUrl(url, parameterInFragment):
-        """
-        :param url: The url that the resource redirected to.
-        :param parameterInFragment: Whether the parameter should be in the fragment or in the query.
-        :return: The parameter transmitted via the redirect url.
-        """
-        if not isinstance(url, str):
-            url = url.decode('utf-8')
-        parsedUrl = urlparse(url)
-        parameter = parse_qs(parsedUrl.fragment if parameterInFragment else parsedUrl.query)
-        for key, value in parameter.items():
-            if len(value) == 1:
-                parameter[key] = value[0]
-        return parameter
+        @staticmethod
+        def createAuthRequest(**kwargs):
+            """
+            :param kwargs: Arguments to the request.
+            :return: A GET request to the OAuth2 resource with the given arguments.
+            """
+            return MockRequest('GET', 'oauth2', **kwargs)
 
-    def assertRedirectsTo(self, request, redirectUri, msg):
-        """
-        Assert that the request redirects to the given uri and retains the query parameters.
+        @staticmethod
+        def getParameterFromRedirectUrl(url, parameterInFragment):
+            """
+            :param url: The url that the resource redirected to.
+            :param parameterInFragment: Whether the parameter should be in
+                                        the fragment or in the query.
+            :return: The parameter transmitted via the redirect url.
+            """
+            if not isinstance(url, str):
+                url = url.decode('utf-8')
+            parsedUrl = urlparse(url)
+            parameter = parse_qs(parsedUrl.fragment if parameterInFragment else parsedUrl.query)
+            for key, value in parameter.items():
+                if len(value) == 1:
+                    parameter[key] = value[0]
+            return parameter
 
-        :param request: The request that should redirect.
-        :param redirectUri: The uri where the request should redirect to.
-        :param msg: The assertion message.
-        :return: The actual url the request is redirecting to.
-        """
-        self.assertEqual(302, request.responseCode,
-                         msg=msg + ': Expected the auth resource to redirect the resource owner.')
-        redirectUrl = request.getResponseHeader(b'location')
-        self.assertIsNotNone(
-            redirectUrl, msg=msg + ': Expected the auth resource to redirect the resource owner.')
-        parsedUrl = urlparse(redirectUrl)
-        parsedUri = urlparse(redirectUri.encode('utf-8'))
-        self.assertTrue(
-            parsedUrl.scheme == parsedUri.scheme and parsedUrl.netloc == parsedUri.netloc and
-            parsedUrl.path == parsedUri.path and parsedUrl.params == parsedUri.params,
-            msg='{msg}: The auth token endpoint did not redirect '
-                'the resource owner to the expected url: '
-                '{expected} <> {actual}'.format(msg=msg, expected=redirectUri, actual=redirectUrl))
-        self.assertIn(parsedUri.query, parsedUrl.query,
-                      msg=msg + ': Expected the redirect uri to contain the query parameters '
-                                'of the original redirect uri of the client.')
-        return redirectUrl
+        def assertRedirectsTo(self, request, redirectUri, msg):
+            """
+            Assert that the request redirects to the given uri and retains the query parameters.
 
-    def assertFailedRequest(self, request, result, expectedError, msg=None, redirectUri=None,
-                            parameterInFragment=False):
-        """
-        Assert that the request did not succeed and that
-        the auth resource returned an appropriate error response.
-        :param request: The request.
-        :param result: The return value of the render_POST function of the token resource.
-        :param expectedError: The expected error.
-        :param msg: The assertion error message.
-        :param redirectUri: The redirect uri of the client.
-        :param parameterInFragment: If the error parameters are in the fragment of the redirect uri.
-        """
-        if result == NOT_DONE_YET:
-            result = request.getResponse()
-        if msg.endswith('.'):
-            msg = msg[:-1]
-        self.assertFalse(isinstance(result, tuple),
-                         msg=msg + ': Expected the auth resource not to call onAuthenticate.')
-        if redirectUri is not None:
-            redirectUrl = self.assertRedirectsTo(request, redirectUri, msg)
-            errorResult = self.getParameterFromRedirectUrl(redirectUrl, parameterInFragment)
-        else:
+            :param request: The request that should redirect.
+            :param redirectUri: The uri where the request should redirect to.
+            :param msg: The assertion message.
+            :return: The actual url the request is redirecting to.
+            """
             self.assertEqual(
-                'application/json;charset=UTF-8', request.getResponseHeader('Content-Type'),
-                msg='Expected the auth resource to return an error in the json format.')
-            self.assertEqual('no-store', request.getResponseHeader('Cache-Control'),
-                             msg='Expected the auth resource to set Cache-Control to "no-store".')
-            self.assertEqual('no-cache', request.getResponseHeader('Pragma'),
-                             msg='Expected the auth resource to set Pragma to "no-cache".')
-            self.assertEqual(expectedError.code, request.responseCode,
-                             msg='Expected the auth resource to return a response '
-                                 'with the HTTP code {code}.'.format(code=expectedError.code))
-            errorResult = json.loads(result.decode('utf-8'), encoding='utf-8')
-        self.assertIn('error', errorResult, msg=msg + ': Missing error parameter in response.')
-        self.assertEqual(expectedError.name, errorResult['error'],
-                         msg=msg + ': Result contained a different error than expected.')
-        self.assertIn('error_description', errorResult,
-                      msg=msg + ': Missing error_description parameter in response.')
-        if not isinstance(expectedError.description, (bytes, str)):
-            self.assertEqual(
-                expectedError.description.encode('utf-8'), errorResult['error_description'],
-                msg=msg + ': Result contained a different error description than expected.')
-        else:
-            self.assertEqual(
-                expectedError.description, errorResult['error_description'],
-                msg=msg + ': Result contained a different error description than expected.')
-        if expectedError.errorUri is not None:
-            self.assertIn('error_uri', errorResult,
-                          msg=msg + ': Missing error_uri parameter in response.')
-            self.assertEqual(expectedError.errorUri, errorResult['error_uri'],
-                             msg=msg + ': Result contained an unexpected error_uri.')
-        if hasattr(expectedError, 'state') and getattr(expectedError, 'state') is not None:
-            self.assertIn('state', errorResult, msg=msg + ': Missing state parameter in response.')
-            self.assertEqual(
-                expectedError.state if isinstance(expectedError.state, str)
-                else expectedError.state.decode('utf-8', errors='replace'), errorResult['state'],
-                msg=msg + ': Result contained an unexpected state.')
+                302, request.responseCode,
+                msg=msg + ': Expected the auth resource to redirect the resource owner.')
+            redirectUrl = request.getResponseHeader(b'location')
+            self.assertIsNotNone(
+                redirectUrl,
+                msg=msg + ': Expected the auth resource to redirect the resource owner.')
+            parsedUrl = urlparse(redirectUrl)
+            parsedUri = urlparse(redirectUri.encode('utf-8'))
+            self.assertTrue(
+                parsedUrl.scheme == parsedUri.scheme and parsedUrl.netloc == parsedUri.netloc and
+                parsedUrl.path == parsedUri.path and parsedUrl.params == parsedUri.params,
+                msg='{msg}: The auth token endpoint did not redirect '
+                    'the resource owner to the expected url: '
+                    '{expected} <> {actual}'.format(msg=msg, expected=redirectUri,
+                                                    actual=redirectUrl))
+            self.assertIn(parsedUri.query, parsedUrl.query,
+                          msg=msg + ': Expected the redirect uri to contain the query parameters '
+                                    'of the original redirect uri of the client.')
+            return redirectUrl
 
-    def assertValidAuthRequest(self, request, result, parameters, msg, expectedDataLifetime=None):
-        """
-        Assert that a GET request is processed correctly and the expected data has been stored.
+        def assertFailedRequest(self, request, result, expectedError, msg=None, redirectUri=None,
+                                parameterInFragment=False):
+            """
+            Assert that the request did not succeed and that
+            the auth resource returned an appropriate error response.
 
-        :param request: The GET request.
-        :param result: The result of render_GET and onAuthenticate.
-        :param parameters: The parameters of the request.
-        :param msg: The assertion error message.
-        :param expectedDataLifetime: The expected lifetime of the stored data.
-        """
-        if msg.endswith('.'):
-            msg = msg[:-1]
-        self.assertFalse(
-            request.finished, msg=msg + ': Expected the auth resource not to close the request.')
-        self.assertIsInstance(
-            result, tuple, message=msg + ': Expected the auth resource to call onAuthenticate.')
-        requestParam, client, responseType, scope, redirectUri, state, dataKey = result
-        self.assertIs(
-            request, requestParam, msg=msg + ': Expected the auth resource to pass the request '
-                                             'to onAuthenticate as the first parameter.')
-        self.assertEqual(parameters['client_id'], client.id,
-                         msg=msg + ': Expected the auth resource to pass the received '
-                                   'client to onAuthenticate as the second parameter.')
-        parameters['response_type'] = self._RESPONSE_GRANT_TYPE_MAPPING.get(
-            parameters['response_type'], parameters['response_type'])
-        self.assertEqual(parameters['response_type'], responseType,
-                         msg=msg + ': Expected the auth resource to pass the response '
-                                   'type to onAuthenticate as the third parameter.')
-        parameters['scope'] = parameters['scope'].split(' ')
-        self.assertListEqual(scope, parameters['scope'],
-                             msg=msg + ': Expected the auth resource to pass the scope '
-                                       'to onAuthenticate as the fourth parameter.')
-        expectedRedirectUri = parameters['redirect_uri'] if parameters['redirect_uri'] is not None \
-            else self._VALID_CLIENT.redirectUris[0]
-        self.assertEqual(expectedRedirectUri, redirectUri,
-                         msg=msg + ': Expected the auth resource to pass the redirect '
-                                   'uri to onAuthenticate as the fifth parameter.')
-        expectedState = parameters.get('state', None)
-        self.assertEqual(expectedState, state,
-                         msg=msg + ': Expected the auth resource to pass the state '
-                                   'to onAuthenticate as the sixth parameter.')
-        if expectedDataLifetime is None:
-            expectedDataLifetime = self._AUTH_RESOURCE.requestDataLifetime
-        try:
-            self.assertEqual(expectedDataLifetime, self._PERSISTENT_STORAGE.getExpireTime(dataKey),
-                             msg=msg + ': Expected the auth resource to store '
-                                       'the request data with the given lifetime.')
-            data = self._PERSISTENT_STORAGE.pop(dataKey)
-        except KeyError:
-            self.fail(msg=msg + ': Expected the auth resource to pass a valid '
-                                'data key to onAuthenticate as the sixth parameter.')
-        for key, value in parameters.items():
-            self.assertIn(key, data, msg=msg + ': Expected the data stored by auth token resource '
-                                               'to contain the {name} parameter.'.format(name=key))
-            self.assertEqual(value, data[key],
-                             msg=msg + ': Expected the auth token resource to store the value '
-                                       'of the {name} parameter.'.format(name=key))
+            :param request: The request.
+            :param result: The return value of the render_POST function of the token resource.
+            :param expectedError: The expected error.
+            :param msg: The assertion error message.
+            :param redirectUri: The redirect uri of the client.
+            :param parameterInFragment: If the error parameters are
+                                        in the fragment of the redirect uri.
+            """
+            if result == NOT_DONE_YET:
+                result = request.getResponse()
+            if msg.endswith('.'):
+                msg = msg[:-1]
+            self.assertFalse(isinstance(result, tuple),
+                             msg=msg + ': Expected the auth resource not to call onAuthenticate.')
+            if redirectUri is not None:
+                redirectUrl = self.assertRedirectsTo(request, redirectUri, msg)
+                errorResult = self.getParameterFromRedirectUrl(redirectUrl, parameterInFragment)
+            else:
+                self.assertEqual(
+                    'application/json;charset=UTF-8', request.getResponseHeader('Content-Type'),
+                    msg='Expected the auth resource to return an error in the json format.')
+                self.assertEqual(
+                    'no-store', request.getResponseHeader('Cache-Control'),
+                    msg='Expected the auth resource to set Cache-Control to "no-store".')
+                self.assertEqual('no-cache', request.getResponseHeader('Pragma'),
+                                 msg='Expected the auth resource to set Pragma to "no-cache".')
+                self.assertEqual(expectedError.code, request.responseCode,
+                                 msg='Expected the auth resource to return a response '
+                                     'with the HTTP code {code}.'.format(code=expectedError.code))
+                errorResult = json.loads(result.decode('utf-8'), encoding='utf-8')
+            self.assertIn('error', errorResult, msg=msg + ': Missing error parameter in response.')
+            self.assertEqual(expectedError.name, errorResult['error'],
+                             msg=msg + ': Result contained a different error than expected.')
+            self.assertIn('error_description', errorResult,
+                          msg=msg + ': Missing error_description parameter in response.')
+            if not isinstance(expectedError.description, (bytes, str)):
+                self.assertEqual(
+                    expectedError.description.encode('utf-8'), errorResult['error_description'],
+                    msg=msg + ': Result contained a different error description than expected.')
+            else:
+                self.assertEqual(
+                    expectedError.description, errorResult['error_description'],
+                    msg=msg + ': Result contained a different error description than expected.')
+            if expectedError.errorUri is not None:
+                self.assertIn('error_uri', errorResult,
+                              msg=msg + ': Missing error_uri parameter in response.')
+                self.assertEqual(expectedError.errorUri, errorResult['error_uri'],
+                                 msg=msg + ': Result contained an unexpected error_uri.')
+            if hasattr(expectedError, 'state') and getattr(expectedError, 'state') is not None:
+                self.assertIn('state', errorResult,
+                              msg=msg + ': Missing state parameter in response.')
+                self.assertEqual(
+                    expectedError.state if isinstance(expectedError.state, str)
+                    else expectedError.state.decode('utf-8', errors='replace'),
+                    errorResult['state'],
+                    msg=msg + ': Result contained an unexpected state.')
+
+        def assertValidAuthRequest(self, request, result, parameters, msg,
+                                   expectedDataLifetime=None):
+            """
+            Assert that a GET request is processed correctly and the expected data has been stored.
+
+            :param request: The GET request.
+            :param result: The result of render_GET and onAuthenticate.
+            :param parameters: The parameters of the request.
+            :param msg: The assertion error message.
+            :param expectedDataLifetime: The expected lifetime of the stored data.
+            """
+            if msg.endswith('.'):
+                msg = msg[:-1]
+            self.assertFalse(
+                request.finished,
+                msg=msg + ': Expected the auth resource not to close the request.')
+            self.assertIsInstance(
+                result, tuple, message=msg + ': Expected the auth resource to call onAuthenticate.')
+            requestParam, client, responseType, scope, redirectUri, state, dataKey = result
+            self.assertIs(
+                request, requestParam, msg=msg + ': Expected the auth resource to pass the request '
+                                                 'to onAuthenticate as the first parameter.')
+            self.assertEqual(parameters['client_id'], client.id,
+                             msg=msg + ': Expected the auth resource to pass the received '
+                                       'client to onAuthenticate as the second parameter.')
+            parameters['response_type'] = self._RESPONSE_GRANT_TYPE_MAPPING.get(
+                parameters['response_type'], parameters['response_type'])
+            self.assertEqual(parameters['response_type'], responseType,
+                             msg=msg + ': Expected the auth resource to pass the response '
+                                       'type to onAuthenticate as the third parameter.')
+            parameters['scope'] = parameters['scope'].split(' ')
+            self.assertListEqual(scope, parameters['scope'],
+                                 msg=msg + ': Expected the auth resource to pass the scope '
+                                           'to onAuthenticate as the fourth parameter.')
+            expectedRedirectUri = parameters['redirect_uri'] if parameters[
+                                                                    'redirect_uri'] is not None \
+                else self._VALID_CLIENT.redirectUris[0]
+            self.assertEqual(expectedRedirectUri, redirectUri,
+                             msg=msg + ': Expected the auth resource to pass the redirect '
+                                       'uri to onAuthenticate as the fifth parameter.')
+            expectedState = parameters.get('state', None)
+            self.assertEqual(expectedState, state,
+                             msg=msg + ': Expected the auth resource to pass the state '
+                                       'to onAuthenticate as the sixth parameter.')
+            if expectedDataLifetime is None:
+                expectedDataLifetime = self._AUTH_RESOURCE.requestDataLifetime
+            try:
+                self.assertEqual(expectedDataLifetime,
+                                 self._PERSISTENT_STORAGE.getExpireTime(dataKey),
+                                 msg=msg + ': Expected the auth resource to store '
+                                           'the request data with the given lifetime.')
+                data = self._PERSISTENT_STORAGE.pop(dataKey)
+            except KeyError:
+                self.fail(msg=msg + ': Expected the auth resource to pass a valid '
+                                    'data key to onAuthenticate as the sixth parameter.')
+            for key, value in parameters.items():
+                self.assertIn(key, data,
+                              msg=msg + ': Expected the data stored by auth token resource '
+                                        'to contain the {name} parameter.'.format(name=key))
+                self.assertEqual(value, data[key],
+                                 msg=msg + ': Expected the auth token resource to store the value '
+                                           'of the {name} parameter.'.format(name=key))
 
 
-class AuthResourceTest(AbstractAuthResourceTest):
+class AuthResourceTest(Abstract.AuthResourceTest):
     """ Tests aspects of the OAuth2 resource that do not depend on the response type. """
 
     def testWithoutResponseType(self):

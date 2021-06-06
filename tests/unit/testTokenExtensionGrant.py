@@ -4,10 +4,10 @@ import warnings
 from txoauth2.errors import UnsupportedGrantTypeError, ServerError, InvalidParameterError
 from txoauth2.token import TokenResource
 
-from tests.unit.testTokenResource import AbstractTokenResourceTest
+from tests.unit.testTokenResource import Abstract
 
 
-class TestExtensionGrant(AbstractTokenResourceTest):
+class TestExtensionGrant(Abstract.TokenResourceTest):
     """
     Test that one can use a custom authorization method to authorize a token request.
     See https://tools.ietf.org/html/rfc6749#section-4.5

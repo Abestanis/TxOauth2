@@ -19,202 +19,211 @@ from tests import TwistedTestCase, TestTokenFactory, getTestPasswordClient, Test
     MockRequest, TestPasswordManager, TestPersistentStorage
 
 
-class AbstractTokenResourceTest(TwistedTestCase):
-    """ Abstract base class for test targeting the token resource. """
-    _VALID_REFRESH_TOKEN = 'refreshToken'
-    _VALID_SCOPE = ['All', 'scope']
-    _VALID_CLIENT = getTestPasswordClient()
+class Abstract:
+    """ Wrapper for the abstract TokenResourceTest to hide it during test discovery. """
 
-    @classmethod
-    def setUpClass(cls):
-        super(AbstractTokenResourceTest, cls).setUpClass()
-        cls._AUTH_TOKEN_STORAGE = DictTokenStorage()
-        cls._REFRESH_TOKEN_STORAGE = DictTokenStorage()
-        cls._TOKEN_FACTORY = TestTokenFactory()
-        cls._PERSISTENT_STORAGE = TestPersistentStorage()
-        cls._CLIENT_STORAGE = TestClientStorage()
-        cls._REFRESH_TOKEN_STORAGE.store(
-            cls._VALID_REFRESH_TOKEN, cls._VALID_CLIENT, cls._VALID_SCOPE)
-        cls._CLIENT_STORAGE.addClient(cls._VALID_CLIENT)
-        cls._PASSWORD_MANAGER = TestPasswordManager()
-        cls._TOKEN_RESOURCE = TokenResource(
-            cls._TOKEN_FACTORY, cls._PERSISTENT_STORAGE, cls._REFRESH_TOKEN_STORAGE,
-            cls._AUTH_TOKEN_STORAGE, cls._CLIENT_STORAGE, passwordManager=cls._PASSWORD_MANAGER)
+    class TokenResourceTest(TwistedTestCase):
+        """ Abstract base class for test targeting the token resource. """
+        _VALID_REFRESH_TOKEN = 'refreshToken'
+        _VALID_SCOPE = ['All', 'scope']
+        _VALID_CLIENT = getTestPasswordClient()
 
-    @classmethod
-    def tearDownClass(cls):
-        setattr(TokenResource, '_OAuthTokenStorage', None)
+        @classmethod
+        def setUpClass(cls):
+            super(Abstract.TokenResourceTest, cls).setUpClass()
+            cls._AUTH_TOKEN_STORAGE = DictTokenStorage()
+            cls._REFRESH_TOKEN_STORAGE = DictTokenStorage()
+            cls._TOKEN_FACTORY = TestTokenFactory()
+            cls._PERSISTENT_STORAGE = TestPersistentStorage()
+            cls._CLIENT_STORAGE = TestClientStorage()
+            cls._REFRESH_TOKEN_STORAGE.store(
+                cls._VALID_REFRESH_TOKEN, cls._VALID_CLIENT, cls._VALID_SCOPE)
+            cls._CLIENT_STORAGE.addClient(cls._VALID_CLIENT)
+            cls._PASSWORD_MANAGER = TestPasswordManager()
+            cls._TOKEN_RESOURCE = TokenResource(
+                cls._TOKEN_FACTORY, cls._PERSISTENT_STORAGE, cls._REFRESH_TOKEN_STORAGE,
+                cls._AUTH_TOKEN_STORAGE, cls._CLIENT_STORAGE, passwordManager=cls._PASSWORD_MANAGER)
 
-    def setUp(self):
-        self._TOKEN_FACTORY.reset(self)
+        @classmethod
+        def tearDownClass(cls):
+            setattr(TokenResource, '_OAuthTokenStorage', None)
 
-    @staticmethod
-    def _addAuthenticationToRequestHeader(request, client):
-        """ Add authentication with the clients credentials to the header of the request. """
-        request.addAuthorization(client.id, client.secret)
+        def setUp(self):
+            self._TOKEN_FACTORY.reset(self)
 
-    @staticmethod
-    def generateValidTokenRequest(url='token', urlQuery='', authentication=None, **kwargs):
-        """
-        :param url: The request url.
-        :param urlQuery: An optional query part of the request url.
-        :param authentication: An optional client to use for header-authentication.
-        :param kwargs: Optional arguments to the the request.
-        :return: A valid request to the token resource.
-        """
-        if urlQuery:
-            url = '?'.join((url, urlQuery))
-        request = MockRequest('POST', url, **kwargs)
-        request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded')
-        if authentication is not None:
-            AbstractTokenResourceTest._addAuthenticationToRequestHeader(request, authentication)
-        return request
+        @staticmethod
+        def _addAuthenticationToRequestHeader(request, client):
+            """ Add authentication with the clients credentials to the header of the request. """
+            request.addAuthorization(client.id, client.secret)
 
-    def assertValidTokenResponse(self, request, result, expectedAccessToken,
-                                 expectedExpireTime=None, expectedTokenType='Bearer',
-                                 expectedRefreshToken=None, expectedScope=None,
-                                 expectedAdditionalData=None):
-        """
-        Assert that the request succeeded and the token resource returned a correct response.
-        :param request: The request.
-        :param result: The return value of the render_POST function of the token resource.
-        :param expectedAccessToken: The new token that the token resource should have created.
-        :param expectedExpireTime: The expire time of the new token.
-        :param expectedTokenType: The expected type of the token.
-        :param expectedRefreshToken: The expected optional refresh token that
-                                     the token resource should have created.
-        :param expectedScope: The expected scope of all new created tokens.
-        :param expectedAdditionalData: The optional additional data of the new tokens.
-        """
-        self.assertEqual(
-            'application/json;charset=UTF-8', request.getResponseHeader('Content-Type'),
-            msg='Expected the token resource to return the token in the json format.')
-        self.assertEqual('no-store', request.getResponseHeader('Cache-Control'),
-                         msg='Expected the token resource to set Cache-Control to "no-store".')
-        self.assertEqual('no-cache', request.getResponseHeader('Pragma'),
-                         msg='Expected the token resource to set Pragma to "no-cache".')
-        self.assertEqual(200, request.responseCode,
-                         msg='Expected the token resource to return '
-                             'a new token with the HTTP code 200 OK.')
-        jsonResult = json.loads(result.decode('utf-8'), encoding='utf-8')
-        self.assertIn('access_token', jsonResult, msg='Expected the result from the token resource '
-                                                      'to contain an access_token parameter.')
-        self.assertEqual(expectedAccessToken, jsonResult['access_token'],
-                         msg='The token resource returned a different access token than expected.')
-        self.assertIn('token_type', jsonResult, msg='Expected the result from the token resource '
-                                                    'to contain a token_type parameter.')
-        self.assertEqual(
-            expectedTokenType.lower(), jsonResult['token_type'].lower(),
-            msg='The token resource returned a different access token type than expected.')
-        if expectedExpireTime is None:
-            self.assertNotIn('expires_in', jsonResult,
-                             msg='Expected the result from the token resource '
-                                 'to not contain an expires_in parameter.')
-        else:
-            self.assertIn('expires_in', jsonResult,
+        @classmethod
+        def generateValidTokenRequest(cls, url='token', urlQuery='', authentication=None, **kwargs):
+            """
+            :param url: The request url.
+            :param urlQuery: An optional query part of the request url.
+            :param authentication: An optional client to use for header-authentication.
+            :param kwargs: Optional arguments to the the request.
+            :return: A valid request to the token resource.
+            """
+            if urlQuery:
+                url = '?'.join((url, urlQuery))
+            request = MockRequest('POST', url, **kwargs)
+            request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded')
+            if authentication is not None:
+                cls._addAuthenticationToRequestHeader(request, authentication)
+            return request
+
+        def assertValidTokenResponse(self, request, result, expectedAccessToken,
+                                     expectedExpireTime=None, expectedTokenType='Bearer',
+                                     expectedRefreshToken=None, expectedScope=None,
+                                     expectedAdditionalData=None):
+            """
+            Assert that the request succeeded and the token resource returned a correct response.
+            :param request: The request.
+            :param result: The return value of the render_POST function of the token resource.
+            :param expectedAccessToken: The new token that the token resource should have created.
+            :param expectedExpireTime: The expire time of the new token.
+            :param expectedTokenType: The expected type of the token.
+            :param expectedRefreshToken: The expected optional refresh token that
+                                         the token resource should have created.
+            :param expectedScope: The expected scope of all new created tokens.
+            :param expectedAdditionalData: The optional additional data of the new tokens.
+            """
+            self.assertEqual(
+                'application/json;charset=UTF-8', request.getResponseHeader('Content-Type'),
+                msg='Expected the token resource to return the token in the json format.')
+            self.assertEqual('no-store', request.getResponseHeader('Cache-Control'),
+                             msg='Expected the token resource to set Cache-Control to "no-store".')
+            self.assertEqual('no-cache', request.getResponseHeader('Pragma'),
+                             msg='Expected the token resource to set Pragma to "no-cache".')
+            self.assertEqual(200, request.responseCode,
+                             msg='Expected the token resource to return '
+                                 'a new token with the HTTP code 200 OK.')
+            jsonResult = json.loads(result.decode('utf-8'), encoding='utf-8')
+            self.assertIn('access_token', jsonResult,
                           msg='Expected the result from the token resource '
-                              'to contain an expires_in parameter.')
-            self.assertEqual(expectedExpireTime, jsonResult['expires_in'],
-                             msg='The token resource returned a different '
-                                 'access token expire time than expected.')
-        if expectedRefreshToken is None:
-            self.assertNotIn('refresh_token', jsonResult,
-                             msg='Expected the result from the token resource '
-                                 'to not contain a refresh_token parameter.')
-        else:
-            self.assertIn('refresh_token', jsonResult,
+                              'to contain an access_token parameter.')
+            self.assertEqual(
+                expectedAccessToken, jsonResult['access_token'],
+                msg='The token resource returned a different access token than expected.')
+            self.assertIn('token_type', jsonResult,
                           msg='Expected the result from the token resource '
-                              'to contain a refresh_token parameter.')
-            self.assertEqual(expectedRefreshToken, jsonResult['refresh_token'],
-                             msg='The token resource returned a different '
-                                 'refresh token than expected.')
-        if expectedScope is None:
-            self.assertNotIn('scope', jsonResult,
-                             msg='Expected the result from the token resource '
-                                 'to not contain a scope parameter.')
-            expectedScope = self._VALID_SCOPE
-        else:
-            self.assertIn('scope', jsonResult,
-                          msg='Expected the result from the token resource '
-                              'to contain a scope parameter.')
-            self.assertListEqual(jsonResult['scope'].split(), expectedScope,
+                              'to contain a token_type parameter.')
+            self.assertEqual(
+                expectedTokenType.lower(), jsonResult['token_type'].lower(),
+                msg='The token resource returned a different access token type than expected.')
+            if expectedExpireTime is None:
+                self.assertNotIn('expires_in', jsonResult,
+                                 msg='Expected the result from the token resource '
+                                     'to not contain an expires_in parameter.')
+            else:
+                self.assertIn('expires_in', jsonResult,
+                              msg='Expected the result from the token resource '
+                                  'to contain an expires_in parameter.')
+                self.assertEqual(expectedExpireTime, jsonResult['expires_in'],
                                  msg='The token resource returned a different '
-                                     'scope than expected.')
-        self.assertTrue(self._AUTH_TOKEN_STORAGE.contains(expectedAccessToken),
-                        msg='Expected the token storage to contain the new access token.')
-        self.assertTrue(self._AUTH_TOKEN_STORAGE.hasAccess(expectedAccessToken, expectedScope),
-                        msg='Expected the new access token to have access to the expected scope.')
-        self.assertEqual(expectedAdditionalData,
-                         self._AUTH_TOKEN_STORAGE.getTokenAdditionalData(expectedAccessToken),
-                         msg='Expected the new access token to have the expected additional data.')
-        if expectedRefreshToken is not None:
-            self.assertTrue(self._REFRESH_TOKEN_STORAGE.contains(expectedRefreshToken),
-                            msg='Expected the token storage to contain the refresh token.')
+                                     'access token expire time than expected.')
+            if expectedRefreshToken is None:
+                self.assertNotIn('refresh_token', jsonResult,
+                                 msg='Expected the result from the token resource '
+                                     'to not contain a refresh_token parameter.')
+            else:
+                self.assertIn('refresh_token', jsonResult,
+                              msg='Expected the result from the token resource '
+                                  'to contain a refresh_token parameter.')
+                self.assertEqual(expectedRefreshToken, jsonResult['refresh_token'],
+                                 msg='The token resource returned a different '
+                                     'refresh token than expected.')
+            if expectedScope is None:
+                self.assertNotIn('scope', jsonResult,
+                                 msg='Expected the result from the token resource '
+                                     'to not contain a scope parameter.')
+                expectedScope = self._VALID_SCOPE
+            else:
+                self.assertIn('scope', jsonResult,
+                              msg='Expected the result from the token resource '
+                                  'to contain a scope parameter.')
+                self.assertListEqual(jsonResult['scope'].split(), expectedScope,
+                                     msg='The token resource returned a different '
+                                         'scope than expected.')
+            self.assertTrue(self._AUTH_TOKEN_STORAGE.contains(expectedAccessToken),
+                            msg='Expected the token storage to contain the new access token.')
             self.assertTrue(
-                self._REFRESH_TOKEN_STORAGE.hasAccess(expectedRefreshToken, expectedScope),
-                msg='Expected the refresh token to have access to the expected scope.')
+                self._AUTH_TOKEN_STORAGE.hasAccess(expectedAccessToken, expectedScope),
+                msg='Expected the new access token to have access to the expected scope.')
             self.assertEqual(
                 expectedAdditionalData,
-                self._REFRESH_TOKEN_STORAGE.getTokenAdditionalData(expectedAccessToken),
-                msg='Expected the new refresh token to have the expected additional data.')
+                self._AUTH_TOKEN_STORAGE.getTokenAdditionalData(expectedAccessToken),
+                msg='Expected the new access token to have the expected additional data.')
+            if expectedRefreshToken is not None:
+                self.assertTrue(self._REFRESH_TOKEN_STORAGE.contains(expectedRefreshToken),
+                                msg='Expected the token storage to contain the refresh token.')
+                self.assertTrue(
+                    self._REFRESH_TOKEN_STORAGE.hasAccess(expectedRefreshToken, expectedScope),
+                    msg='Expected the refresh token to have access to the expected scope.')
+                self.assertEqual(
+                    expectedAdditionalData,
+                    self._REFRESH_TOKEN_STORAGE.getTokenAdditionalData(expectedAccessToken),
+                    msg='Expected the new refresh token to have the expected additional data.')
 
-    def assertFailedTokenRequest(self, request, result, expectedError, msg):
-        """
-        Assert that the request did not succeed and that
-        the token resource returned an appropriate error response.
-        :param request: The request.
-        :param result: The return value of the render_POST function of the token resource.
-        :param expectedError: The expected error.
-        :param msg: The assertion error message.
-        """
-        if result == NOT_DONE_YET:
-            result = request.getResponse()
-        if msg.endswith('.'):
-            msg = msg[:-1]
-        self.assertEqual(
-            'application/json;charset=UTF-8', request.getResponseHeader('Content-Type'),
-            msg='Expected the token resource to return an error in the json format.')
-        self.assertEqual('no-store', request.getResponseHeader('Cache-Control'),
-                         msg='Expected the token resource to set Cache-Control to "no-store".')
-        self.assertEqual('no-cache', request.getResponseHeader('Pragma'),
-                         msg='Expected the token resource to set Pragma to "no-cache".')
-        self.assertEqual(expectedError.code, request.responseCode,
-                         msg='Expected the token resource to return a response '
-                             'with the HTTP code {code}.'.format(code=expectedError.code))
-        errorResult = json.loads(result.decode('utf-8'), encoding='utf-8')
-        self.assertIn('error', errorResult, msg=msg + ': Missing error parameter in response.')
-        self.assertEqual(expectedError.name, errorResult['error'],
-                         msg=msg + ': Result contained a different error than expected.')
-        self.assertIn('error_description', errorResult,
-                      msg=msg + ': Missing error_description parameter in response.')
-        self.assertEqual(
-            expectedError.description, errorResult['error_description'],
-            msg=msg + ': Result contained a different error description than expected.')
-        if expectedError.errorUri is not None:
-            self.assertIn('error_uri', errorResult,
-                          msg=msg + ': Missing error_uri parameter in response.')
-            self.assertEqual(expectedError.errorUri, errorResult['error_uri'],
-                             msg=msg + ': Result contained an unexpected error_uri.')
-        if expectedError.name == 'invalid_client':
+        def assertFailedTokenRequest(self, request, result, expectedError, msg):
+            """
+            Assert that the request did not succeed and that
+            the token resource returned an appropriate error response.
+            :param request: The request.
+            :param result: The return value of the render_POST function of the token resource.
+            :param expectedError: The expected error.
+            :param msg: The assertion error message.
+            """
+            if result == NOT_DONE_YET:
+                result = request.getResponse()
+            if msg.endswith('.'):
+                msg = msg[:-1]
             self.assertEqual(
-                401, request.responseCode,
-                msg='Expected the token resource to return UNAUTHORIZED as the response code.')
-            authenticateResponse = request.getResponseHeader('WWW-Authenticate')
-            self.assertIsNotNone(
-                authenticateResponse,
-                msg='If the request has authentication via the "Authorization" header field, '
-                    'the result must include the "WWW-Authenticate" response header field.')
-            authType, _ = authenticateResponse.split(' ', 1)
-            self.assertEqual('Bearer', authType,
-                             msg='Expected an WWW-Authenticate response to use the Bearer scheme.')
-            expectedHeaderValue = 'realm="' + request.prePathURL().decode('utf-8') + '"'
-            self.assertIn(expectedHeaderValue, authenticateResponse,
-                          msg='The "realm" auth-parameter does not contain the '
-                              'expected value: ' + expectedHeaderValue)
+                'application/json;charset=UTF-8', request.getResponseHeader('Content-Type'),
+                msg='Expected the token resource to return an error in the json format.')
+            self.assertEqual('no-store', request.getResponseHeader('Cache-Control'),
+                             msg='Expected the token resource to set Cache-Control to "no-store".')
+            self.assertEqual('no-cache', request.getResponseHeader('Pragma'),
+                             msg='Expected the token resource to set Pragma to "no-cache".')
+            self.assertEqual(expectedError.code, request.responseCode,
+                             msg='Expected the token resource to return a response '
+                                 'with the HTTP code {code}.'.format(code=expectedError.code))
+            errorResult = json.loads(result.decode('utf-8'), encoding='utf-8')
+            self.assertIn('error', errorResult, msg=msg + ': Missing error parameter in response.')
+            self.assertEqual(expectedError.name, errorResult['error'],
+                             msg=msg + ': Result contained a different error than expected.')
+            self.assertIn('error_description', errorResult,
+                          msg=msg + ': Missing error_description parameter in response.')
+            self.assertEqual(
+                expectedError.description, errorResult['error_description'],
+                msg=msg + ': Result contained a different error description than expected.')
+            if expectedError.errorUri is not None:
+                self.assertIn('error_uri', errorResult,
+                              msg=msg + ': Missing error_uri parameter in response.')
+                self.assertEqual(expectedError.errorUri, errorResult['error_uri'],
+                                 msg=msg + ': Result contained an unexpected error_uri.')
+            if expectedError.name == 'invalid_client':
+                self.assertEqual(
+                    401, request.responseCode,
+                    msg='Expected the token resource to return UNAUTHORIZED as the response code.')
+                authenticateResponse = request.getResponseHeader('WWW-Authenticate')
+                self.assertIsNotNone(
+                    authenticateResponse,
+                    msg='If the request has authentication via the "Authorization" header field, '
+                        'the result must include the "WWW-Authenticate" response header field.')
+                authType, _ = authenticateResponse.split(' ', 1)
+                self.assertEqual(
+                    'Bearer', authType,
+                    msg='Expected an WWW-Authenticate response to use the Bearer scheme.')
+                expectedHeaderValue = 'realm="' + request.prePathURL().decode('utf-8') + '"'
+                self.assertIn(expectedHeaderValue, authenticateResponse,
+                              msg='The "realm" auth-parameter does not contain the '
+                                  'expected value: ' + expectedHeaderValue)
 
 
 # pylint: disable=too-many-public-methods
-class TestTokenResource(AbstractTokenResourceTest):
+class TestTokenResource(Abstract.TokenResourceTest):
     """ Test the functionality of the token resource that is shared among the grant types. """
 
     def testInsecureConnection(self):
@@ -616,14 +625,17 @@ class TestTokenResource(AbstractTokenResourceTest):
         Test that the Token resource generates a warning if authenticateClient
         returns an error instead of raising it.
         """
+
         class ErrorTestClientStorage(TestClientStorage):
             """ A ClientStorage to test returning errors from authenticateClient. """
+
             def __init__(self, errorToReturn):
                 super(ErrorTestClientStorage, self).__init__()
                 self.error = errorToReturn
 
             def authenticateClient(self, client, request, secret=None):
                 return self.error
+
         validRequest = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'client_id': self._VALID_CLIENT.id,
@@ -695,8 +707,9 @@ class TestTokenResource(AbstractTokenResourceTest):
             self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._REFRESH_TOKEN_STORAGE,
             self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE, grantTypes=[
                 GrantTypes.IMPLICIT, GrantTypes.AUTHORIZATION_CODE])
-        self.assertListEqual([GrantTypes.AUTHORIZATION_CODE.value], tokenResource.acceptedGrantTypes,
-                             msg='Expected the token resource to ignore the implicit grant.')
+        self.assertListEqual(
+            [GrantTypes.AUTHORIZATION_CODE.value], tokenResource.acceptedGrantTypes,
+            msg='Expected the token resource to ignore the implicit grant.')
 
     def testRequiresPasswordManagerForPasswordGrant(self):
         """
