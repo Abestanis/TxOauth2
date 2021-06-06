@@ -100,7 +100,7 @@ def getTestClient():
     """
     return PasswordClient(
         clientId='test', redirectUris=['https://clientServer.com/return'], secret='test_secret',
-        authorizedGrantTypes=[GrantTypes.RefreshToken, GrantTypes.AuthorizationCode])
+        authorizedGrantTypes=[GrantTypes.REFRESH_TOKEN, GrantTypes.AUTHORIZATION_CODE])
 
 
 def setupOAuth2Clients():
@@ -120,7 +120,7 @@ def setupTestServerResource():
     :return: The root resource of the test server
     """
     clientStorage = setupOAuth2Clients()
-    enabledGrantTypes = [GrantTypes.AuthorizationCode, GrantTypes.RefreshToken]
+    enabledGrantTypes = [GrantTypes.AUTHORIZATION_CODE, GrantTypes.REFRESH_TOKEN]
     tokenResource = TokenResource(
         UUIDTokenFactory(), DictNonPersistentStorage(), DictTokenStorage(), DictTokenStorage(),
         clientStorage, allowInsecureRequestDebug=True, grantTypes=enabledGrantTypes)

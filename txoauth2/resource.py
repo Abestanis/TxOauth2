@@ -67,7 +67,7 @@ class OAuth2(Resource, object):
 
     """
     __metaclass__ = ABCMeta
-    acceptedGrantTypes = [GrantTypes.AuthorizationCode.value, GrantTypes.Implicit.value]
+    acceptedGrantTypes = [GrantTypes.AUTHORIZATION_CODE.value, GrantTypes.IMPLICIT.value]
     requestDataLifetime = 3600
     authTokenLifeTime = 3600
     allowInsecureRequestDebug = False
@@ -111,8 +111,8 @@ class OAuth2(Resource, object):
             raise ValueError('Authentication tokens generated with the '
                              'implicit grant flow need a limited lifetime.')
         if grantTypes is not None:
-            for grantType in [GrantTypes.RefreshToken, GrantTypes.Password,
-                              GrantTypes.ClientCredentials]:
+            for grantType in [GrantTypes.REFRESH_TOKEN, GrantTypes.PASSWORD,
+                              GrantTypes.CLIENT_CREDENTIALS]:
                 if grantType in grantTypes:
                     grantTypes.remove(grantType)
             grantTypes = [grantType.value if isinstance(grantType, GrantTypes) else grantType
@@ -120,7 +120,7 @@ class OAuth2(Resource, object):
             self.acceptedGrantTypes = grantTypes
         if defaultScope is not None:
             self.defaultScope = defaultScope
-        if GrantTypes.Implicit.value in self.acceptedGrantTypes and self._authTokenStorage is None:
+        if GrantTypes.IMPLICIT.value in self.acceptedGrantTypes and self._authTokenStorage is None:
             raise ValueError('The token storage can not be None '
                              'when the implicit authorization flow is enabled')
 
@@ -225,9 +225,9 @@ class OAuth2(Resource, object):
                     .generate(request, redirectUri, errorInFragment)
         grantType = responseType
         if responseType == 'code':
-            grantType = GrantTypes.AuthorizationCode.value
+            grantType = GrantTypes.AUTHORIZATION_CODE.value
         elif responseType == 'token':
-            grantType = GrantTypes.Implicit.value
+            grantType = GrantTypes.IMPLICIT.value
         if grantType not in self.acceptedGrantTypes:
             return UnsupportedResponseTypeError(responseType, state)\
                 .generate(request, redirectUri, errorInFragment)
@@ -292,7 +292,7 @@ class OAuth2(Resource, object):
             data = self._persistentStorage.pop(dataKey)
         except KeyError:
             raise InvalidDataKeyError(dataKey)
-        errorInFragment = data['response_type'] == GrantTypes.Implicit.value
+        errorInFragment = data['response_type'] == GrantTypes.IMPLICIT.value
         redirectUri = data['redirect_uri']
         return UserDeniesAuthorization(data['state'])\
             .generate(request, redirectUri, errorInFragment)
@@ -332,8 +332,8 @@ class OAuth2(Resource, object):
             raise InvalidDataKeyError(dataKey)
         state = data['state']
         responseType = data['response_type']
-        errorInFragment = responseType == GrantTypes.Implicit.value
-        if responseType not in [GrantTypes.AuthorizationCode.value, GrantTypes.Implicit.value]:
+        errorInFragment = responseType == GrantTypes.IMPLICIT.value
+        if responseType not in [GrantTypes.AUTHORIZATION_CODE.value, GrantTypes.IMPLICIT.value]:
             self._persistentStorage.put(
                 dataKey, data, expireTime=int(time.time()) + self.requestDataLifetime)
             raise ValueError(responseType)
@@ -356,7 +356,7 @@ class OAuth2(Resource, object):
                         .generate(request, redirectUri, errorInFragment)
         else:
             scope = data['scope']
-        if responseType == GrantTypes.AuthorizationCode.value:
+        if responseType == GrantTypes.AUTHORIZATION_CODE.value:
             code = self._tokenFactory.generateToken(
                 client, codeLifeTime, scope, additionalData=additionalData)
             self._persistentStorage.put('code' + code, {

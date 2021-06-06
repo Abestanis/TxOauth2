@@ -85,18 +85,18 @@ class ClientTest(TwistedTestCase):
         for grantType in GrantTypes:
             try:
                 Client('clientId', [], [grantType.value])
-                Client('clientId', [], [GrantTypes.AuthorizationCode.value, grantType.value])
+                Client('clientId', [], [GrantTypes.AUTHORIZATION_CODE.value, grantType.value])
             except ValueError as error:
                 self.fail('Expected Client to accept a string grant type: ' + str(error))
             try:
                 Client('clientId', [], [grantType])
-                Client('clientId', [], [GrantTypes.AuthorizationCode, grantType])
+                Client('clientId', [], [GrantTypes.AUTHORIZATION_CODE, grantType])
             except ValueError as error:
                 self.fail('Expected Client to accept a GrantType object: ' + str(error))
         notString = b'Test' if isinstance(u'', str) else u'Test'
         for grantTypes in ['x', 1, None, True, object(), [notString], [None], [True], [object()],
-                           [notString, GrantTypes.AuthorizationCode],
-                           [None, GrantTypes.AuthorizationCode],
-                           [True, GrantTypes.AuthorizationCode],
-                           [object(), GrantTypes.AuthorizationCode]]:
+                           [notString, GrantTypes.AUTHORIZATION_CODE],
+                           [None, GrantTypes.AUTHORIZATION_CODE],
+                           [True, GrantTypes.AUTHORIZATION_CODE],
+                           [object(), GrantTypes.AUTHORIZATION_CODE]]:
             self.assertRaises(ValueError, Client, 'clientId', [], grantTypes)

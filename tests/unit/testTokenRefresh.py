@@ -189,7 +189,7 @@ class TestTokenRefresh(AbstractTokenResourceTest):
     def testWrongClient(self):
         """ Test the rejection of a request with a valid refresh token for a different client. """
         client = getTestPasswordClient(
-            clientId='differentClient', authorizedGrantTypes=[GrantTypes.RefreshToken])
+            clientId='differentClient', authorizedGrantTypes=[GrantTypes.REFRESH_TOKEN])
         request = self.generateValidTokenRequest(arguments={
             'grant_type': 'refresh_token',
             'refresh_token': self._VALID_REFRESH_TOKEN,

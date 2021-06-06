@@ -227,8 +227,8 @@ class TokenResource(Resource, object):
     authTokenLifeTime = 3600
     minRefreshTokenLifeTime = 1209600  # = 14 days
     defaultScope = None
-    acceptedGrantTypes = [GrantTypes.RefreshToken.value, GrantTypes.AuthorizationCode.value,
-                          GrantTypes.ClientCredentials.value, GrantTypes.Password.value]
+    acceptedGrantTypes = [GrantTypes.REFRESH_TOKEN.value, GrantTypes.AUTHORIZATION_CODE.value,
+                          GrantTypes.CLIENT_CREDENTIALS.value, GrantTypes.PASSWORD.value]
 
     def __init__(self, tokenFactory, persistentStorage, refreshTokenStorage, authTokenStorage,
                  clientStorage, authTokenLifeTime=3600, minRefreshTokenLifeTime=1209600,
@@ -279,12 +279,12 @@ class TokenResource(Resource, object):
             )
         TokenResource._OAuthTokenStorage = authTokenStorage
         if grantTypes is not None:
-            if GrantTypes.Implicit in grantTypes:
-                grantTypes.remove(GrantTypes.Implicit)
+            if GrantTypes.IMPLICIT in grantTypes:
+                grantTypes.remove(GrantTypes.IMPLICIT)
             grantTypes = [grantType.value if isinstance(grantType, GrantTypes) else grantType
                           for grantType in grantTypes]
             self.acceptedGrantTypes = grantTypes
-        if GrantTypes.Password.value in self.acceptedGrantTypes and passwordManager is None:
+        if GrantTypes.PASSWORD.value in self.acceptedGrantTypes and passwordManager is None:
             raise ValueError('The passwordManager must not be None '
                              'if the password grant flow is enabled')
         self.render_HEAD = None  # Disable automatic HEAD handling. pylint: disable=invalid-name
@@ -315,16 +315,16 @@ class TokenResource(Resource, object):
         if grantType not in self.acceptedGrantTypes:
             return UnsupportedGrantTypeError(grantType).generate(request)
         try:
-            if grantType == GrantTypes.RefreshToken.value:
+            if grantType == GrantTypes.REFRESH_TOKEN.value:
                 return self._handleRefreshRequest(
                     request, self._authenticateClient(request, grantType))
-            elif grantType == GrantTypes.AuthorizationCode.value:
+            elif grantType == GrantTypes.AUTHORIZATION_CODE.value:
                 return self._handleAuthorizationCodeRequest(
                     request, self._authenticateClient(request, grantType))
-            elif grantType == GrantTypes.ClientCredentials.value:
+            elif grantType == GrantTypes.CLIENT_CREDENTIALS.value:
                 return self._handleClientCredentialsRequest(
                     request, self._authenticateClient(request, grantType))
-            elif grantType == GrantTypes.Password.value:
+            elif grantType == GrantTypes.PASSWORD.value:
                 return self._handlePasswordRequest(
                     request, self._authenticateClient(request, grantType))
             # pylint: disable=assignment-from-no-return
@@ -432,7 +432,7 @@ class TokenResource(Resource, object):
         :return: The result of the request.
         """
         if isinstance(client, PublicClient):
-            raise UnauthorizedClientError(GrantTypes.ClientCredentials.value)
+            raise UnauthorizedClientError(GrantTypes.CLIENT_CREDENTIALS.value)
         scope = self._getScope(request)
         try:
             accessToken = self._storeNewAccessToken(client, scope, None)

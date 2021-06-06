@@ -162,7 +162,7 @@ class Abstract:
             """
             client = PublicClient(
                 'clientWithOneRedirectUri', self._VALID_CLIENT.redirectUris[:1],
-                [GrantTypes.AuthorizationCode.value, GrantTypes.Implicit.value])
+                [GrantTypes.AUTHORIZATION_CODE.value, GrantTypes.IMPLICIT.value])
             parameter = {
                 'response_type': self._RESPONSE_TYPE,
                 'client_id': client.id,

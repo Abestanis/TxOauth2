@@ -98,7 +98,7 @@ class ConfigParserClientStorageTest(Abstract.ClientStorageTest):
         """ Test if a client can be added to the client storage. """
         client = PublicClient(
             'newPublicClientId', ['https://return.nonexistent', 'https://return2.nonexistent'],
-            [GrantTypes.RefreshToken])
+            [GrantTypes.REFRESH_TOKEN])
         self._CLIENT_STORAGE.addClient(client)
         self.assertListEqual(
             self._CLIENT_STORAGE.getClient(client.id).authorizedGrantTypes,

@@ -694,8 +694,8 @@ class TestTokenResource(AbstractTokenResourceTest):
         tokenResource = TokenResource(
             self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._REFRESH_TOKEN_STORAGE,
             self._AUTH_TOKEN_STORAGE, self._CLIENT_STORAGE, grantTypes=[
-                GrantTypes.Implicit, GrantTypes.AuthorizationCode])
-        self.assertListEqual([GrantTypes.AuthorizationCode.value], tokenResource.acceptedGrantTypes,
+                GrantTypes.IMPLICIT, GrantTypes.AUTHORIZATION_CODE])
+        self.assertListEqual([GrantTypes.AUTHORIZATION_CODE.value], tokenResource.acceptedGrantTypes,
                              msg='Expected the token resource to ignore the implicit grant.')
 
     def testRequiresPasswordManagerForPasswordGrant(self):
@@ -705,7 +705,7 @@ class TestTokenResource(AbstractTokenResourceTest):
         """
         self.assertRaises(ValueError, TokenResource, self._TOKEN_FACTORY, self._PERSISTENT_STORAGE,
                           self._REFRESH_TOKEN_STORAGE, self._AUTH_TOKEN_STORAGE,
-                          self._CLIENT_STORAGE, grantTypes=[GrantTypes.Password])
+                          self._CLIENT_STORAGE, grantTypes=[GrantTypes.PASSWORD])
 
     def testGetTokenStorageSingletonRaisesErrorOnNoSingleton(self):
         """ Test that getTokenStorageSingleton raises an error if no singleton is registered. """

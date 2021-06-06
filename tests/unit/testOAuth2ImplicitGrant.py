@@ -89,7 +89,7 @@ class TestImplicitCodeGrant(Abstract.SharedGrantTest):
         lifetime = 10
         scope = ['All']
         data = {
-            'response_type': GrantTypes.Implicit.value,
+            'response_type': GrantTypes.IMPLICIT.value,
             'redirect_uri': redirectUri,
             'client_id': self._VALID_CLIENT.id,
             'scope': scope,
@@ -109,6 +109,6 @@ class TestImplicitCodeGrant(Abstract.SharedGrantTest):
         """ Ensure that the expected additional data is stored alongside the auth token. """
         self._testGrantAccessAdditionalData(
             dataKey='implicitGrantDataKeyAdditionalData',
-            responseType=GrantTypes.Implicit.value,
+            responseType=GrantTypes.IMPLICIT.value,
             msg='Expected the auth resource to correctly handle a valid accepted implicit grant '
                 'and store the token with the given additional data.')

@@ -77,7 +77,7 @@ class TestAuthorizationCodeGrant(Abstract.SharedGrantTest):
         lifeTime = 60
         request = MockRequest('GET', 'some/path')
         data = {
-            'response_type': GrantTypes.AuthorizationCode.value,
+            'response_type': GrantTypes.AUTHORIZATION_CODE.value,
             'redirect_uri': redirectUri,
             'client_id': self._VALID_CLIENT.id,
             'scope': ['All'],
@@ -94,6 +94,6 @@ class TestAuthorizationCodeGrant(Abstract.SharedGrantTest):
         """ Ensure that additional data given to grantAccess is stored with the code. """
         self._testGrantAccessAdditionalData(
             dataKey='authorizationCodeGrantDataKeyAdditionalData',
-            responseType=GrantTypes.AuthorizationCode.value,
+            responseType=GrantTypes.AUTHORIZATION_CODE.value,
             msg='Expected the auth resource to correctly handle a valid accepted code grant '
                 'and store the code data with the given additional data.')

@@ -230,7 +230,7 @@ class TestAuthorizationCodeGrant(AbstractTokenResourceTest):
         authorization code that authorizes a different client.
         """
         client = getTestPasswordClient(
-            'unauthorizedCodeGrantClient', authorizedGrantTypes=[GrantTypes.AuthorizationCode])
+            'unauthorizedCodeGrantClient', authorizedGrantTypes=[GrantTypes.AUTHORIZATION_CODE])
         code = 'differentClientCode'
         self._addAuthorizationToStorage(code, client, ['scope'], client.redirectUris[0])
         request = self.generateValidTokenRequest(arguments={

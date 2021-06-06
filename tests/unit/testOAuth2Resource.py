@@ -31,8 +31,8 @@ class AbstractAuthResourceTest(TwistedTestCase):
                                     'http://return.nonexistent/notSecure?param=retain'],
                                    list(GrantTypes), secret='ClientSecret')
     _RESPONSE_GRANT_TYPE_MAPPING = {
-        'code': GrantTypes.AuthorizationCode.value,
-        'token': GrantTypes.Implicit.value
+        'code': GrantTypes.AUTHORIZATION_CODE.value,
+        'token': GrantTypes.IMPLICIT.value
     }
 
     class TestOAuth2Resource(OAuth2):
@@ -507,7 +507,7 @@ class AuthResourceTest(AbstractAuthResourceTest):
         """ Test that a request with a non https redirect uri is accepted. """
         state = b'state\xFF\xFF'
         client = PasswordClient('customResponseTypeClientUnauthorized', ['custom://callback'],
-                                [GrantTypes.AuthorizationCode], 'clientSecret')
+                                [GrantTypes.AUTHORIZATION_CODE], 'clientSecret')
         redirectUri = client.redirectUris[0]
         parameters = {
             'response_type': 'code',
@@ -599,7 +599,7 @@ class AuthResourceTest(AbstractAuthResourceTest):
         """
         self.assertRaises(ValueError, self.TestOAuth2Resource, self._TOKEN_FACTORY,
                           self._PERSISTENT_STORAGE, self._CLIENT_STORAGE,
-                          grantTypes=[GrantTypes.Implicit])
+                          grantTypes=[GrantTypes.IMPLICIT])
 
     def testTemporaryUnavailable(self):
         """ Test that the OAuth2 resource correctly handles a TemporarilyUnavailableError. """
