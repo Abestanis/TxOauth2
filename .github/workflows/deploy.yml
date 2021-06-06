@@ -38,6 +38,11 @@ jobs:
       - name: Archive changelog
         run: |
           mv changelogs/current.txt changelogs/${{ env.RELEASE_VERSION }}.txt
-          echo -n -e "\n" > current.txt
-      - name: Push archived changelog 
-        uses: EndBug/add-and-commit@v
+          echo -n -e "\n" > changelogs/current.txt
+      - name: Push archived changelog
+        uses: EndBug/add-and-commit@v/
+        with:
+          add: changelogs
+          author_name: Github Actions
+          author_email: automations@github-actions.com
+          message: 'Archive changelog'
