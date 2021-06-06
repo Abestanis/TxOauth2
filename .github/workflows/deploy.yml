@@ -25,10 +25,6 @@ jobs:
       - name: Determine new version string
         id: release_version
         run: echo ::set-output name=VERSION::$(echo ${GITHUB_REF:10})
-      - name: Publish 📦 to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.pypi_password }}
       - name: Publish 📦 to Github
         uses: softprops/action-gh-release@v1
         with:
