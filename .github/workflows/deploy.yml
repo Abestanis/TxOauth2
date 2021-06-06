@@ -22,6 +22,13 @@ jobs:
           pip install --upgrade wheel
       - name: Create wheel
         run: python setup.py bdist_wheel --universal
+      - name: Determine new version string
+        id: release_version
+        run: echo ::set-output name=VERSION::$(echo ${GITHUB_REF:10})
+      - name: Archive changelog
+        run: |
+          mv changelogs/current.txt changelogs/${{ steps.release_version.VERSION }}.txt
+          echo -n -e "\n" > changelogs/current.txt
       - name: Publish 📦 to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
@@ -33,12 +40,6 @@ jobs:
           body_path: changelogs/current.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Determine new version string
-        run: echo ::set-env name=RELEASE_VERSION::$(echo ${GITHUB_REF:10})
-      - name: Archive changelog
-        run: |
-          mv changelogs/current.txt changelogs/${{ env.RELEASE_VERSION }}.txt
-          echo -n -e "\n" > changelogs/current.txt
       - name: Push archived changelog
         uses: EndBug/add-and-commit@v7
         with:
