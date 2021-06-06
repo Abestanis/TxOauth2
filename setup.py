@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='txoauth2',
-    version='1.1.1',
+    version='1.2.0',
     author='Sebastian Scholz',
     author_email='abestanis.gc@gmail.com',
     description='A module that allows implementing OAuth2 with twisted',
