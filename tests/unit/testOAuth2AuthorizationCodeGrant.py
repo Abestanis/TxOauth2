@@ -3,10 +3,10 @@
 from txoauth2 import GrantTypes
 
 from tests import MockRequest
-from tests.unit.testGrant import AbstractSharedGrantTest
+from tests.unit.testGrant import Abstract
 
 
-class TestAuthorizationCodeGrant(AbstractSharedGrantTest):
+class TestAuthorizationCodeGrant(Abstract.SharedGrantTest):
     """
     Test the authorization resource part of the Authorization Code Grant flow.
     See https://tools.ietf.org/html/rfc6749#section-4.1

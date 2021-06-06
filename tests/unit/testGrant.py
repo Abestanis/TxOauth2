@@ -12,591 +12,613 @@ from tests import getTestPasswordClient, MockRequest
 from tests.unit.testOAuth2Resource import AbstractAuthResourceTest
 
 
-class AbstractSharedGrantTest(AbstractAuthResourceTest):  # pylint: disable=too-many-public-methods
-    """
-    This test contains test for shared functionality for
-    the grant types that use the authentication resource.
-    """
-    _RESPONSE_TYPE = None
-
-    def assertValidCodeResponse(self, request, result, data, msg, parameterInFragment=False, **_):
+class Abstract:
+    class SharedGrantTest(AbstractAuthResourceTest):  # pylint: disable=too-many-public-methods
         """
-        Validate the parameters of the uri that the authorization endpoint redirected to.
-
-        :param request: The request.
-        :param result: The result of the grantAccess call.
-        :param data: The data that was stored in the persistent storage.
-        :param msg: The assertion message.
-        :param parameterInFragment: Whether or not the return parameters
-                                    are in the query or fragment of the redirect uri.
-        :return: The redirect parameters extracted from the redirect url.
+        This test contains test for shared functionality for
+        the grant types that use the authentication resource.
         """
-        if msg.endswith('.'):
-            msg = msg[:-1]
-        self.assertEqual(NOT_DONE_YET, result, msg=msg + ': Expected the authorization resource '
-                                                         'to redirect the resource owner.')
-        self.assertTrue(request.finished,
-                        msg=msg + ': Expected the authorization resource to close the request.')
-        redirectUrl = self.assertRedirectsTo(request, data['redirect_uri'], msg)
-        redirectParameter = self.getParameterFromRedirectUrl(redirectUrl, parameterInFragment)
-        if data['state'] is None:
-            self.assertNotIn(
-                'state', redirectParameter,
-                msg=msg + ': Expected the authorization resource not to send a state '
-                          'to the redirect uri if it did not receive one.')
-        else:
-            self.assertIn('state', redirectParameter,
-                          msg=msg + ': Expected the authorization resource to '
-                                    'send a state to the redirect uri.')
-            self.assertEqual(
-                data['state'] if isinstance(data['state'], str)
-                else data['state'].decode('utf-8', errors='replace'), redirectParameter['state'],
-                msg=msg + ': Expected the authorization resource to send '
-                          'the exact same state back to the redirect uri.')
-        return redirectParameter
+        _RESPONSE_TYPE = None
 
-    def assertFailedRequest(self, request, result, expectedError, msg=None, redirectUri=None,
-                            parameterInFragment=None):
-        """
-        Assert that the request did not succeed and that
-        the auth resource returned an appropriate error response.
-        :param request: The request.
-        :param result: The return value of the render_POST function of the token resource.
-        :param expectedError: The expected error.
-        :param msg: The assertion error message.
-        :param redirectUri: The redirect uri of the client.
-        :param parameterInFragment: If the error parameters are in the fragment of the redirect uri.
-                                    If None, use the default for the response type.
-        """
-        if parameterInFragment is None:
-            parameterInFragment = self._RESPONSE_TYPE == 'token'
-        super(AbstractSharedGrantTest, self).assertFailedRequest(
-            request, result, expectedError, msg, redirectUri, parameterInFragment)
+        def assertValidCodeResponse(
+                self, request, result, data, msg, parameterInFragment=False, **_):
+            """
+            Validate the parameters of the uri that the authorization endpoint redirected to.
 
-    def testWithUnauthorizedClient(self):
-        """
-        Test the rejection of a request with a client
-        that is not allowed to use the response type.
-        """
-        state = b'state\xFF\xFF'
-        client = getTestPasswordClient(authorizedGrantTypes=[])
-        redirectUri = client.redirectUris[0]
-        request = self.createAuthRequest(arguments={
-            'response_type': self._RESPONSE_TYPE,
-            'client_id': client.id,
-            'redirect_uri': redirectUri,
-            'scope': 'All',
-            'state': state
-        })
-        self._CLIENT_STORAGE.addClient(client)
-        result = self._AUTH_RESOURCE.render_GET(request)
-        self.assertFailedRequest(
-            request, result, UnauthorizedClientError(self._RESPONSE_TYPE, state=state),
-            msg='Expected the auth resource to reject a request for a client that is not '
-                'authorized to request an authorization using the '
-                '{type} method.'.format(type=self._RESPONSE_TYPE), redirectUri=redirectUri)
+            :param request: The request.
+            :param result: The result of the grantAccess call.
+            :param data: The data that was stored in the persistent storage.
+            :param msg: The assertion message.
+            :param parameterInFragment: Whether or not the return parameters
+                                        are in the query or fragment of the redirect uri.
+            :return: The redirect parameters extracted from the redirect url.
+            """
+            if msg.endswith('.'):
+                msg = msg[:-1]
+            self.assertEqual(NOT_DONE_YET, result,
+                             msg=msg + ': Expected the authorization resource '
+                                       'to redirect the resource owner.')
+            self.assertTrue(request.finished,
+                            msg=msg + ': Expected the authorization resource to close the request.')
+            redirectUrl = self.assertRedirectsTo(request, data['redirect_uri'], msg)
+            redirectParameter = self.getParameterFromRedirectUrl(redirectUrl, parameterInFragment)
+            if data['state'] is None:
+                self.assertNotIn(
+                    'state', redirectParameter,
+                    msg=msg + ': Expected the authorization resource not to send a state '
+                              'to the redirect uri if it did not receive one.')
+            else:
+                self.assertIn('state', redirectParameter,
+                              msg=msg + ': Expected the authorization resource to '
+                                        'send a state to the redirect uri.')
+                self.assertEqual(
+                    data['state'] if isinstance(data['state'], str)
+                    else data['state'].decode('utf-8', errors='replace'),
+                    redirectParameter['state'],
+                    msg=msg + ': Expected the authorization resource to send '
+                              'the exact same state back to the redirect uri.')
+            return redirectParameter
 
-    def testWithoutClientId(self):
-        """ Test the rejection of a request without a client id. """
-        request = self.createAuthRequest(arguments={
-            'response_type': self._RESPONSE_TYPE,
-            'redirect_uri': self._VALID_CLIENT.redirectUris[0],
-            'scope': 'All',
-            'state': b'state\xFF\xFF'
-        })
-        result = self._AUTH_RESOURCE.render_GET(request)
-        self.assertFailedRequest(
-            request, result, MissingParameterError('client_id'),
-            msg='Expected the auth resource to reject a request without a client id.')
+        def assertFailedRequest(self, request, result, expectedError, msg=None, redirectUri=None,
+                                parameterInFragment=None):
+            """
+            Assert that the request did not succeed and that
+            the auth resource returned an appropriate error response.
+            :param request: The request.
+            :param result: The return value of the render_POST function of the token resource.
+            :param expectedError: The expected error.
+            :param msg: The assertion error message.
+            :param redirectUri: The redirect uri of the client.
+            :param parameterInFragment: If the error parameters are in the fragment of the redirect
+                                        uri. If None, use the default for the response type.
+            """
+            if parameterInFragment is None:
+                parameterInFragment = self._RESPONSE_TYPE == 'token'
+            super(Abstract.SharedGrantTest, self).assertFailedRequest(
+                request, result, expectedError, msg, redirectUri, parameterInFragment)
 
-    def testWithInvalidClientId(self):
-        """ Test the rejection of a request with an invalid client id. """
-        request = self.createAuthRequest(arguments={
-            'response_type': self._RESPONSE_TYPE,
-            'client_id': 'invalidClientId',
-            'redirect_uri': self._VALID_CLIENT.redirectUris[0],
-            'scope': 'All',
-            'state': b'state\xFF\xFF'
-        })
-        result = self._AUTH_RESOURCE.render_GET(request)
-        self.assertFailedRequest(
-            request, result, InvalidParameterError('client_id'),
-            msg='Expected the auth resource to reject a request with an invalid client id.')
+        def testWithUnauthorizedClient(self):
+            """
+            Test the rejection of a request with a client
+            that is not allowed to use the response type.
+            """
+            state = b'state\xFF\xFF'
+            client = getTestPasswordClient(authorizedGrantTypes=[])
+            redirectUri = client.redirectUris[0]
+            request = self.createAuthRequest(arguments={
+                'response_type': self._RESPONSE_TYPE,
+                'client_id': client.id,
+                'redirect_uri': redirectUri,
+                'scope': 'All',
+                'state': state
+            })
+            self._CLIENT_STORAGE.addClient(client)
+            result = self._AUTH_RESOURCE.render_GET(request)
+            self.assertFailedRequest(
+                request, result, UnauthorizedClientError(self._RESPONSE_TYPE, state=state),
+                msg='Expected the auth resource to reject a request for a client that is not '
+                    'authorized to request an authorization using the '
+                    '{type} method.'.format(type=self._RESPONSE_TYPE), redirectUri=redirectUri)
 
-    def testWithMalformedClientId(self):
-        """ Test the rejection of a request with a malformed client id. """
-        request = self.createAuthRequest(arguments={
-            'response_type': self._RESPONSE_TYPE,
-            'client_id': b'malformedClientId\xFF\xFF',
-            'redirect_uri': self._VALID_CLIENT.redirectUris[0],
-            'scope': 'All',
-            'state': b'state\xFF\xFF'
-        })
-        result = self._AUTH_RESOURCE.render_GET(request)
-        self.assertFailedRequest(
-            request, result, MalformedParameterError('client_id'),
-            msg='Expected the auth resource to reject a request with a malformed client id.')
+        def testWithoutClientId(self):
+            """ Test the rejection of a request without a client id. """
+            request = self.createAuthRequest(arguments={
+                'response_type': self._RESPONSE_TYPE,
+                'redirect_uri': self._VALID_CLIENT.redirectUris[0],
+                'scope': 'All',
+                'state': b'state\xFF\xFF'
+            })
+            result = self._AUTH_RESOURCE.render_GET(request)
+            self.assertFailedRequest(
+                request, result, MissingParameterError('client_id'),
+                msg='Expected the auth resource to reject a request without a client id.')
 
-    def testWithMultipleClientIds(self):
-        """ Test the rejection of a request with multiple client ids. """
-        request = self.createAuthRequest(arguments={
-            'response_type': self._RESPONSE_TYPE,
-            'client_id': [self._VALID_CLIENT.id] * 2,
-            'redirect_uri': self._VALID_CLIENT.redirectUris[0],
-            'scope': 'All',
-            'state': b'state\xFF\xFF'
-        })
-        result = self._AUTH_RESOURCE.render_GET(request)
-        self.assertFailedRequest(
-            request, result, MultipleParameterError('client_id'),
-            msg='Expected the auth resource to reject a request with multiple client ids.')
+        def testWithInvalidClientId(self):
+            """ Test the rejection of a request with an invalid client id. """
+            request = self.createAuthRequest(arguments={
+                'response_type': self._RESPONSE_TYPE,
+                'client_id': 'invalidClientId',
+                'redirect_uri': self._VALID_CLIENT.redirectUris[0],
+                'scope': 'All',
+                'state': b'state\xFF\xFF'
+            })
+            result = self._AUTH_RESOURCE.render_GET(request)
+            self.assertFailedRequest(
+                request, result, InvalidParameterError('client_id'),
+                msg='Expected the auth resource to reject a request with an invalid client id.')
 
-    def testWithoutRedirectUriButClientHasOne(self):
-        """
-        Test that a request without a redirect uri is accepted
-        if the client has ony one predefined redirect uri.
-        """
-        client = PublicClient(
-            'clientWithOneRedirectUri', self._VALID_CLIENT.redirectUris[:1],
-            [GrantTypes.AuthorizationCode.value, GrantTypes.Implicit.value])
-        parameter = {
-            'response_type': self._RESPONSE_TYPE,
-            'client_id': client.id,
-            'scope': 'All',
-            'state': b'state\xFF\xFF'
-        }
-        self._CLIENT_STORAGE.addClient(client)
-        request = self.createAuthRequest(arguments=parameter)
-        result = self._AUTH_RESOURCE.render_GET(request)
-        parameter['redirect_uri'] = client.redirectUris[0]
-        self.assertValidAuthRequest(request, result, parameter,
-                                    msg='Expected the auth resource to accept a request '
-                                        'without a redirect uri if the client has one.')
+        def testWithMalformedClientId(self):
+            """ Test the rejection of a request with a malformed client id. """
+            request = self.createAuthRequest(arguments={
+                'response_type': self._RESPONSE_TYPE,
+                'client_id': b'malformedClientId\xFF\xFF',
+                'redirect_uri': self._VALID_CLIENT.redirectUris[0],
+                'scope': 'All',
+                'state': b'state\xFF\xFF'
+            })
+            result = self._AUTH_RESOURCE.render_GET(request)
+            self.assertFailedRequest(
+                request, result, MalformedParameterError('client_id'),
+                msg='Expected the auth resource to reject a request with a malformed client id.')
 
-    def testWithoutRedirectUriButClientHasMultiple(self):
-        """
-        Test the rejection of a request without a redirect uri
-        if the client has more than one predefined redirect uri.
-        """
-        client = PublicClient('clientWithMultipleRedirectUris', ['https://return.nonexistent'] * 2,
-                              ['authorization_code'])
-        request = self.createAuthRequest(arguments={
-            'response_type': self._RESPONSE_TYPE,
-            'client_id': client.id,
-            'scope': 'All',
-            'state': b'state\xFF\xFF'
-        })
-        self._CLIENT_STORAGE.addClient(client)
-        result = self._AUTH_RESOURCE.render_GET(request)
-        self.assertFailedRequest(
-            request, result, MissingParameterError('redirect_uri'),
-            msg='Expected the auth resource to reject a request without a redirect uri.')
+        def testWithMultipleClientIds(self):
+            """ Test the rejection of a request with multiple client ids. """
+            request = self.createAuthRequest(arguments={
+                'response_type': self._RESPONSE_TYPE,
+                'client_id': [self._VALID_CLIENT.id] * 2,
+                'redirect_uri': self._VALID_CLIENT.redirectUris[0],
+                'scope': 'All',
+                'state': b'state\xFF\xFF'
+            })
+            result = self._AUTH_RESOURCE.render_GET(request)
+            self.assertFailedRequest(
+                request, result, MultipleParameterError('client_id'),
+                msg='Expected the auth resource to reject a request with multiple client ids.')
 
-    def testWithInvalidRedirectUri(self):
-        """ Test the rejection of a request with an invalid redirect uri. """
-        request = self.createAuthRequest(arguments={
-            'response_type': self._RESPONSE_TYPE,
-            'client_id': self._VALID_CLIENT.id,
-            'redirect_uri': 'invalidRedirectUri',
-            'scope': 'All',
-            'state': b'state\xFF\xFF'
-        })
-        result = self._AUTH_RESOURCE.render_GET(request)
-        self.assertFailedRequest(
-            request, result, InvalidRedirectUriError(),
-            msg='Expected the auth resource to reject a request with an invalid redirect uri.')
+        def testWithoutRedirectUriButClientHasOne(self):
+            """
+            Test that a request without a redirect uri is accepted
+            if the client has ony one predefined redirect uri.
+            """
+            client = PublicClient(
+                'clientWithOneRedirectUri', self._VALID_CLIENT.redirectUris[:1],
+                [GrantTypes.AuthorizationCode.value, GrantTypes.Implicit.value])
+            parameter = {
+                'response_type': self._RESPONSE_TYPE,
+                'client_id': client.id,
+                'scope': 'All',
+                'state': b'state\xFF\xFF'
+            }
+            self._CLIENT_STORAGE.addClient(client)
+            request = self.createAuthRequest(arguments=parameter)
+            result = self._AUTH_RESOURCE.render_GET(request)
+            parameter['redirect_uri'] = client.redirectUris[0]
+            self.assertValidAuthRequest(request, result, parameter,
+                                        msg='Expected the auth resource to accept a request '
+                                            'without a redirect uri if the client has one.')
 
-    def testWithMalformedRedirectUri(self):
-        """ Test the rejection of a request with a malformed redirect uri. """
-        request = self.createAuthRequest(arguments={
-            'response_type': self._RESPONSE_TYPE,
-            'client_id': self._VALID_CLIENT.id,
-            'redirect_uri': b'malformedRedirectUri\xFF\xFF',
-            'scope': 'All',
-            'state': b'state\xFF\xFF'
-        })
-        result = self._AUTH_RESOURCE.render_GET(request)
-        self.assertFailedRequest(
-            request, result, MalformedParameterError('redirect_uri'),
-            msg='Expected the auth resource to reject a request with a malformed redirect uri.')
+        def testWithoutRedirectUriButClientHasMultiple(self):
+            """
+            Test the rejection of a request without a redirect uri
+            if the client has more than one predefined redirect uri.
+            """
+            client = PublicClient('clientWithMultipleRedirectUris',
+                                  ['https://return.nonexistent'] * 2,
+                                  ['authorization_code'])
+            request = self.createAuthRequest(arguments={
+                'response_type': self._RESPONSE_TYPE,
+                'client_id': client.id,
+                'scope': 'All',
+                'state': b'state\xFF\xFF'
+            })
+            self._CLIENT_STORAGE.addClient(client)
+            result = self._AUTH_RESOURCE.render_GET(request)
+            self.assertFailedRequest(
+                request, result, MissingParameterError('redirect_uri'),
+                msg='Expected the auth resource to reject a request without a redirect uri.')
 
-    def testWithMultipleRedirectUris(self):
-        """ Test the rejection of a request with multiple redirect uris. """
-        request = self.createAuthRequest(arguments={
-            'response_type': self._RESPONSE_TYPE,
-            'client_id': self._VALID_CLIENT.id,
-            'redirect_uri': [self._VALID_CLIENT.redirectUris[0]] * 2,
-            'scope': 'All',
-            'state': b'state\xFF\xFF'
-        })
-        result = self._AUTH_RESOURCE.render_GET(request)
-        self.assertFailedRequest(
-            request, result, MultipleParameterError('redirect_uri'),
-            msg='Expected the auth resource to reject a request with multiple redirect uris.')
+        def testWithInvalidRedirectUri(self):
+            """ Test the rejection of a request with an invalid redirect uri. """
+            request = self.createAuthRequest(arguments={
+                'response_type': self._RESPONSE_TYPE,
+                'client_id': self._VALID_CLIENT.id,
+                'redirect_uri': 'invalidRedirectUri',
+                'scope': 'All',
+                'state': b'state\xFF\xFF'
+            })
+            result = self._AUTH_RESOURCE.render_GET(request)
+            self.assertFailedRequest(
+                request, result, InvalidRedirectUriError(),
+                msg='Expected the auth resource to reject a request with an invalid redirect uri.')
 
-    def testWithoutScope(self):
-        """ Test that a request without a scope is accepted if a default scope is defined. """
-        defaultScope = 'default'
-        authToken = AbstractAuthResourceTest.TestOAuth2Resource(
-            self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._CLIENT_STORAGE,
-            defaultScope=[defaultScope], authTokenStorage=self._TOKEN_STORAGE)
-        parameter = {
-            'response_type': self._RESPONSE_TYPE,
-            'client_id': self._VALID_CLIENT.id,
-            'redirect_uri': self._VALID_CLIENT.redirectUris[0],
-            'state': b'state\xFF\xFF'
-        }
-        request = self.createAuthRequest(arguments=parameter)
-        result = authToken.render_GET(request)
-        parameter['scope'] = defaultScope
-        self.assertValidAuthRequest(request, result, parameter,
-                                    msg='Expected the auth resource to accept a request without '
-                                        'a scope if the auth resource has a valid scope.')
+        def testWithMalformedRedirectUri(self):
+            """ Test the rejection of a request with a malformed redirect uri. """
+            request = self.createAuthRequest(arguments={
+                'response_type': self._RESPONSE_TYPE,
+                'client_id': self._VALID_CLIENT.id,
+                'redirect_uri': b'malformedRedirectUri\xFF\xFF',
+                'scope': 'All',
+                'state': b'state\xFF\xFF'
+            })
+            result = self._AUTH_RESOURCE.render_GET(request)
+            self.assertFailedRequest(
+                request, result, MalformedParameterError('redirect_uri'),
+                msg='Expected the auth resource to reject a request with a malformed redirect uri.')
 
-    def testWithoutScopeNoDefault(self):
-        """ Test the rejection of a request without a scope if no default scope is defined. """
-        state = b'state\xFF\xFF'
-        redirectUri = self._VALID_CLIENT.redirectUris[0]
-        request = self.createAuthRequest(arguments={
-            'response_type': self._RESPONSE_TYPE,
-            'client_id': self._VALID_CLIENT.id,
-            'redirect_uri': redirectUri,
-            'state': state
-        })
-        result = self._AUTH_RESOURCE.render_GET(request)
-        self.assertFailedRequest(
-            request, result, MissingParameterError('scope', state=state), redirectUri=redirectUri,
-            msg='Expected the auth resource to reject a request without a scope.')
+        def testWithMultipleRedirectUris(self):
+            """ Test the rejection of a request with multiple redirect uris. """
+            request = self.createAuthRequest(arguments={
+                'response_type': self._RESPONSE_TYPE,
+                'client_id': self._VALID_CLIENT.id,
+                'redirect_uri': [self._VALID_CLIENT.redirectUris[0]] * 2,
+                'scope': 'All',
+                'state': b'state\xFF\xFF'
+            })
+            result = self._AUTH_RESOURCE.render_GET(request)
+            self.assertFailedRequest(
+                request, result, MultipleParameterError('redirect_uri'),
+                msg='Expected the auth resource to reject a request with multiple redirect uris.')
 
-    def testWithMalformedScope(self):
-        """ Test the rejection of a request with a malformed scope. """
-        state = b'state\xFF\xFF'
-        scope = b'malformedScope\xFF\xFF'
-        redirectUri = self._VALID_CLIENT.redirectUris[0]
-        request = self.createAuthRequest(arguments={
-            'response_type': self._RESPONSE_TYPE,
-            'client_id': self._VALID_CLIENT.id,
-            'redirect_uri': redirectUri,
-            'scope': scope,
-            'state': state
-        })
-        result = self._AUTH_RESOURCE.render_GET(request)
-        self.assertFailedRequest(
-            request, result, InvalidScopeError(scope, state=state), redirectUri=redirectUri,
-            msg='Expected the auth resource to reject a request with a malformed scope.')
+        def testWithoutScope(self):
+            """ Test that a request without a scope is accepted if a default scope is defined. """
+            defaultScope = 'default'
+            authToken = AbstractAuthResourceTest.TestOAuth2Resource(
+                self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._CLIENT_STORAGE,
+                defaultScope=[defaultScope], authTokenStorage=self._TOKEN_STORAGE)
+            parameter = {
+                'response_type': self._RESPONSE_TYPE,
+                'client_id': self._VALID_CLIENT.id,
+                'redirect_uri': self._VALID_CLIENT.redirectUris[0],
+                'state': b'state\xFF\xFF'
+            }
+            request = self.createAuthRequest(arguments=parameter)
+            result = authToken.render_GET(request)
+            parameter['scope'] = defaultScope
+            self.assertValidAuthRequest(
+                request, result, parameter,
+                msg='Expected the auth resource to accept a request without '
+                    'a scope if the auth resource has a valid scope.')
 
-    def testWithMultipleScopes(self):
-        """ Test the rejection of a request with multiple scopes. """
-        state = b'state\xFF\xFF'
-        redirectUri = self._VALID_CLIENT.redirectUris[0]
-        request = self.createAuthRequest(arguments={
-            'response_type': self._RESPONSE_TYPE,
-            'client_id': self._VALID_CLIENT.id,
-            'redirect_uri': redirectUri,
-            'scope': ['scope1', 'scope2'],
-            'state': state
-        })
-        result = self._AUTH_RESOURCE.render_GET(request)
-        self.assertFailedRequest(
-            request, result, MultipleParameterError('scope', state=state), redirectUri=redirectUri,
-            msg='Expected the auth resource to reject a request with a multiple scopes.')
+        def testWithoutScopeNoDefault(self):
+            """ Test the rejection of a request without a scope if no default scope is defined. """
+            state = b'state\xFF\xFF'
+            redirectUri = self._VALID_CLIENT.redirectUris[0]
+            request = self.createAuthRequest(arguments={
+                'response_type': self._RESPONSE_TYPE,
+                'client_id': self._VALID_CLIENT.id,
+                'redirect_uri': redirectUri,
+                'state': state
+            })
+            result = self._AUTH_RESOURCE.render_GET(request)
+            self.assertFailedRequest(
+                request, result, MissingParameterError('scope', state=state),
+                redirectUri=redirectUri,
+                msg='Expected the auth resource to reject a request without a scope.')
 
-    def testWithoutState(self):
-        """ Test that a request without a state is accepted. """
-        parameter = {
-            'response_type': self._RESPONSE_TYPE,
-            'client_id': self._VALID_CLIENT.id,
-            'redirect_uri': self._VALID_CLIENT.redirectUris[0],
-            'scope': 'All'
-        }
-        request = self.createAuthRequest(arguments=parameter)
-        result = self._AUTH_RESOURCE.render_GET(request)
-        parameter['state'] = None
-        self.assertValidAuthRequest(
-            request, result, parameter,
-            msg='Expected the auth resource to accept a request without a state.')
+        def testWithMalformedScope(self):
+            """ Test the rejection of a request with a malformed scope. """
+            state = b'state\xFF\xFF'
+            scope = b'malformedScope\xFF\xFF'
+            redirectUri = self._VALID_CLIENT.redirectUris[0]
+            request = self.createAuthRequest(arguments={
+                'response_type': self._RESPONSE_TYPE,
+                'client_id': self._VALID_CLIENT.id,
+                'redirect_uri': redirectUri,
+                'scope': scope,
+                'state': state
+            })
+            result = self._AUTH_RESOURCE.render_GET(request)
+            self.assertFailedRequest(
+                request, result, InvalidScopeError(scope, state=state), redirectUri=redirectUri,
+                msg='Expected the auth resource to reject a request with a malformed scope.')
 
-    def testWithState(self):
-        """ Test that a request with a state is accepted. """
-        parameter = {
-            'response_type': self._RESPONSE_TYPE,
-            'client_id': self._VALID_CLIENT.id,
-            'redirect_uri': self._VALID_CLIENT.redirectUris[0],
-            'scope': 'All',
-            'state': b'someState'
-        }
-        request = self.createAuthRequest(arguments=parameter)
-        result = self._AUTH_RESOURCE.render_GET(request)
-        self.assertValidAuthRequest(
-            request, result, parameter,
-            msg='Expected the auth resource to accept a request with a state.')
+        def testWithMultipleScopes(self):
+            """ Test the rejection of a request with multiple scopes. """
+            state = b'state\xFF\xFF'
+            redirectUri = self._VALID_CLIENT.redirectUris[0]
+            request = self.createAuthRequest(arguments={
+                'response_type': self._RESPONSE_TYPE,
+                'client_id': self._VALID_CLIENT.id,
+                'redirect_uri': redirectUri,
+                'scope': ['scope1', 'scope2'],
+                'state': state
+            })
+            result = self._AUTH_RESOURCE.render_GET(request)
+            self.assertFailedRequest(
+                request, result, MultipleParameterError('scope', state=state),
+                redirectUri=redirectUri,
+                msg='Expected the auth resource to reject a request with a multiple scopes.')
 
-    def testWithNonUnicodeState(self):
-        """ Test that a request with a non unicode state is accepted. """
-        parameter = {
-            'response_type': self._RESPONSE_TYPE,
-            'client_id': self._VALID_CLIENT.id,
-            'redirect_uri': self._VALID_CLIENT.redirectUris[0],
-            'scope': 'All',
-            'state': b'someStateNotUnicode\xFF\xFF'
-        }
-        request = self.createAuthRequest(arguments=parameter)
-        result = self._AUTH_RESOURCE.render_GET(request)
-        self.assertValidAuthRequest(
-            request, result, parameter,
-            msg='Expected the auth resource to accept a request with a non unicode state.')
+        def testWithoutState(self):
+            """ Test that a request without a state is accepted. """
+            parameter = {
+                'response_type': self._RESPONSE_TYPE,
+                'client_id': self._VALID_CLIENT.id,
+                'redirect_uri': self._VALID_CLIENT.redirectUris[0],
+                'scope': 'All'
+            }
+            request = self.createAuthRequest(arguments=parameter)
+            result = self._AUTH_RESOURCE.render_GET(request)
+            parameter['state'] = None
+            self.assertValidAuthRequest(
+                request, result, parameter,
+                msg='Expected the auth resource to accept a request without a state.')
 
-    def testWhenDisabled(self):
-        """ Test the rejection of a request when the return type is disabled. """
-        state = b'state\xFF\xFF'
-        redirectUri = self._VALID_CLIENT.redirectUris[0]
-        request = self.createAuthRequest(arguments={
-            'response_type': self._RESPONSE_TYPE,
-            'client_id': self._VALID_CLIENT.id,
-            'redirect_uri': redirectUri,
-            'scope': 'All',
-            'state': state
-        })
-        authResource = AbstractAuthResourceTest.TestOAuth2Resource(
-            self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._CLIENT_STORAGE, grantTypes=[])
-        result = authResource.render_GET(request)
-        self.assertFailedRequest(
-            request, result, UnsupportedResponseTypeError(self._RESPONSE_TYPE, state),
-            msg='Expected the auth resource to reject a request for the {type} response type '
-                'if it is not enabled.'.format(type=self._RESPONSE_TYPE), redirectUri=redirectUri)
+        def testWithState(self):
+            """ Test that a request with a state is accepted. """
+            parameter = {
+                'response_type': self._RESPONSE_TYPE,
+                'client_id': self._VALID_CLIENT.id,
+                'redirect_uri': self._VALID_CLIENT.redirectUris[0],
+                'scope': 'All',
+                'state': b'someState'
+            }
+            request = self.createAuthRequest(arguments=parameter)
+            result = self._AUTH_RESOURCE.render_GET(request)
+            self.assertValidAuthRequest(
+                request, result, parameter,
+                msg='Expected the auth resource to accept a request with a state.')
 
-    def testDataLifetime(self):
-        """
-        Test that the lifetime of the data stored by render_GET
-        is controlled by the requestDataLifeTime parameter.
-        """
-        lifetime = 10
-        parameter = {
-            'response_type': self._RESPONSE_TYPE,
-            'client_id': self._VALID_CLIENT.id,
-            'redirect_uri': self._VALID_CLIENT.redirectUris[0],
-            'scope': 'All',
-            'state': b'state\xFF\xFF'
-        }
-        request = self.createAuthRequest(arguments=parameter)
-        authResource = AbstractAuthResourceTest.TestOAuth2Resource(
-            self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._CLIENT_STORAGE,
-            requestDataLifeTime=lifetime, authTokenStorage=self._TOKEN_STORAGE)
-        result = authResource.render_GET(request)
-        self.assertValidAuthRequest(
-            request, result, parameter,
-            msg='Expected the auth resource to accept a request without a redirect uri '
-                'if the client has one.', expectedDataLifetime=lifetime)
+        def testWithNonUnicodeState(self):
+            """ Test that a request with a non unicode state is accepted. """
+            parameter = {
+                'response_type': self._RESPONSE_TYPE,
+                'client_id': self._VALID_CLIENT.id,
+                'redirect_uri': self._VALID_CLIENT.redirectUris[0],
+                'scope': 'All',
+                'state': b'someStateNotUnicode\xFF\xFF'
+            }
+            request = self.createAuthRequest(arguments=parameter)
+            result = self._AUTH_RESOURCE.render_GET(request)
+            self.assertValidAuthRequest(
+                request, result, parameter,
+                msg='Expected the auth resource to accept a request with a non unicode state.')
 
-    def testDenyAccess(self):
-        """ Test that denyAccess redirects with the expected error. """
-        dataKey = 'userDenies_' + self._RESPONSE_TYPE
-        state = b'state\xFF\xFF'
-        redirectUri = self._VALID_CLIENT.redirectUris[0]
-        self._PERSISTENT_STORAGE.put(dataKey, {
-            'response_type': self._RESPONSE_GRANT_TYPE_MAPPING[self._RESPONSE_TYPE],
-            'redirect_uri': redirectUri,
-            'client_id': self._VALID_CLIENT.id,
-            'scope': 'All',
-            'state': state
-        })
-        request = MockRequest('GET', 'some/path')
-        result = self._AUTH_RESOURCE.denyAccess(request, dataKey)
-        self.assertFailedRequest(
-            request, result, UserDeniesAuthorization(state), redirectUri=redirectUri,
-            msg='Expected denyAccess to redirect the resource owner to the '
-                'redirection endpoint with an access denied error.')
+        def testWhenDisabled(self):
+            """ Test the rejection of a request when the return type is disabled. """
+            state = b'state\xFF\xFF'
+            redirectUri = self._VALID_CLIENT.redirectUris[0]
+            request = self.createAuthRequest(arguments={
+                'response_type': self._RESPONSE_TYPE,
+                'client_id': self._VALID_CLIENT.id,
+                'redirect_uri': redirectUri,
+                'scope': 'All',
+                'state': state
+            })
+            authResource = AbstractAuthResourceTest.TestOAuth2Resource(
+                self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._CLIENT_STORAGE, grantTypes=[])
+            result = authResource.render_GET(request)
+            self.assertFailedRequest(
+                request, result, UnsupportedResponseTypeError(self._RESPONSE_TYPE, state),
+                msg='Expected the auth resource to reject a request for the {type} response type '
+                    'if it is not enabled.'.format(type=self._RESPONSE_TYPE),
+                redirectUri=redirectUri)
 
-    def testGrantAccessInsecureRedirectUri(self):
-        """ Test that grandAccess raises InsecureRedirectUriError for an insecure redirect uri. """
-        dataKey = 'insecureRedirectUriDataKey' + self._RESPONSE_TYPE
-        redirectUri = self._VALID_CLIENT.redirectUris[1]
-        self.assertTrue(redirectUri.startswith('http://'), msg='The redirect uri is not insecure.')
-        request = MockRequest('GET', 'some/path')
-        self._PERSISTENT_STORAGE.put(dataKey, {
-            'response_type': self._RESPONSE_GRANT_TYPE_MAPPING[self._RESPONSE_TYPE],
-            'redirect_uri': redirectUri,
-            'client_id': self._VALID_CLIENT.id,
-            'scope': 'All',
-            'state': b'state\xFF\xFF'
-        })
-        self.assertRaises(InsecureRedirectUriError, self._AUTH_RESOURCE.grantAccess,
-                          request, dataKey)
-        try:
-            self.assertEqual(self._AUTH_RESOURCE.requestDataLifetime,
-                             self._PERSISTENT_STORAGE.getExpireTime(dataKey),
-                             msg='Expected the data to be stored with the expected lifetime.')
-            self._PERSISTENT_STORAGE.pop(dataKey)
-        except KeyError:
-            self.fail('Expected the data to still be in the persistent storage.')
+        def testDataLifetime(self):
+            """
+            Test that the lifetime of the data stored by render_GET
+            is controlled by the requestDataLifeTime parameter.
+            """
+            lifetime = 10
+            parameter = {
+                'response_type': self._RESPONSE_TYPE,
+                'client_id': self._VALID_CLIENT.id,
+                'redirect_uri': self._VALID_CLIENT.redirectUris[0],
+                'scope': 'All',
+                'state': b'state\xFF\xFF'
+            }
+            request = self.createAuthRequest(arguments=parameter)
+            authResource = AbstractAuthResourceTest.TestOAuth2Resource(
+                self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._CLIENT_STORAGE,
+                requestDataLifeTime=lifetime, authTokenStorage=self._TOKEN_STORAGE)
+            result = authResource.render_GET(request)
+            self.assertValidAuthRequest(
+                request, result, parameter,
+                msg='Expected the auth resource to accept a request without a redirect uri '
+                    'if the client has one.', expectedDataLifetime=lifetime)
 
-    def testGrantAccessInsecureConnection(self):
-        """
-        Test that grandAccess returns the expected error for a request over an insecure transport.
-        """
-        dataKey = 'insecureConnectionDataKey' + self._RESPONSE_TYPE
-        request = MockRequest('GET', 'some/path', isSecure=False)
-        state = b'state\xFF\xFF'
-        redirectUri = self._VALID_CLIENT.redirectUris[0]
-        self._PERSISTENT_STORAGE.put(dataKey, {
-            'response_type': self._RESPONSE_GRANT_TYPE_MAPPING[self._RESPONSE_TYPE],
-            'redirect_uri': redirectUri,
-            'client_id': self._VALID_CLIENT.id,
-            'scope': 'All',
-            'state': state
-        })
-        result = self._AUTH_RESOURCE.grantAccess(request, dataKey)
-        self.assertFailedRequest(
-            request, result, InsecureConnectionError(state), redirectUri=redirectUri,
-            msg='Expected the authorization resource to '
-                'reject a request over an insecure transport.')
+        def testDenyAccess(self):
+            """ Test that denyAccess redirects with the expected error. """
+            dataKey = 'userDenies_' + self._RESPONSE_TYPE
+            state = b'state\xFF\xFF'
+            redirectUri = self._VALID_CLIENT.redirectUris[0]
+            self._PERSISTENT_STORAGE.put(dataKey, {
+                'response_type': self._RESPONSE_GRANT_TYPE_MAPPING[self._RESPONSE_TYPE],
+                'redirect_uri': redirectUri,
+                'client_id': self._VALID_CLIENT.id,
+                'scope': 'All',
+                'state': state
+            })
+            request = MockRequest('GET', 'some/path')
+            result = self._AUTH_RESOURCE.denyAccess(request, dataKey)
+            self.assertFailedRequest(
+                request, result, UserDeniesAuthorization(state), redirectUri=redirectUri,
+                msg='Expected denyAccess to redirect the resource owner to the '
+                    'redirection endpoint with an access denied error.')
 
-    def testGrantAccessInvalidScope(self):
-        """ Test that grandAccess rejects a call with a scope that is not in the original scope. """
-        dataKey = 'dataKeyInvalidScope' + self._RESPONSE_TYPE
-        redirectUri = self._VALID_CLIENT.redirectUris[0]
-        request = MockRequest('GET', 'some/path')
-        state = b'state\xFF\xFF'
-        data = {
-            'response_type': self._RESPONSE_GRANT_TYPE_MAPPING[self._RESPONSE_TYPE],
-            'redirect_uri': redirectUri,
-            'client_id': self._VALID_CLIENT.id,
-            'scope': ['All'],
-            'state': state
-        }
-        self._PERSISTENT_STORAGE.put(dataKey, data)
-        scope = ['Other']
-        result = self._AUTH_RESOURCE.grantAccess(request, dataKey, scope=scope)
-        self.assertFailedRequest(
-            request, result, InvalidScopeError(scope, state), redirectUri=redirectUri,
-            msg='Expected grantAccess to reject an invalid scope.')
+        def testGrantAccessInsecureRedirectUri(self):
+            """
+            Test that grandAccess raises InsecureRedirectUriError for an insecure redirect uri.
+            """
+            dataKey = 'insecureRedirectUriDataKey' + self._RESPONSE_TYPE
+            redirectUri = self._VALID_CLIENT.redirectUris[1]
+            # noinspection HttpUrlsUsage
+            self.assertTrue(redirectUri.startswith('http://'),
+                            msg='The redirect uri is not insecure.')
+            request = MockRequest('GET', 'some/path')
+            self._PERSISTENT_STORAGE.put(dataKey, {
+                'response_type': self._RESPONSE_GRANT_TYPE_MAPPING[self._RESPONSE_TYPE],
+                'redirect_uri': redirectUri,
+                'client_id': self._VALID_CLIENT.id,
+                'scope': 'All',
+                'state': b'state\xFF\xFF'
+            })
+            self.assertRaises(InsecureRedirectUriError, self._AUTH_RESOURCE.grantAccess,
+                              request, dataKey)
+            try:
+                self.assertEqual(self._AUTH_RESOURCE.requestDataLifetime,
+                                 self._PERSISTENT_STORAGE.getExpireTime(dataKey),
+                                 msg='Expected the data to be stored with the expected lifetime.')
+                self._PERSISTENT_STORAGE.pop(dataKey)
+            except KeyError:
+                self.fail('Expected the data to still be in the persistent storage.')
 
-    def testGrantAccessInvalidClientId(self):
-        """ Test that grandAccess rejects a call with an invalid clientId. """
-        dataKey = 'dataKeyInvalidClientId' + self._RESPONSE_TYPE
-        redirectUri = self._VALID_CLIENT.redirectUris[0]
-        request = MockRequest('GET', 'some/path')
-        state = b'state\xFF\xFF'
-        data = {
-            'response_type': self._RESPONSE_GRANT_TYPE_MAPPING[self._RESPONSE_TYPE],
-            'redirect_uri': redirectUri,
-            'client_id': 'invalidClientId',
-            'scope': ['All'],
-            'state': state
-        }
-        self._PERSISTENT_STORAGE.put(dataKey, data)
-        result = self._AUTH_RESOURCE.grantAccess(request, dataKey)
-        self.assertFailedRequest(
-            request, result, InvalidParameterError('client_id', state=state),
-            redirectUri=redirectUri, msg='Expected grantAccess to reject an invalid client id.')
+        def testGrantAccessInsecureConnection(self):
+            """
+            Test that grandAccess returns the expected error
+            for a request over an insecure transport.
+            """
+            dataKey = 'insecureConnectionDataKey' + self._RESPONSE_TYPE
+            request = MockRequest('GET', 'some/path', isSecure=False)
+            state = b'state\xFF\xFF'
+            redirectUri = self._VALID_CLIENT.redirectUris[0]
+            self._PERSISTENT_STORAGE.put(dataKey, {
+                'response_type': self._RESPONSE_GRANT_TYPE_MAPPING[self._RESPONSE_TYPE],
+                'redirect_uri': redirectUri,
+                'client_id': self._VALID_CLIENT.id,
+                'scope': 'All',
+                'state': state
+            })
+            result = self._AUTH_RESOURCE.grantAccess(request, dataKey)
+            self.assertFailedRequest(
+                request, result, InsecureConnectionError(state), redirectUri=redirectUri,
+                msg='Expected the authorization resource to '
+                    'reject a request over an insecure transport.')
 
-    def testGrantAccess(self):
-        """ Test that grandAccess redirects with the expected parameters. """
-        dataKey = 'dataKey' + self._RESPONSE_TYPE
-        redirectUri = self._VALID_CLIENT.redirectUris[0]
-        request = MockRequest('GET', 'some/path')
-        data = {
-            'response_type': self._RESPONSE_GRANT_TYPE_MAPPING[self._RESPONSE_TYPE],
-            'redirect_uri': redirectUri,
-            'client_id': self._VALID_CLIENT.id,
-            'scope': ['All'],
-            'state': b'state\xFF\xFF'
-        }
-        self._PERSISTENT_STORAGE.put(dataKey, data)
-        result = self._AUTH_RESOURCE.grantAccess(request, dataKey)
-        self.assertValidCodeResponse(
-            request, result, data,
-            msg='Expected the auth resource to correctly handle a valid '
-                'accepted {type} grant.'.format(type=self._RESPONSE_TYPE))
+        def testGrantAccessInvalidScope(self):
+            """
+            Test that grandAccess rejects a call with a scope that is not in the original scope.
+            """
+            dataKey = 'dataKeyInvalidScope' + self._RESPONSE_TYPE
+            redirectUri = self._VALID_CLIENT.redirectUris[0]
+            request = MockRequest('GET', 'some/path')
+            state = b'state\xFF\xFF'
+            data = {
+                'response_type': self._RESPONSE_GRANT_TYPE_MAPPING[self._RESPONSE_TYPE],
+                'redirect_uri': redirectUri,
+                'client_id': self._VALID_CLIENT.id,
+                'scope': ['All'],
+                'state': state
+            }
+            self._PERSISTENT_STORAGE.put(dataKey, data)
+            scope = ['Other']
+            result = self._AUTH_RESOURCE.grantAccess(request, dataKey, scope=scope)
+            self.assertFailedRequest(
+                request, result, InvalidScopeError(scope, state), redirectUri=redirectUri,
+                msg='Expected grantAccess to reject an invalid scope.')
 
-    def testGrantAccessInsecureRedirectUriAllowed(self):
-        """
-        Test that grandAccess accepts a call with an insecure
-        redirect uri if it is allowed.
-        """
-        dataKey = 'insecureRedirectUriDataKey' + self._RESPONSE_TYPE
-        redirectUri = self._VALID_CLIENT.redirectUris[1]
-        self.assertTrue(redirectUri.startswith('http://'), msg='The redirect uri is not insecure.')
-        request = MockRequest('GET', 'some/path')
-        data = {
-            'response_type': self._RESPONSE_GRANT_TYPE_MAPPING[self._RESPONSE_TYPE],
-            'redirect_uri': redirectUri,
-            'client_id': self._VALID_CLIENT.id,
-            'scope': ['All'],
-            'state': b'state\xFF\xFF'
-        }
-        self._PERSISTENT_STORAGE.put(dataKey, data)
-        result = self._AUTH_RESOURCE.grantAccess(request, dataKey, allowInsecureRedirectUri=True)
-        self.assertValidCodeResponse(
-            request, result, data,
-            msg='Expected the auth resource to correctly handle a valid accepted {type} grant '
-                'with an insecure redirect uri, if it is allowed.'.format(type=self._RESPONSE_TYPE))
+        def testGrantAccessInvalidClientId(self):
+            """ Test that grandAccess rejects a call with an invalid clientId. """
+            dataKey = 'dataKeyInvalidClientId' + self._RESPONSE_TYPE
+            redirectUri = self._VALID_CLIENT.redirectUris[0]
+            request = MockRequest('GET', 'some/path')
+            state = b'state\xFF\xFF'
+            data = {
+                'response_type': self._RESPONSE_GRANT_TYPE_MAPPING[self._RESPONSE_TYPE],
+                'redirect_uri': redirectUri,
+                'client_id': 'invalidClientId',
+                'scope': ['All'],
+                'state': state
+            }
+            self._PERSISTENT_STORAGE.put(dataKey, data)
+            result = self._AUTH_RESOURCE.grantAccess(request, dataKey)
+            self.assertFailedRequest(
+                request, result, InvalidParameterError('client_id', state=state),
+                redirectUri=redirectUri, msg='Expected grantAccess to reject an invalid client id.')
 
-    def testGrantAccessInsecureConnectionAllowed(self):
-        """
-        Test that grandAccess accepts a call with a
-        request over an insecure transport if it is allowed.
-        """
-        dataKey = 'insecureConnectionDataKey' + self._RESPONSE_TYPE
-        redirectUri = self._VALID_CLIENT.redirectUris[0]
-        request = MockRequest('GET', 'some/path', isSecure=False)
-        data = {
-            'response_type': self._RESPONSE_GRANT_TYPE_MAPPING[self._RESPONSE_TYPE],
-            'redirect_uri': redirectUri,
-            'client_id': self._VALID_CLIENT.id,
-            'scope': ['All'],
-            'state': b'state\xFF\xFF'
-        }
-        self._PERSISTENT_STORAGE.put(dataKey, data)
-        authResource = AbstractAuthResourceTest.TestOAuth2Resource(
-            self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._CLIENT_STORAGE,
-            authTokenStorage=self._TOKEN_STORAGE, allowInsecureRequestDebug=True)
-        result = authResource.grantAccess(request, dataKey)
-        self.assertValidCodeResponse(
-            request, result, data,
-            msg='Expected the auth resource to correctly handle a valid '
-                'accepted {type} grant request over an insecure transport, '
-                'if it is allowed.'.format(type=self._RESPONSE_TYPE))
+        def testGrantAccess(self):
+            """ Test that grandAccess redirects with the expected parameters. """
+            dataKey = 'dataKey' + self._RESPONSE_TYPE
+            redirectUri = self._VALID_CLIENT.redirectUris[0]
+            request = MockRequest('GET', 'some/path')
+            data = {
+                'response_type': self._RESPONSE_GRANT_TYPE_MAPPING[self._RESPONSE_TYPE],
+                'redirect_uri': redirectUri,
+                'client_id': self._VALID_CLIENT.id,
+                'scope': ['All'],
+                'state': b'state\xFF\xFF'
+            }
+            self._PERSISTENT_STORAGE.put(dataKey, data)
+            result = self._AUTH_RESOURCE.grantAccess(request, dataKey)
+            self.assertValidCodeResponse(
+                request, result, data,
+                msg='Expected the auth resource to correctly handle a valid '
+                    'accepted {type} grant.'.format(type=self._RESPONSE_TYPE))
 
-    def testGrantAccessSubsetScope(self):
-        """ Test that grandAccess accepts a call with a subset of the original scope. """
-        dataKey = 'dataKeySubsetScope' + self._RESPONSE_TYPE
-        redirectUri = self._VALID_CLIENT.redirectUris[0]
-        request = MockRequest('GET', 'some/path')
-        data = {
-            'response_type': self._RESPONSE_GRANT_TYPE_MAPPING[self._RESPONSE_TYPE],
-            'redirect_uri': redirectUri,
-            'client_id': self._VALID_CLIENT.id,
-            'scope': ['All', 'Other'],
-            'state': b'state\xFF\xFF'
-        }
-        scope = ['Other']
-        self._PERSISTENT_STORAGE.put(dataKey, data)
-        result = self._AUTH_RESOURCE.grantAccess(request, dataKey, scope=scope)
-        self.assertValidCodeResponse(
-            request, result, data, expectedScope=scope,
-            msg='Expected the auth resource to correctly handle a valid accepted {type} grant '
-                'with a subset of the scope original requested.'.format(type=self._RESPONSE_TYPE))
+        def testGrantAccessInsecureRedirectUriAllowed(self):
+            """
+            Test that grandAccess accepts a call with an insecure
+            redirect uri if it is allowed.
+            """
+            dataKey = 'insecureRedirectUriDataKey' + self._RESPONSE_TYPE
+            redirectUri = self._VALID_CLIENT.redirectUris[1]
+            # noinspection HttpUrlsUsage
+            self.assertTrue(redirectUri.startswith('http://'),
+                            msg='The redirect uri is not insecure.')
+            request = MockRequest('GET', 'some/path')
+            data = {
+                'response_type': self._RESPONSE_GRANT_TYPE_MAPPING[self._RESPONSE_TYPE],
+                'redirect_uri': redirectUri,
+                'client_id': self._VALID_CLIENT.id,
+                'scope': ['All'],
+                'state': b'state\xFF\xFF'
+            }
+            self._PERSISTENT_STORAGE.put(dataKey, data)
+            result = self._AUTH_RESOURCE.grantAccess(
+                request, dataKey, allowInsecureRedirectUri=True)
+            self.assertValidCodeResponse(
+                request, result, data,
+                msg='Expected the auth resource to correctly handle a valid accepted {type} grant '
+                    'with an insecure redirect uri, if it is allowed.'
+                    .format(type=self._RESPONSE_TYPE))
 
-    def _testGrantAccessAdditionalData(self, dataKey, responseType, msg):
-        """
-        Ensure that additional data given to grantAccess is stored with the code.
+        def testGrantAccessInsecureConnectionAllowed(self):
+            """
+            Test that grandAccess accepts a call with a
+            request over an insecure transport if it is allowed.
+            """
+            dataKey = 'insecureConnectionDataKey' + self._RESPONSE_TYPE
+            redirectUri = self._VALID_CLIENT.redirectUris[0]
+            request = MockRequest('GET', 'some/path', isSecure=False)
+            data = {
+                'response_type': self._RESPONSE_GRANT_TYPE_MAPPING[self._RESPONSE_TYPE],
+                'redirect_uri': redirectUri,
+                'client_id': self._VALID_CLIENT.id,
+                'scope': ['All'],
+                'state': b'state\xFF\xFF'
+            }
+            self._PERSISTENT_STORAGE.put(dataKey, data)
+            authResource = AbstractAuthResourceTest.TestOAuth2Resource(
+                self._TOKEN_FACTORY, self._PERSISTENT_STORAGE, self._CLIENT_STORAGE,
+                authTokenStorage=self._TOKEN_STORAGE, allowInsecureRequestDebug=True)
+            result = authResource.grantAccess(request, dataKey)
+            self.assertValidCodeResponse(
+                request, result, data,
+                msg='Expected the auth resource to correctly handle a valid '
+                    'accepted {type} grant request over an insecure transport, '
+                    'if it is allowed.'.format(type=self._RESPONSE_TYPE))
 
-        :param dataKey: The  key to store the data.
-        :param responseType: The response type of the authorization request.
-        :param msg: The assertion message.
-        """
-        redirectUri = self._VALID_CLIENT.redirectUris[0]
-        request = MockRequest('GET', 'some/path')
-        additionalData = 'someData'
-        data = {
-            'response_type': responseType,
-            'redirect_uri': redirectUri,
-            'client_id': self._VALID_CLIENT.id,
-            'scope': ['All'],
-            'state': b'state\xFF\xFF'
-        }
-        self._PERSISTENT_STORAGE.put(dataKey, data)
-        result = self._AUTH_RESOURCE.grantAccess(request, dataKey, additionalData=additionalData)
-        self.assertValidCodeResponse(
-            request, result, data, expectedAdditionalData=additionalData, msg=msg)
+        def testGrantAccessSubsetScope(self):
+            """ Test that grandAccess accepts a call with a subset of the original scope. """
+            dataKey = 'dataKeySubsetScope' + self._RESPONSE_TYPE
+            redirectUri = self._VALID_CLIENT.redirectUris[0]
+            request = MockRequest('GET', 'some/path')
+            data = {
+                'response_type': self._RESPONSE_GRANT_TYPE_MAPPING[self._RESPONSE_TYPE],
+                'redirect_uri': redirectUri,
+                'client_id': self._VALID_CLIENT.id,
+                'scope': ['All', 'Other'],
+                'state': b'state\xFF\xFF'
+            }
+            scope = ['Other']
+            self._PERSISTENT_STORAGE.put(dataKey, data)
+            result = self._AUTH_RESOURCE.grantAccess(request, dataKey, scope=scope)
+            self.assertValidCodeResponse(
+                request, result, data, expectedScope=scope,
+                msg='Expected the auth resource to correctly handle a valid accepted {type} grant '
+                    'with a subset of the scope original requested.'
+                    .format(type=self._RESPONSE_TYPE))
+
+        def _testGrantAccessAdditionalData(self, dataKey, responseType, msg):
+            """
+            Ensure that additional data given to grantAccess is stored with the code.
+
+            :param dataKey: The  key to store the data.
+            :param responseType: The response type of the authorization request.
+            :param msg: The assertion message.
+            """
+            redirectUri = self._VALID_CLIENT.redirectUris[0]
+            request = MockRequest('GET', 'some/path')
+            additionalData = 'someData'
+            data = {
+                'response_type': responseType,
+                'redirect_uri': redirectUri,
+                'client_id': self._VALID_CLIENT.id,
+                'scope': ['All'],
+                'state': b'state\xFF\xFF'
+            }
+            self._PERSISTENT_STORAGE.put(dataKey, data)
+            result = self._AUTH_RESOURCE.grantAccess(request, dataKey,
+                                                     additionalData=additionalData)
+            self.assertValidCodeResponse(
+                request, result, data, expectedAdditionalData=additionalData, msg=msg)

@@ -39,11 +39,6 @@ class TwistedTestCase(TestCase):
     """ An abstract base class for the test cases. """
     longMessage = True
 
-    @classProperty
-    def __test__(self):
-        # pylint: disable=no-member
-        return not (self.__name__.startswith('Abstract') or self.__name__ == 'TwistedTestCase')
-
 
 class MockRequest(DummyRequest):
     """ A request that can be used for testing. """

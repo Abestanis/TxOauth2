@@ -29,7 +29,9 @@ class FullExampleTestCase(TwistedTestCase):
         sys.path.append(os.path.abspath(os.path.join(
             os.path.dirname(__file__), '..', '..', 'example')))
         exampleModule = importlib.import_module('main')
+        # noinspection PyUnresolvedReferences
         cls._VALID_CLIENT = exampleModule.getTestClient()
+        # noinspection PyUnresolvedReferences
         cls._SERVER = MockSite(exampleModule.setupTestServerResource())
         TokenResource.getTokenStorageSingleton().store(
             cls._VALID_TOKEN, cls._VALID_CLIENT, cls._VALID_SCOPE)

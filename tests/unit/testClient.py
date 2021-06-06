@@ -27,6 +27,7 @@ class ClientTest(TwistedTestCase):
 
     def testAcceptsValidUri(self):
         """ Check that the client does not reject valid redirect uris. """
+        # noinspection HttpUrlsUsage
         validUris = [
             'https://valid.nonexistent',
             'http://valid.nonexistent',
@@ -65,6 +66,7 @@ class ClientTest(TwistedTestCase):
 
     def testValidatesUris(self):
         """ Test that the client only accepts list of strings as uris. """
+        # noinspection HttpUrlsUsage
         for urls in [['https://valid.nonexistent'],
                      ['https://valid.nonexistent', 'http://valid.nonexistent']]:
             try:

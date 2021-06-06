@@ -3,10 +3,10 @@
 from txoauth2 import GrantTypes
 
 from tests import MockRequest
-from tests.unit.testGrant import AbstractSharedGrantTest
+from tests.unit.testGrant import Abstract
 
 
-class TestImplicitCodeGrant(AbstractSharedGrantTest):
+class TestImplicitCodeGrant(Abstract.SharedGrantTest):
     """
     Test the Implicit Code Grant.
     See https://tools.ietf.org/html/rfc6749#section-4.2

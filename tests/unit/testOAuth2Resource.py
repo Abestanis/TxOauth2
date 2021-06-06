@@ -25,7 +25,7 @@ from tests import TwistedTestCase, MockRequest, TestTokenFactory, TestPersistent
 
 class AbstractAuthResourceTest(TwistedTestCase):
     """ Abstract base class for test targeting the OAuth2 resource. """
-    # noinspection PyTypeChecker
+    # noinspection HttpUrlsUsage
     _VALID_CLIENT = PasswordClient('authResourceClientId',
                                    ['https://return.nonexistent?param=retain',
                                     'http://return.nonexistent/notSecure?param=retain'],
