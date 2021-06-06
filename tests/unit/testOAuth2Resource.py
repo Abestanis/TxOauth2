@@ -503,6 +503,26 @@ class AuthResourceTest(AbstractAuthResourceTest):
             msg='Expected the authorization token resource to reject a request with a '
                 'custom response type that the client is not allowed to use.')
 
+    def testInsecureRedirectUriClient(self):
+        """ Test that a request with a non https redirect uri is accepted. """
+        state = b'state\xFF\xFF'
+        client = PasswordClient('customResponseTypeClientUnauthorized', ['custom://callback'],
+                                [GrantTypes.AuthorizationCode], 'clientSecret')
+        redirectUri = client.redirectUris[0]
+        parameters = {
+            'response_type': 'code',
+            'client_id': client.id,
+            'redirect_uri': redirectUri,
+            'scope': 'All',
+            'state': state
+        }
+        request = self.createAuthRequest(arguments=parameters)
+        self._CLIENT_STORAGE.addClient(client)
+        result = self._AUTH_RESOURCE.render_GET(request)
+        self.assertValidAuthRequest(
+            request, result, parameters, msg='Expected the authorization token resource to accept '
+                                             'a valid request with a non https redirect uri.')
+
     def testCustomResponseTypeNotAllowed(self):
         """ Test that a request with a custom response type is rejected if it is not enabled. """
         responseType = 'myCustomResponseType'

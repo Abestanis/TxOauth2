@@ -32,6 +32,7 @@ class ClientTest(TwistedTestCase):
             'http://valid.nonexistent',
             'https://valid.nonexistent/path/subpath',
             'https://valid.nonexistent/path/subpath?querry=1',
+            'custom://callback',
         ]
         for uri in validUris:
             self.assertEqual(uri, Client('clientId', [uri], []).redirectUris[0],
