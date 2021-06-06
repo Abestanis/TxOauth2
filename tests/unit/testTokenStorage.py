@@ -8,6 +8,8 @@ from tests import TwistedTestCase, getTestPasswordClient
 
 
 class Abstract:
+    """ Wrapper for the abstract TokenStorageTest to hide it during test discovery. """
+
     class TokenStorageTest(TwistedTestCase):
         """
         An abstract test case for TokenStorage implementations. A subclass must

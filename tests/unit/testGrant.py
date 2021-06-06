@@ -13,6 +13,8 @@ from tests.unit.testOAuth2Resource import AbstractAuthResourceTest
 
 
 class Abstract:
+    """ Wrapper for the abstract SharedGrantTest to hide it during test discovery. """
+
     class SharedGrantTest(AbstractAuthResourceTest):  # pylint: disable=too-many-public-methods
         """
         This test contains test for shared functionality for

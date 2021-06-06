@@ -7,6 +7,8 @@ from tests import TwistedTestCase, getTestPasswordClient
 
 
 class Abstract:
+    """ Wrapper for the abstract TokenFactoryTest to hide it during test discovery. """
+
     class TokenFactoryTest(TwistedTestCase):
         """
         An abstract test case for TokenFactory implementations. A subclass must

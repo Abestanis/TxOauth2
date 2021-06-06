@@ -13,6 +13,8 @@ from tests import TwistedTestCase, getTestPasswordClient, assertClientEquals
 
 
 class Abstract:
+    """ Wrapper for the abstract ClientStorageTest to hide it during test discovery. """
+
     class ClientStorageTest(TwistedTestCase):
         """
         An abstract test case for ClientStorage implementations. A subclass must

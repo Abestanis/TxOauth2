@@ -8,6 +8,8 @@ from tests import TwistedTestCase
 
 
 class Abstract:
+    """ Wrapper for the abstract PersistentStorageTest to hide it during test discovery. """
+
     class PersistentStorageTest(TwistedTestCase):
         """
         An abstract test case for PersistentStorage implementations. A subclass must
