@@ -12,6 +12,8 @@ disable=useless-object-inheritance,
         too-many-arguments,
         too-many-instance-attributes,
         too-many-branches,
+        super-with-arguments,
+        raise-missing-from,
         no-else-return
 
 [REPORTS]
